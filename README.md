@@ -1,259 +1,246 @@
-<a href="https://softserve.academy/"><div align="center"><img src="https://github.com/ita-social-projects/StreetCode/blob/master/StreetCodeLogo.jpg" title="SoftServe IT Academy" alt="SoftServe IT Academy"></div></a>
+<div align="center"><img src="StreetCodeLogo.jpg" title="SoftServe IT Academy" alt="SoftServe IT Academy"></div>
 
-# Streetcode
-This is a Back-end part of our Streetcode project.
-Front-end part: https://github.com/ita-social-projects/streetcode-client_Admin-Full
->### **Vision**
->The largest platform about the history of Ukraine, built in the space of cities.
+# Streetcode — Server (August 2026 cohort)
 
->### **Mission**
->To fill the gaps in the historical memory of Ukrainians.
+Back-end (ASP.NET Core Web API) of the Streetcode project, used as the working codebase of the **August 2026** .NET cohort.
 
-[![Build Status](https://img.shields.io/travis/ita-social-projects/Streetcode-Admin/master?style=flat-square)](https://travis-ci.org/github/ita-social-projects/Streetcode-Admin)
-[![Coverage Status](https://img.shields.io/gitlab/coverage/ita-social-projects/Streetcode-Admin/master?style=flat-square)](https://coveralls.io)
-[![Github Issues](https://img.shields.io/github/issues/ita-social-projects/Streetcode-Admin?style=flat-square)](https://github.com/ita-social-projects/Streetcode-Admin/issues)
-[![Pending Pull-Requests](https://img.shields.io/github/issues-pr/ita-social-projects/Streetcode-Admin?style=flat-square)](https://github.com/ita-social-projects/Streetcode-Admin/pulls)
+> ### **Vision**
+> The largest platform about the history of Ukraine, built in the space of cities.
 
----
+> ### **Mission**
+> To fill the gaps in the historical memory of Ukrainians.
 
-## Table of Contents 
+| | |
+|---|---|
+| Repository | `project-studying-dotnet/Streetcode-Server-August-2026` |
+| Default branch | `dev` |
+| Board | [project #30 · Streetcode-August-2026](https://github.com/orgs/project-studying-dotnet/projects/30) (private) |
+| Team | `net-team-august-2026` |
 
-- [Streetcode](#streetcode)
-  - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
-    - [Required to install](#required-to-install)
-    - [Environment](#environment)
-    - [Clone](#clone)
-    - [Setup](#setup)
-    - [How to run local](#how-to-run-local)
-    - [How to run Docker](#how-to-run-docker)
-  - [Usage](#usage)
-    - [How to work with swagger UI](#how-to-work-with-swagger-ui)
-    - [How to run tests](#how-to-run-tests)
-    - [How to Checkstyle](#how-to-checkstyle)
-  - [Documentation](#documentation)
-  - [Contributing](#contributing)
-    - [Git flow](#github-flow)
-    - [Issue flow](#issue-flow)
-  - [Team](#team)
-  - [FAQ](#faq)
-  - [Support](#support)
-  - [License](#license)
+The codebase originates from [ita-social-projects/StreetCode](https://github.com/ita-social-projects/StreetCode). Each cohort starts from the same reference tree rather than from the previous cohort's work. This cohort works on the server only — no client repository is provisioned, and the `Streetcode/StreetCode.Client` submodule stays uninitialised.
 
 ---
 
-## Installation
+## Table of Contents
 
-### Required to install
-* <a href="https://dotnet.microsoft.com/en-us/download/dotnet/6.0" target="_blank">ASP.NET Core Runtime 6.0.12</a>
-* <a href="https://www.microsoft.com/en-us/sql-server/sql-server-downloads" target="_blank"> Microsoft SQL Server 2017</a>+
-* <a href="https://nuke.build/" target="_blank"> Nuke Build 6.2.1+</a> ```dotnet tool install Nuke.GlobalTool --global --version <VERSION_NUMBER>```
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Clone](#clone)
+  - [Database](#database)
+  - [Run](#run)
+  - [Tests](#tests)
+  - [Code style](#code-style)
+- [Workflow](#workflow)
+  - [Access](#access)
+  - [Branches](#branches)
+  - [Board flow](#board-flow)
+  - [Pull requests](#pull-requests)
+  - [Hotfixes](#hotfixes)
+- [Project layout](#project-layout)
+- [Known gaps](#known-gaps)
+- [FAQ](#faq)
+- [License](#license)
 
-### Environment
-environmental variables
-```properties
-spring.datasource.url=${DATASOURCE_URL}
-spring.datasource.username=${DATASOURCE_USER}
-spring.datasource.password=${DATASOURCE_PASSWORD}
-spring.mail.username=${EMAIL_ADDRESS}
-spring.mail.password=${EMAIL_PASSWORD}
-cloud.name=${CLOUD_NAME}
-api.key=${API_KEY}
-api.secret=${API_SECRET}
-```
+---
+
+## Tech stack
+
+ASP.NET Core 6 · EF Core 6 (SQL Server) · MediatR · AutoMapper · FluentResults · Hangfire · Serilog · Swashbuckle · StyleCop.Analyzers · xUnit · Nuke Build
+
+---
+
+## Getting started
+
+### Prerequisites
+
+* [.NET SDK 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) — the solution targets `net6.0`
+* [Visual Studio 2022](https://visualstudio.microsoft.com/) (17.x), JetBrains Rider, or VS Code. **Visual Studio 2019 does not support `net6.0`** and cannot open this solution.
+* [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) 2019+ (Express edition is enough) **or** [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### Clone
-  Clone this repo to your local machine using:
-  ```
-https://github.com/ita-social-projects/StreetCode
-  ```
-  Or if your have an associated SSH key:
-  ```
-git@github.com:ita-social-projects/StreetCode.git
-  ```
 
-### Setup
-  1. Change connection string  
-   (Go to **appsettings.json** and write your local database connection string)
-  2. Create local database  
-   (Run project and make sure that database was created filled with data)
-
-
-### How to run local 
- Run the Streetcode project than open your browser and enter https://localhost:5001/swagger/index.html url. If you had this page already opened, just reload it.
-
-### How to connect to db locally
-1. launch SQL Server management Studio
-2. In the pop-up window:
-    - enter **"localhost"** as the server name;
-    - select **"windows authentication"** as authentication mechanism;
-3. After the connection has been established, right-click on the server (the first line with the icon), on the left-hand side of the UI
-4. In the the appeared window find and click on **"properties"**
-5. In the properties section, select **"security"** page
-6. Make sure that **"Server authentication"** radio-button is set to **"SQL Server and Windows Authentication mode"**
-7. Click "Ok"
-8. Then again, on the left-hand side of the UI find folder entitled **"Security"**, and expand it
-9. In unrolled list of options find folder "Logins", and expand it
-10. At this point, you should have **"sa"** as the last option.
-    If for some reason you do not see it, please refer to https://stackoverflow.com/questions/35753254/why-login-without-rights-can-see-sa-login
-11. Right-click on the "sa" item, select "properties"
-12. Change password to the default system one - **"Admin@1234"**. Don't forget to confirm it afterwards
-13. On the left-hand side select **"Status"** page, and set **"Login"** radio-button to **"Enabled"**
-14. Click "Ok"
-
-Now you can connect to your localhost instance with login (sa) and password (Admin@1234)!
-
-**_NOTE:_** Here's the full walkthrough: https://www.youtube.com/watch?v=ANFnDqe4JBk&t=211s.
-
-
-### How to run Docker
-
-1. In the **"build"** project, find the **"Targets"** folder
-2. In the appeared list of classes, find and click on **"SetupPublicBuild.cs"**
-3. Open the command prompt/PowerShell/linux terminal, go inside of **"/Streetcode"** directory, and start the **"SetupDocker"** Target.
+```bash
+git clone https://github.com/project-studying-dotnet/Streetcode-Server-August-2026.git
+cd Streetcode-Server-August-2026
 ```
-cd ./Streetcode
-nuke SetupDocker
-```
-After waiting for target completion, you should find that the image and running containers for back-end, front-end, db and redis have been successfully created.
 
-**_NOTE:_**  If order to delete newly created images/containers/volumes, you can utilize the **"CleanDocker"** Target.
+`dev` is the default branch and the base for all work.
+
+### Database
+
+The connection string shipped in `appsettings.json` and `appsettings.Local.json` expects a SQL Server on the default instance:
+
 ```
-cd ./Streetcode
-nuke CleanDocker
+Server=127.0.0.1;Database=StreetcodeDb;User Id=sa;Password=Admin@1234;MultipleActiveResultSets=true
 ```
-That will delete all unnecessary docker-atoms for you.
+
+Pick whichever option matches the machine. **Option A** works with the shipped configuration unchanged; **Option B** overrides it without editing any file.
+
+#### Option A — SQL Server in a container
+
+```bash
+docker run -d --name streetcode-db \
+  -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=Admin@1234" \
+  -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+```
+
+#### Option B — a local SQL Server instance
+
+Set one environment variable and restart the IDE (it reads the environment at startup):
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+  "STREETCODE_ConnectionStrings__DefaultConnection",
+  "Server=localhost\SQLEXPRESS;Database=StreetcodeDb;Trusted_Connection=True;MultipleActiveResultSets=true",
+  "User")
+```
+
+The configuration pipeline registers `AddEnvironmentVariables("STREETCODE_")` as the last source, and `__` maps to `:`, so this value wins over both `appsettings.json` files while they stay untouched. The same string is used by EF Core and by Hangfire storage.
+
+> **Named instances:** address them as `localhost\SQLEXPRESS` or `.\SQLEXPRESS`. `Trusted_Connection` over the literal `127.0.0.1` fails on machines outside a domain with `Login failed. The login is from an untrusted domain`, surfacing as `Named Pipes Provider, error: 40`.
+
+The schema is created on startup — `ApplyMigrations` runs `MigrateAsync()`, so an empty database is enough. Seed data is **not** loaded: the `SeedDataAsync()` call in `Program.cs` is commented out, so endpoints return empty collections until data is added.
+
+### Run
+
+Set **Streetcode.WebApi** as the startup project and use the **`Streetcode_Local`** launch profile, or:
+
+```bash
+dotnet run --project Streetcode/Streetcode.WebApi --launch-profile Streetcode_Local
+```
+
+| | |
+|---|---|
+| Swagger UI | <https://localhost:5001/swagger> |
+| HTTP | <http://localhost:5000> |
+| Hangfire dashboard | `/dash` |
+
+The `Local` environment is what enables Swagger and suppresses the recurring background jobs. Under any other profile Swagger is off, HSTS is on, and Hangfire starts web-parsing jobs — use Postman or another client against `http://localhost:5000`.
+
+Run `dotnet dev-certs https --trust` once, since the pipeline enforces HTTPS redirection.
+
+> A failed database connection does **not** stop the host: `ApplyMigrations` logs the exception and startup continues, after which every request fails. If endpoints misbehave, look for `An error occured during startup migration` in the console.
+
+### Tests
+
+```bash
+dotnet test Streetcode/Streetcode.XUnitTest        # unit tests
+dotnet test Streetcode/Streetcode.XIntegrationTest # integration tests
+```
+
+Integration tests read `appsettings.IntegrationTests.json` and need a reachable database.
+
+### Code style
+
+StyleCop.Analyzers is wired through `Streetcode/settings.ruleset`. Its findings are warnings and do not fail the build; the reference tree already carries a large number of them, so keep new code clean rather than trying to zero the counter.
 
 ---
 
-## Usage
-### How to work with swagger UI
-Run the Streetcode project than open your browser and enter https://localhost:5001/swagger/index.html url. If you had this page already opened, just reload it.
+## Workflow
 
-### How to run API without swagger UI
-Run the Streetcode project in any other profile but "Local" and enter http://localhost:5000. Now, you are free to test API-endpoints with <a href="https://www.postman.com/" target="_blank">Postman</a> or any other tool.
+### Access
 
-### How to run tests
-### How to Checkstyle
+Membership in the `net-team-august-2026` team grants `push` on the repository and `WRITER` on the board — these are two separate access lists. **Do not fork**: branches are created directly in this repository.
 
----
+### Branches
 
-## Contributing
+| Branch | Purpose | Approvals to merge |
+|---|---|---|
+| `dev` | default, integration branch, base of every PR | 2 |
+| `main` | release | 1 |
 
-### Gitflow
+Both branches are protected: no force-push, no deletion, stale approvals are dismissed on a new push, and every conversation must be resolved.
 
-Gitflow is a lightweight, branch-based workflow.
+Name a working branch after the task:
 
-Gitflow is an alternative Git branching model that involves the use of feature branches and multiple primary branches.
+```
+type/SSAD-<number>/short-description
+```
 
-#### Step 1
+for example `feature/SSAD-42/add-partner-endpoint`. Start it from an up-to-date `dev`:
 
-- First step is checkout to `developer` branch and pull the recent changes.
+```bash
+git switch dev && git pull
+git switch -c feature/SSAD-42/add-partner-endpoint
+```
 
-#### Step 2
+### Board flow
 
-- 🍴 Fork this repo from `developer` branch and name it! A short, descriptive branch name enables your collaborators to see ongoing work at a glance. For example, `increase-test-timeout` or `add-code-of-conduct`. 
+Sprint iterations last 7 days and start on Wednesday. A task travels the board as:
 
-#### Step 3
+```
+Sprint N Backlog (draft)  →  Convert to issue  →  Todo  →  In Progress  →  To Review  →  Sprint N Done
+```
 
-- 🔨 On your branch, make ANY reasonable & desired changes to the repository.
+Convert the draft to an issue before starting, so the work has a number to reference from the branch and the PR.
 
-#### Step 4
+### Pull requests
 
-- :chart_with_upwards_trend: Commit and push your changes to your branch. 
-Give each commit a descriptive message to help you and future contributors understand what changes the commit contains. 
-For example, `fix typo` or `increase rate limit`. Note: you don't need to commit every line of your code in separate commits.
+1. Push the branch and open a PR into `dev`; move the card to `To Review`.
+2. Fill in the template and assign reviewers.
+3. Collect **2 approvals**. Any new commit dismisses existing approvals, so push fixes before asking for the final review.
+4. Resolve every conversation — it is enforced by branch protection.
+5. Merge the PR yourself once the checks above are met.
+6. Delete the branch manually (auto-delete is off) and move the card to `Sprint N Done`.
 
-#### Step 5
+Before requesting review, sync with `dev` and resolve conflicts locally:
 
-- Before creating pull request you need to check the `developer` branch state! To avoid conflicts, you should merge `developer` branch to your local branch! And resolve your local conflicts. Mini manual: checkout to your local branch and write in console `git merge developer`.
-
-#### Step 6
-
-- 🔃 Create a new pull request using <a href="https://github.com/ita-social-projects/Streetcode_Client-Admin.git" target="_blank">*this link*</a>.
-
-#### Step 7
-
-- :raising_hand: Assign reviewers! Reviewers should leave questions, comments, and suggestions. After receiving comments, improve the code. Get Approved status on the request and be satisfied with it! 
-
-#### Step 8
-
-- :tada: After 3 approved reviews, merge your pull request with `developer` branch! Also, it is important to wait for your scrum master to approve your changes. If there are some conflicts, resolve them, again.
-
-#### Step 9
-
-- :scissors: Delete redundant branch. Done!
+```bash
+git switch dev && git pull
+git switch feature/SSAD-42/add-partner-endpoint
+git merge dev
+```
 
 ### Hotfixes
 
-Oops, some fixed needs to be done immediately? Use this guide for Hotfixes!
-
-Some fixes will be needed due to the nature of Gitflow. You would have to do a 'hotfix' or something outside of the normal process, but it's simply part of our normal process. 
-
-#### Step 1 
-
-- :fire: To implement an urgent change, a Hotfix branch is created off the `developer` branch to test and implement the fix.
-
-#### Step 2
-
-- :dancer: Once it’s complete, the Hotfix is merged with the `developer` branch.
-
-### Issue flow
+Branch off `dev`, fix, and open a PR back into `dev` under the same rules. `main` receives changes only by merging `dev` as a release.
 
 ---
 
-## Team
+## Project layout
 
-<div align="center">
+```
+Streetcode/
+├── Streetcode.WebApi/          controllers, DI and pipeline configuration, entry point
+├── Streetcode.BLL/             business logic: MediatR handlers, DTOs, services
+├── Streetcode.DAL/             EF Core entities, DbContext, migrations, repositories
+├── Streetcode.XUnitTest/       unit tests
+├── Streetcode.XIntegrationTest/integration tests
+└── DbUpdate/                   DbUp runner for the raw SQL scripts in DAL/Persistence/ScriptsMigration
+build/                          Nuke Build targets
+```
 
-***Project manager***
+---
 
-[![@IrynaZavushchak](https://avatars.githubusercontent.com/u/45690640?s=100&v=4)](https://github.com/IrynaZavushchak) 
+## Known gaps
 
-***Tech expert***
+Inherited from the reference tree and left as is:
 
-[![@LanchevychMaxym](https://avatars.githubusercontent.com/u/47561209?s=100&v=4)](https://github.com/LanchevychMaxym) 
-
-***Business analyst***
-
-[![@vladnvp](https://avatars.githubusercontent.com/u/112704799?s=100&v=4)](https://github.com/vladnvp)
-
-***Dev team***
-
-[![@Kotusyk](https://avatars.githubusercontent.com/u/72945528?s=100&v=4)](https://github.com/Kotusyk) 
-[![@Kasterov](https://avatars.githubusercontent.com/u/96317477?s=100&v=4)](https://github.com/Kasterov)
-[![@Katerix](https://avatars.githubusercontent.com/u/92515141?s=100&v=4)](https://github.com/Katerix)
-[![@Tysyatsky](https://avatars.githubusercontent.com/u/77460353?s=100&v=4)](https://github.com/Tysyatsky)
-[![@MementoMorj](https://avatars.githubusercontent.com/u/98163405?s=100&v=4)](https://github.com/MementoMorj)
-[![@Chynchenko](https://i.ibb.co/LP9n7w3/Svetlana.jpg)](https://github.com/Chynchenko)
-[![@NadiaKishchuk](https://i.ibb.co/s3kgMSM/Nadia.jpg)](https://github.com/NadiaKishchuk)
-
-[![@Dobriyr](https://avatars.githubusercontent.com/u/67451349?s=100&v=4)](https://github.com/Dobriyr)
-[![@DanyilTerentiev](https://avatars.githubusercontent.com/u/96494594?s=100&v=4)](https://github.com/DanyilTerentiev)
-[![@ValDekh](https://avatars.githubusercontent.com/u/61435019?s=100&v=4)](https://github.com/ValDekh)
-[![@ormykhalyshyn](https://avatars.githubusercontent.com/u/92263517?s=100&v=4)](https://github.com/ormykhalyshyn)
-[![@MaksBrat](https://avatars.githubusercontent.com/u/113379463?s=100&v=4)](https://github.com/MaksBrat)
-[![@Lolimkeri](https://avatars.githubusercontent.com/u/57957843?s=100&v=4)](https://github.com/Lolimkeri)
-
-</div>
+* The GitHub Actions workflows target `master`/`develop` and an upstream SonarCloud project whose token this repository does not hold. A red check on a PR is expected and does **not** block a merge — no status checks are required by branch protection.
+* `.github/PULL_REQUEST_TEMPLATE/develop.md` and `master.md` are leftovers named after branches that no longer exist. GitHub uses `.github/pull_request_template.md`.
+* The Nuke targets `SetupDocker` and `CleanDocker` call `docker-compose`, but no compose file ships with this repository.
+* The `.editorconfig` referenced by the project files is absent.
 
 ---
 
 ## FAQ
 
-- **Сan't  install .NET Core 6.0.0+ in Visual Studio?**
-    - Try to install <a href="https://visualstudio.microsoft.com/ru/free-developer-offers/" target="_blank">Visual Studio 2022</a>
+**Visual Studio will not open the solution.**
+Use Visual Studio 2022. The 2019 release cannot load `net6.0` projects.
 
----
+**Startup logs a migration error and every request fails.**
+The database is unreachable — see [Database](#database). The host starts regardless, so the log is the only signal.
 
-## Support
+**Swagger returns 404.**
+The application is running under a profile other than `Streetcode_Local`. Swagger is registered only for the `Local` environment.
 
-Reach out to us at one of the following places!
-
-- Telegram at <a href="https://t.me/ira_zavushchak" target="_blank">`Iryna Zavushchak`</a>
+**All endpoints return empty collections.**
+Expected on a fresh database: seeding is disabled in `Program.cs`.
 
 ---
 
 ## License
-- **[MIT license](http://opensource.org/licenses/mit-license.php)**
-- Copyright 2022 © <a href="https://softserve.academy/" target="_blank"> SoftServe IT Academy</a>.
+
+* **[MIT license](http://opensource.org/licenses/mit-license.php)**
+* Copyright 2022 © <a href="https://softserve.academy/" target="_blank">SoftServe IT Academy</a>.
