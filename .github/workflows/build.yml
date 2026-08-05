@@ -3,8 +3,8 @@ name: SonarCloud
 on:
   push:
     branches:
-      - master
-      - develop
+      - main
+      - dev
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -51,13 +51,14 @@ jobs:
       - name: SonarScanner Analysis
         id: sonar
         run: |
-          dotnet sonarscanner begin /k:"ita-social-projects_StreetCode" /o:"ita-social-projects" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.xml"
+          dotnet sonarscanner begin /k:"ita-social-projects_StreetCode" /o:"ita-social-projects" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.xml"
           dotnet build ./Streetcode/Streetcode.sln --configuration Release
-          dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          dotnet test ./Streetcode/Streetcode.sln --configuration Release --no-build /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput="../coverage/"
+          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Publish Code Coverage Report
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Code Coverage Report
           path: |
