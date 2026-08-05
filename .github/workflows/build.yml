@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with: 
+          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -44,7 +46,7 @@ jobs:
       - name: SonarScanner Analysis
         id: sonar
         run: |
-          dotnet sonarscanner begin /k:"project-studying-dotnet_StreetCode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
+          dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_StreetCode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
           dotnet build ./Streetcode/Streetcode.sln --configuration Release
           dotnet test ./Streetcode/Streetcode.XUnitTest/Streetcode.XUnitTest.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/coverage.opencover.xml
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
