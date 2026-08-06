@@ -27,14 +27,16 @@ public class WebParsingUtils
 
     private readonly IRepositoryWrapper _repository;
     private readonly StreetcodeDbContext _streetcodeContext;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public WebParsingUtils(StreetcodeDbContext streetcodeContext)
+    public WebParsingUtils(StreetcodeDbContext streetcodeContext, IWebHostEnvironment webHostEnvironment)
     {
         _repository = new RepositoryWrapper(streetcodeContext);
         _streetcodeContext = streetcodeContext;
+        _webHostEnvironment = webHostEnvironment;
     }
 
-    public static async Task DownloadAndExtractAsync(
+    public async Task DownloadAndExtractAsync(
         string fileUrl,
         string zipPath,
         string extractTo,
@@ -57,7 +59,10 @@ public class WebParsingUtils
 
         var clientHandler = new HttpClientHandler();
         clientHandler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-        clientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+        if (_webHostEnvironment.IsDevelopment())
+        {
+            clientHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+        }
 
         var retryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(
             3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
