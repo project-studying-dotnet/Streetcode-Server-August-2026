@@ -38,9 +38,8 @@ public class GetToponymsByStreetcodeIdHandler : IRequestHandler<GetToponymsByStr
             return Result.Fail(new Error(errorMsg));
         }
 
-        var toponymDto = toponyms
-            .DistinctBy(x => x.StreetName)
-            .Select(x => _mapper.Map<ToponymDTO>(x));
+        var distinctToponyms = toponyms.DistinctBy(x => x.StreetName);
+        var toponymDto = distinctToponyms.Select(x => _mapper.Map<ToponymDTO>(x));
 
         return Result.Ok(toponymDto);
     }
