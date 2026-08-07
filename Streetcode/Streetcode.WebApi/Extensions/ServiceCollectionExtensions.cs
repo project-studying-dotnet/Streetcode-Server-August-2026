@@ -4,7 +4,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Services.Logging;
 using Streetcode.DAL.Persistence;
@@ -40,7 +40,10 @@ public static class ServiceCollectionExtensions
         services.AddFeatureManagement();
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         services.AddAutoMapper(currentAssemblies);
-        services.AddMediatR(currentAssemblies);
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssemblies(currentAssemblies);
+        });
 
         services.AddScoped<IBlobService, BlobService>();
         services.AddScoped<ILoggerService, LoggerService>();
