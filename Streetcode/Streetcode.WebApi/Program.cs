@@ -2,11 +2,21 @@ using Hangfire;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
+using DotNetEnv;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureApplication();
 
-builder.Services.AddApplicationServices(builder.Configuration);
+var connectionString =
+$"Server={Environment.GetEnvironmentVariable("DB_SERVER")};" +
+$"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
+$"User Id={Environment.GetEnvironmentVariable("DB_USER")};" +
+$"Password={Environment.GetEnvironmentVariable("DB_PASSWORD")};" +
+"TrustServerCertificate=True;";
+
+builder.Services.AddApplicationServices(builder.Configuration, connectionString);
 builder.Services.AddSwaggerServices();
 builder.Services.AddCustomServices();
 builder.Services.ConfigureBlob(builder);

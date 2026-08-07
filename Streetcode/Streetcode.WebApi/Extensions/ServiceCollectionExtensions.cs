@@ -50,9 +50,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITextService, AddTermsToTextService>();
     }
 
-    public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
+    public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration, string connectionString)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
 
