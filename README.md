@@ -67,6 +67,46 @@ cd Streetcode-Server-August-2026
 
 `dev` is the default branch and the base for all work.
 
+### Run with Docker Compose
+
+Make sure Docker Desktop is running in Linux containers mode and that the `.env` file in the repository root contains the required values:
+
+```dotenv
+MS_SQL_DB_PORT=1433
+API_PORT=5000
+SA_PASSWORD=your-strong-password
+DB_USER=sa
+DB_NAME=StreetcodeDb
+```
+
+Build and start the Web API and SQL Server:
+
+```bash
+docker compose up --build
+```
+
+The SQL Server health check prevents the API from starting before the database is ready. On startup, the API applies the Entity Framework Core migrations automatically.
+
+When both services are running, the application is available at:
+
+| | |
+|---|---|
+| Swagger UI | <http://localhost:5000/swagger> |
+| HTTP | <http://localhost:5000> |
+| Hangfire dashboard | <http://localhost:5000/dash> |
+| SQL Server | `localhost:1433` |
+
+Useful commands:
+
+```bash
+docker compose ps          # show service status
+docker compose logs -f api # follow API logs
+docker compose up -d       # start in the background
+docker compose down        # stop and remove the containers
+```
+
+The `sqlserver-data` volume preserves database data when the containers are stopped or recreated. To remove the containers together with the database data, run `docker compose down --volumes`.
+
 ### Database
 
 The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
@@ -77,6 +117,7 @@ For local development, copy the tracked environment template:
 cp .env.example .env
 ```
 
+<<<<<<< HEAD
 Then replace the placeholder in `.env` with the connection string for the local SQL Server instance:
 
 ```dotenv
@@ -104,6 +145,9 @@ docker run -d --name streetcode-db \
 For this setup, use `127.0.0.1,1433` as the server, `StreetcodeDb` as the database, `sa` as the user, and the same password that was supplied to the container.
 
 #### Option B — a local SQL Server instance
+=======
+Docker Compose configures the containerized API to connect to the `sqlserver` service automatically. The following override is only needed when running the API directly on the host with a local named SQL Server instance.
+>>>>>>> 6116ad6 (docker-compose)
 
 Set `STREETCODE_ConnectionStrings__DefaultConnection` to a complete connection string for the local SQL Server instance. For a named SQL Server instance, the `Server` value can be set to something such as `localhost\SQLEXPRESS`.
 
@@ -232,7 +276,6 @@ Inherited from the reference tree and left as is:
 
 * The GitHub Actions workflows target `master`/`develop` and an upstream SonarCloud project whose token this repository does not hold. A red check on a PR is expected and does **not** block a merge — no status checks are required by branch protection.
 * `.github/PULL_REQUEST_TEMPLATE/develop.md` and `master.md` are leftovers named after branches that no longer exist. GitHub uses `.github/pull_request_template.md`.
-* The Nuke targets `SetupDocker` and `CleanDocker` call `docker-compose`, but no compose file ships with this repository.
 * The `.editorconfig` referenced by the project files is absent.
 
 ---
