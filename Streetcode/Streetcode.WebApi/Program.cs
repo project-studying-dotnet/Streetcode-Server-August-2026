@@ -39,6 +39,8 @@ app.UseHangfireDashboard("/dash");
 
 if (app.Environment.EnvironmentName != "Local")
 {
+    RecurringJob.RemoveIfExists("WebParsingUtils.ParseZipFileFromWebAsync");
+    RecurringJob.RemoveIfExists("BlobService.CleanBlobStorage");
     BackgroundJob.Schedule<WebParsingUtils>(
         wp => wp.ParseZipFileFromWebAsync(),
         TimeSpan.FromMinutes(1));
