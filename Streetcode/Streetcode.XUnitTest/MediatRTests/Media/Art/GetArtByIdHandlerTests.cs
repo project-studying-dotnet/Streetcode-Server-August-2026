@@ -7,20 +7,13 @@ using Streetcode.BLL.MediatR.Media.Art.GetById;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatR.Media.Art;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Art;
 
 public class GetArtByIdHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock;
-    private readonly Mock<IMapper> _mapperMock;
-    private readonly Mock<ILoggerService> _loggerMock;
-
-    public GetArtByIdHandlerTests()
-    {
-        _repositoryMock = new Mock<IRepositoryWrapper>();
-        _mapperMock = new Mock<IMapper>();
-        _loggerMock = new Mock<ILoggerService>();
-    }
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IMapper> _mapperMock = new();
+    private readonly Mock<ILoggerService> _loggerMock = new();
 
     [Fact]
     public async Task Handle_ReturnsOkResult_WhenArtExists()
@@ -37,9 +30,8 @@ public class GetArtByIdHandlerTests
             .Returns(artDto);
 
         var handler = new GetArtByIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-        var query = new GetArtByIdQuery(expectedId);
 
-        var result = await handler.Handle(query, CancellationToken.None);
+        var result = await handler.Handle(new GetArtByIdQuery(expectedId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(expectedId, result.Value.Id);

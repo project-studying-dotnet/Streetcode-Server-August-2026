@@ -10,22 +10,14 @@ using Streetcode.BLL.MediatR.Media.Art.GetByStreetcodeId;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatR.Media.Art;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Art;
 
 public class GetArtsByStreetcodeIdHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock;
-    private readonly Mock<IMapper> _mapperMock;
-    private readonly Mock<IBlobService> _blobServiceMock;
-    private readonly Mock<ILoggerService> _loggerMock;
-
-    public GetArtsByStreetcodeIdHandlerTests()
-    {
-        _repositoryMock = new Mock<IRepositoryWrapper>();
-        _mapperMock = new Mock<IMapper>();
-        _blobServiceMock = new Mock<IBlobService>();
-        _loggerMock = new Mock<ILoggerService>();
-    }
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IMapper> _mapperMock = new();
+    private readonly Mock<IBlobService> _blobServiceMock = new();
+    private readonly Mock<ILoggerService> _loggerMock = new();
 
     [Fact]
     public async Task Handle_ReturnsOkResult_WithBase64Images_WhenArtsExist()
@@ -38,7 +30,6 @@ public class GetArtsByStreetcodeIdHandlerTests
         {
             new DAL.Entities.Media.Images.Art { Id = 1, Image = new DAL.Entities.Media.Images.Image { BlobName = blobName } }
         };
-
         var artsDto = new List<ArtDTO>
         {
             new ArtDTO { Id = 1, Image = new ImageDTO { BlobName = blobName } }
@@ -57,15 +48,43 @@ public class GetArtsByStreetcodeIdHandlerTests
 
         var handler = new GetArtsByStreetcodeIdHandler(
             _repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-        var query = new GetArtsByStreetcodeIdQuery(streetcodeId);
 
-
-        var result = await handler.Handle(query, CancellationToken.None);
+        var result = await handler.Handle(new GetArtsByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        var resultList = result.Value.ToList();
-        Assert.Single(resultList);
-        Assert.Equal(base64String, resultList.First().Image?.Base64);
+        Assert.Single(result.Value);
+        Assert.Equal(base64String, result.Value.First().Image?.Base64);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsOkResult_AndDoesNotCallBlobService_WhenBlobNameIsNull()
+    {
+        int streetcodeId = 1;
+
+        var arts = new List<DAL.Entities.Media.Images.Art>
+        {
+            new DAL.Entities.Media.Images.Art { Id = 1, Image = new DAL.Entities.Media.Images.Image { BlobName = null } }
+        };
+        var artsDto = new List<ArtDTO>
+        {
+            new ArtDTO { Id = 1, Image = new ImageDTO { BlobName = null } }
+        };
+
+        _repositoryMock.Setup(r => r.ArtRepository.GetAllAsync(
+                It.IsAny<Expression<Func<DAL.Entities.Media.Images.Art, bool>>>(),
+                It.IsAny<Func<IQueryable<DAL.Entities.Media.Images.Art>, IIncludableQueryable<DAL.Entities.Media.Images.Art, object>>>()))
+            .ReturnsAsync(arts);
+
+        _mapperMock.Setup(m => m.Map<IEnumerable<ArtDTO>>(arts)).Returns(artsDto);
+
+        var handler = new GetArtsByStreetcodeIdHandler(
+            _repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(new GetArtsByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+
+        _blobServiceMock.Verify(b => b.FindFileInStorageAsBase64(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
