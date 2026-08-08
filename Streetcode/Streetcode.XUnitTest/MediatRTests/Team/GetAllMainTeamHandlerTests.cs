@@ -9,7 +9,7 @@ using Streetcode.DAL.Entities.Team;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatR.Team;
+namespace Streetcode.XUnitTest.MediatRTests.Team;
 
 public class GetAllMainTeamHandlerTests
 {

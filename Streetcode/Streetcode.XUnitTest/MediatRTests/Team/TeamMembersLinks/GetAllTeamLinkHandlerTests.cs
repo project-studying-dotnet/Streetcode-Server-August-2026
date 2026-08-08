@@ -7,7 +7,7 @@ using Streetcode.DAL.Entities.Team;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatR.Team;
+namespace Streetcode.XUnitTest.MediatRTests.Team;
 
 public class GetAllTeamLinkHandlerTests
 {
@@ -16,7 +16,7 @@ public class GetAllTeamLinkHandlerTests
     private readonly Mock<ILoggerService> _loggerMock = new();
 
     [Fact]
-    public async Task Handle_ReturnsOkResult_WhenLinksExist()
+    public async Task Handle_ReturnsOkResult_WhenLinksExist() 
     {
         var links = new List<TeamMemberLink> { new TeamMemberLink { Id = 1 } };
         var linksDto = new List<TeamMemberLinkDTO> { new TeamMemberLinkDTO { Id = 1 } };
