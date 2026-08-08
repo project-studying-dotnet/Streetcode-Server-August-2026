@@ -55,7 +55,7 @@ ASP.NET Core 10 · EF Core 10 (SQL Server) · MediatR · AutoMapper · FluentRes
 ### Prerequisites
 
 * [.NET SDK 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) — the solution targets `net10.0`
-* [Visual Studio 2022](https://visualstudio.microsoft.com/) (17.x), JetBrains Rider, or VS Code. **Visual Studio 2019 does not support `net10.0`** and cannot open this solution.
+* [Visual Studio 2026](https://visualstudio.microsoft.com/) (Version 18.0), JetBrains Rider, or VS Code. **Visual Studio 2019 & 2022 do not support `net10.0`** and cannot open this solution.
 * [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) 2019+ (Express edition is enough) **or** [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### Clone
@@ -227,7 +227,7 @@ Inherited from the reference tree and left as is:
 ## FAQ
 
 **Visual Studio will not open the solution.**
-Use a version of Visual Studio that supports .NET 10. The 2019 release cannot load `net10.0` projects.
+Use a version of Visual Studio that supports .NET 10. The 2019 & 2022 release cannot load `net10.0` projects.
 
 **Startup logs a migration error and every request fails.**
 The database is unreachable — see [Database](#database). The host starts regardless, so the log is the only signal.

@@ -10,8 +10,10 @@ namespace Streetcode.DAL.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Sonar S8747: safe because this is a TPH discriminator column.
-            // The longest discriminator value is "coordinate_streetcode" (21 characters).
+            // Safe: TPH discriminator column with a bounded, known set of string values.
+            // If new discriminated types are added, verify the longest value still fits within nvarchar(21).
+            #pragma warning disable S8747
+
             migrationBuilder.AlterColumn<string>(
                 name: "StreetcodeType",
                 schema: "streetcode",
@@ -22,8 +24,6 @@ namespace Streetcode.DAL.Persistence.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
 
-            // Sonar S8747: safe because this is a TPH discriminator column.
-            // The longest discriminator value is "coordinate_streetcode" (21 characters).
             migrationBuilder.AlterColumn<string>(
                 name: "CoordinateType",
                 schema: "add_content",
@@ -33,6 +33,8 @@ namespace Streetcode.DAL.Persistence.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "nvarchar(max)");
+
+            #pragma warning restore S8747
         }
 
         /// <inheritdoc />
