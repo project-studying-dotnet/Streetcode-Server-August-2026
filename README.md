@@ -69,38 +69,49 @@ cd Streetcode-Server-August-2026
 
 ### Database
 
-The connection string shipped in `appsettings.json` and `appsettings.Local.json` expects a SQL Server on the default instance:
+Database credentials are loaded from environment variables. Create a local `.env` file from the tracked template:
 
-```
-Server=127.0.0.1;Database=StreetcodeDb;User Id=sa;Password=Admin@1234;MultipleActiveResultSets=true
+```bash
+cp .env.example .env
 ```
 
-Pick whichever option matches the machine. **Option A** works with the shipped configuration unchanged; **Option B** overrides it without editing any file.
+Set the following variables in `.env` for the SQL Server instance used on the local machine:
+
+* `DB_SERVER` — SQL Server address
+* `DB_NAME` — database name
+* `DB_USER` — database user
+* `DB_PASSWORD` — database password
+
+The `.env` file is ignored by Git and must never be committed. Do not put real credentials in `appsettings*.json` or `.env.example`.
 
 #### Option A — SQL Server in a container
 
+Replace `your_strong_password` with a strong local password before running the command:
+
 ```bash
 docker run -d --name streetcode-db \
-  -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=Admin@1234" \
-  -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+  -e "ACCEPT_EULA=Y" \
+  -e "MSSQL_SA_PASSWORD=your_strong_password" \
+  -p 1433:1433 \
+  mcr.microsoft.com/mssql/server:2022-latest
 ```
+
+For this setup, use the following values in `.env`:
+
+* `DB_SERVER=127.0.0.1`
+* `DB_NAME=StreetcodeDb`
+* `DB_USER=sa`
+* `DB_PASSWORD` must contain the same password that was supplied to the container.
 
 #### Option B — a local SQL Server instance
 
-Set one environment variable and restart the IDE (it reads the environment at startup):
+Set the `DB_*` variables in `.env` for the local SQL Server instance. For a named instance, `DB_SERVER` can be set to a value such as `localhost\SQLEXPRESS`. The instance must accept the credentials represented by `DB_USER` and `DB_PASSWORD`.
 
-```powershell
-[Environment]::SetEnvironmentVariable(
-  "STREETCODE_ConnectionStrings__DefaultConnection",
-  "Server=localhost\SQLEXPRESS;Database=StreetcodeDb;Trusted_Connection=True;MultipleActiveResultSets=true",
-  "User")
-```
-
-The configuration pipeline registers `AddEnvironmentVariables("STREETCODE_")` as the last source, and `__` maps to `:`, so this value wins over both `appsettings.json` files while they stay untouched. The same string is used by EF Core and by Hangfire storage.
-
-> **Named instances:** address them as `localhost\SQLEXPRESS` or `.\SQLEXPRESS`. `Trusted_Connection` over the literal `127.0.0.1` fails on machines outside a domain with `Login failed. The login is from an untrusted domain`, surfacing as `Named Pipes Provider, error: 40`.
+The application builds one connection string from these variables and uses it for both EF Core and Hangfire storage.
 
 The schema is created on startup — `ApplyMigrations` runs `MigrateAsync()`, so an empty database is enough. Seed data is **not** loaded: the `SeedDataAsync()` call in `Program.cs` is commented out, so endpoints return empty collections until data is added.
+
+Run the application from the repository root so that `Env.Load()` can find the root `.env` file. When launching from an IDE, set its working directory to the repository root.
 
 ### Run
 
@@ -129,7 +140,7 @@ dotnet test Streetcode/Streetcode.XUnitTest        # unit tests
 dotnet test Streetcode/Streetcode.XIntegrationTest # integration tests
 ```
 
-Integration tests read `appsettings.IntegrationTests.json` and need a reachable database.
+Integration tests use the same `DB_*` environment variables and need a reachable database. Use a separate test database, such as `StreetcodeDbtest`, and never reuse production credentials. The `appsettings.IntegrationTests.json` file contains only non-sensitive environment-specific settings.
 
 ### Code style
 
