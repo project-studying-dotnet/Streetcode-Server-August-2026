@@ -69,18 +69,21 @@ cd Streetcode-Server-August-2026
 
 ### Database
 
-Database credentials are loaded from environment variables. Create a local `.env` file from the tracked template:
+The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
+
+For local development, copy the tracked environment template:
 
 ```bash
 cp .env.example .env
 ```
 
-Set the following variables in `.env` for the SQL Server instance used on the local machine:
+Then replace the placeholder in `.env` with the connection string for the local SQL Server instance:
 
-* `DB_SERVER` — SQL Server address
-* `DB_NAME` — database name
-* `DB_USER` — database user
-* `DB_PASSWORD` — database password
+```dotenv
+STREETCODE_ConnectionStrings__DefaultConnection="Server=localhost;Database=StreetcodeDb;User Id=sa;Password=your_password;TrustServerCertificate=True;MultipleActiveResultSets=true"
+```
+
+The `STREETCODE_` prefix is removed by the environment configuration provider, and the double underscore `__` represents the configuration section separator `:`. Therefore, `STREETCODE_ConnectionStrings__DefaultConnection` overrides `ConnectionStrings:DefaultConnection`.
 
 The `.env` file is ignored by Git and must never be committed. Do not put real credentials in `appsettings*.json` or `.env.example`.
 
@@ -96,22 +99,19 @@ docker run -d --name streetcode-db \
   mcr.microsoft.com/mssql/server:2022-latest
 ```
 
-For this setup, use the following values in `.env`:
-
-* `DB_SERVER=127.0.0.1`
-* `DB_NAME=StreetcodeDb`
-* `DB_USER=sa`
-* `DB_PASSWORD` must contain the same password that was supplied to the container.
+For this setup, use `127.0.0.1,1433` as the server, `StreetcodeDb` as the database, `sa` as the user, and the same password that was supplied to the container.
 
 #### Option B — a local SQL Server instance
 
-Set the `DB_*` variables in `.env` for the local SQL Server instance. For a named instance, `DB_SERVER` can be set to a value such as `localhost\SQLEXPRESS`. The instance must accept the credentials represented by `DB_USER` and `DB_PASSWORD`.
+Set `STREETCODE_ConnectionStrings__DefaultConnection` to a complete connection string for the local SQL Server instance. For a named SQL Server instance, the `Server` value can be set to something such as `localhost\SQLEXPRESS`.
 
-The application builds one connection string from these variables and uses it for both EF Core and Hangfire storage.
+EF Core, Hangfire, and DbUpdate read the same `ConnectionStrings:DefaultConnection` configuration value.
+
+The examples use `TrustServerCertificate=True` only for local development, where SQL Server may use a self-signed certificate. Production environments should use a properly configured and validated server certificate.
+
+`Env.TraversePath().Load()` searches for `.env` in the current directory and its parent directories, so locating the root `.env` file no longer requires the repository root to be used as the working directory.
 
 The schema is created on startup — `ApplyMigrations` runs `MigrateAsync()`, so an empty database is enough. Seed data is **not** loaded: the `SeedDataAsync()` call in `Program.cs` is commented out, so endpoints return empty collections until data is added.
-
-Run the application from the repository root so that `Env.Load()` can find the root `.env` file. When launching from an IDE, set its working directory to the repository root.
 
 ### Run
 
@@ -131,7 +131,7 @@ The `Local` environment is what enables Swagger and suppresses the recurring bac
 
 Run `dotnet dev-certs https --trust` once, since the pipeline enforces HTTPS redirection.
 
-> A failed database connection does **not** stop the host: `ApplyMigrations` logs the exception and startup continues, after which every request fails. If endpoints misbehave, look for `An error occured during startup migration` in the console.
+> A missing connection string stops startup with an explicit configuration error. A non-empty but invalid or unreachable database connection is logged by `ApplyMigrations`, while the host continues to start and subsequent database requests fail. Look for `An error occured during startup migration` in the console.
 
 ### Tests
 
@@ -140,7 +140,7 @@ dotnet test Streetcode/Streetcode.XUnitTest        # unit tests
 dotnet test Streetcode/Streetcode.XIntegrationTest # integration tests
 ```
 
-Integration tests use the same `DB_*` environment variables and need a reachable database. Use a separate test database, such as `StreetcodeDbtest`, and never reuse production credentials. The `appsettings.IntegrationTests.json` file contains only non-sensitive environment-specific settings.
+Integration tests that require a database use the same `STREETCODE_ConnectionStrings__DefaultConnection` environment variable. Point it to a separate test database, such as `StreetcodeDbtest`, and never reuse production credentials. The `appsettings.IntegrationTests.json` file contains only non-sensitive environment-specific settings.
 
 ### Code style
 

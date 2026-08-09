@@ -1,10 +1,13 @@
 ﻿using DbUp;
+using DotNetEnv;
 using Microsoft.Extensions.Configuration;
 
 public class Program
 {
     static int Main(string[] args)
     {
+        Env.TraversePath().Load();
+
         string migrationPath = Path.Combine(Directory.GetCurrentDirectory(),
             "Streetcode.DAL", "Persistence", "ScriptsMigration");
 
@@ -18,6 +21,13 @@ public class Program
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
+                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
+        }
 
         string pathToScript = "";
 
