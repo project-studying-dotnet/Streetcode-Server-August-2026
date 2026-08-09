@@ -14,7 +14,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Partners.Update;
 
 public class UpdatePartnerHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
 
@@ -101,10 +101,13 @@ public class UpdatePartnerHandlerTests
     public async Task Handle_ReturnsFailedResult_AndLogsError_WhenExceptionIsThrown()
     {
         var updateDto = new CreatePartnerDTO { Id = 1 };
+        var partnerEntity = new Partner();
         var query = new UpdatePartnerQuery(updateDto);
         var expectedError = "Database error during update";
 
-        _mapperMock.Setup(m => m.Map<Partner>(updateDto)).Throws(new Exception(expectedError));
+        _mapperMock.Setup(m => m.Map<Partner>(updateDto)).Returns(partnerEntity);
+
+        _repositoryMock.Setup(r => r.SaveChanges()).Throws(new Exception(expectedError));
 
         var handler = new UpdatePartnerHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 

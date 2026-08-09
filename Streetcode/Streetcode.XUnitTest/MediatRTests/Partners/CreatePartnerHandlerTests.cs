@@ -13,7 +13,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Partners.Create;
 
 public class CreatePartnerHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
 
@@ -22,7 +22,7 @@ public class CreatePartnerHandlerTests
     {
         var createPartnerDto = new CreatePartnerDTO { Streetcodes = new List<StreetcodeShortDTO> { new() { Id = 1 } } };
         var partnerEntity = new Partner { Id = 1, Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent>() };
-        var returnedPartnerDto = new PartnerDTO { Id = 1 }; // Те, що ми очікуємо на виході
+        var returnedPartnerDto = new PartnerDTO { Id = 1 };
 
         var query = new CreatePartnerQuery(createPartnerDto);
 
@@ -70,10 +70,13 @@ public class CreatePartnerHandlerTests
     public async Task Handle_ReturnsFailedResult_AndLogsError_WhenExceptionIsThrown()
     {
         var createPartnerDto = new CreatePartnerDTO();
+        var partnerEntity = new Partner();
         var query = new CreatePartnerQuery(createPartnerDto);
         var expectedError = "Database error";
 
-        _mapperMock.Setup(m => m.Map<Partner>(createPartnerDto)).Throws(new Exception(expectedError));
+        _mapperMock.Setup(m => m.Map<Partner>(createPartnerDto)).Returns(partnerEntity);
+
+        _repositoryMock.Setup(r => r.PartnersRepository.CreateAsync(partnerEntity)).ThrowsAsync(new Exception(expectedError));
 
         var handler = new CreatePartnerHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
