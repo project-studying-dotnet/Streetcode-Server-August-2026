@@ -6,7 +6,7 @@ services:
 
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${SA_PASSWORD}"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env}"
 
     ports:
       - "${MS_SQL_DB_PORT:-1433}:1433"
@@ -38,8 +38,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Local
       ASPNETCORE_URLS: "http://+:5000"
-      STREETCODE_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DB_NAME};User Id=${DB_USER};Password=${SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True"
-
+      STREETCODE_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DB_NAME:?DB_NAME is required, copy .env.example to .env};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
     ports:
       - "${API_PORT:-5000}:5000"
 
