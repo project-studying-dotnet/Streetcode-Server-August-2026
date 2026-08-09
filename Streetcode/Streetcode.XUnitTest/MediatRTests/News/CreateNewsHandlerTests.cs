@@ -11,7 +11,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.Create;
 
 public class CreateNewsHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
 

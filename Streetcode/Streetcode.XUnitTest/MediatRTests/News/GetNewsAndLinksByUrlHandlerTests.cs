@@ -14,7 +14,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.GetNewsAndLinksByUrl;
 
 public class GetNewsAndLinksByUrlHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IBlobService> _blobServiceMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
@@ -90,5 +90,35 @@ public class GetNewsAndLinksByUrlHandlerTests
         Assert.True(result.IsFailed);
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsOkResult_AndSelectsCorrectRandomNews_WhenRequestingSecondToLastItem()
+    {
+        var url = "url3";
+        var news = new DAL.Entities.News.News { Id = 3, URL = url };
+        var newsDto = new NewsDTO { Id = 3, URL = url };
+
+        var allNews = new List<DAL.Entities.News.News>
+        {
+            new() { Id = 1, URL = "url1", Title = "T1" },
+            new() { Id = 2, URL = "url2", Title = "T2" },
+            new() { Id = 3, URL = "url3", Title = "T3" },
+            new() { Id = 4, URL = "url4", Title = "T4" }
+        };
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+            .ReturnsAsync(news);
+        _mapperMock.Setup(m => m.Map<NewsDTO>(news)).Returns(newsDto);
+        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(null, null)).ReturnsAsync(allNews);
+
+        var handler = new GetNewsAndLinksByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(new GetNewsAndLinksByUrlQuery(url), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("url2", result.Value.PrevNewsUrl);
+        Assert.Equal("url4", result.Value.NextNewsUrl);
+        Assert.Equal("url1", result.Value.RandomNews.RandomNewsUrl);
     }
 }
