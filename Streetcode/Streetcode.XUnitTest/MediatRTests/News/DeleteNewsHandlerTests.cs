@@ -13,7 +13,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.Delete;
 
 public class DeleteNewsHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<ILoggerService> _loggerMock = new();
 
     [Fact]

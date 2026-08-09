@@ -6,14 +6,14 @@ using Streetcode.BLL.DTO.Media.Images;
 using Streetcode.BLL.DTO.News;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.Newss.GetById;
+using Streetcode.BLL.MediatR.Newss.GetByUrl;
 using Streetcode.DAL.Entities.News;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatRTests.News.GetById;
+namespace Streetcode.XUnitTest.MediatRTests.News.GetByUrl;
 
-public class GetNewsByIdHandlerTests
+public class GetNewsByUrlHandlerTests
 {
     private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IMapper> _mapperMock = new();
@@ -23,54 +23,35 @@ public class GetNewsByIdHandlerTests
     [Fact]
     public async Task Handle_ReturnsOkResult_WhenNewsExists()
     {
-        int newsId = 1;
-        var news = new DAL.Entities.News.News { Id = newsId };
-        var newsDto = new NewsDTO { Id = newsId, Image = new ImageDTO { BlobName = "test.jpg" } };
+        string url = "test-url";
+        var news = new DAL.Entities.News.News { Id = 1, URL = url };
+        var newsDto = new NewsDTO { Id = 1, URL = url, Image = new ImageDTO { BlobName = "test.jpg" } };
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync(news);
         _mapperMock.Setup(m => m.Map<NewsDTO>(news)).Returns(newsDto);
 
-        var handler = new GetNewsByIdHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+        var handler = new GetNewsByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 
-        var result = await handler.Handle(new GetNewsByIdQuery(newsId), CancellationToken.None);
+        var result = await handler.Handle(new GetNewsByUrlQuery(url), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(newsId, result.Value.Id);
+        Assert.Equal(url, result.Value.URL);
         _blobServiceMock.Verify(b => b.FindFileInStorageAsBase64("test.jpg"), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_ReturnsOkResult_AndDoesNotCallBlobService_WhenImageIsNull_EdgeCase()
-    {
-        int newsId = 1;
-        var news = new DAL.Entities.News.News { Id = newsId };
-        var newsDto = new NewsDTO { Id = newsId, Image = null };
-
-        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
-            .ReturnsAsync(news);
-        _mapperMock.Setup(m => m.Map<NewsDTO>(news)).Returns(newsDto);
-
-        var handler = new GetNewsByIdHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-
-        var result = await handler.Handle(new GetNewsByIdQuery(newsId), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        _blobServiceMock.Verify(b => b.FindFileInStorageAsBase64(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
     public async Task Handle_ReturnsFailedResult_WhenNewsNotFound()
     {
-        int newsId = 99;
-        var query = new GetNewsByIdQuery(newsId);
-        var expectedError = $"No news by entered Id - {newsId}";
+        string url = "not-found";
+        var query = new GetNewsByUrlQuery(url);
+        var expectedError = $"No news by entered Url - {url}";
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync((DAL.Entities.News.News)null!);
         _mapperMock.Setup(m => m.Map<NewsDTO>(null)).Returns((NewsDTO)null!);
 
-        var handler = new GetNewsByIdHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+        var handler = new GetNewsByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
