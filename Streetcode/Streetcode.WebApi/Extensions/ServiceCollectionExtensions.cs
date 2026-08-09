@@ -1,29 +1,30 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Serilog.Events;
+using Streetcode.BLL.Interfaces.BlobStorage;
+using Streetcode.BLL.Interfaces.Email;
+using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.Interfaces.Payment;
+using Streetcode.BLL.Interfaces.Text;
+using Streetcode.BLL.Interfaces.Users;
+using Streetcode.BLL.Services.BlobStorageService;
+using Streetcode.BLL.Services.Email;
+using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
+using Streetcode.BLL.Services.Payment;
+using Streetcode.BLL.Services.Text;
+using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
-using Streetcode.BLL.Interfaces.Email;
-using Streetcode.BLL.Services.Email;
-using Streetcode.DAL.Entities.AdditionalContent.Email;
-using Streetcode.BLL.Interfaces.BlobStorage;
-using Streetcode.BLL.Services.BlobStorageService;
-using Streetcode.BLL.Interfaces.Users;
-using Microsoft.FeatureManagement;
-using Streetcode.BLL.Interfaces.Payment;
-using Streetcode.BLL.Services.Payment;
-using Streetcode.BLL.Interfaces.Instagram;
-using Streetcode.BLL.Services.Instagram;
-using Streetcode.BLL.Interfaces.Text;
-using Streetcode.BLL.Services.Text;
-using Serilog.Events;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -34,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRepositoryWrapper, RepositoryWrapper>();
     }
 
+    [ExcludeFromCodeCoverage(Justification = "DI composition-root wiring; not meaningfully unit-testable")]
     public static void AddCustomServices(this IServiceCollection services)
     {
         services.AddRepositoryServices();
