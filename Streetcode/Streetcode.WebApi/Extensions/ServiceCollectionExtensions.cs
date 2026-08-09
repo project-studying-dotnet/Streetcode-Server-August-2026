@@ -55,8 +55,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITextService, AddTermsToTextService>();
     }
 
-    public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration, string connectionString)
+    public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
+                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
+        }
+
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
 

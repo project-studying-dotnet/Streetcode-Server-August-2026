@@ -1,6 +1,8 @@
-﻿namespace DbUpdate;
+namespace DbUpdate;
 
 using DbUp;
+using DbUp;
+using DotNetEnv;
 using Microsoft.Extensions.Configuration;
 
 public class Program
@@ -21,7 +23,14 @@ public class Program
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        string? pathToScript = string.Empty;
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
+                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
+        }
+
+        string pathToScript = "";
 
         Console.WriteLine("Enter '-m' to MIGRATE or '-s' to SEED db:");
         pathToScript = Console.ReadLine();
