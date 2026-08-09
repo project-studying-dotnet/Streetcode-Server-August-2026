@@ -346,7 +346,7 @@ healthchecksdb
 BlobStorageFolder/
 BlobStorageTestFolder/
 
-#Sensitive data
+# Sensitive configuration
 appsettings.Development.json
 appsettings.Local.json
 secrets.json
