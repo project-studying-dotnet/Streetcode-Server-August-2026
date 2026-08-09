@@ -14,7 +14,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Partners.Update;
 
 public class UpdatePartnerHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
 
@@ -50,6 +50,8 @@ public class UpdatePartnerHandlerTests
         _repositoryMock.Setup(r => r.PartnerStreetcodeRepository.GetAllAsync(It.IsAny<Expression<Func<StreetcodePartner, bool>>>(), null))
             .ReturnsAsync(oldStreetcodes);
 
+        _repositoryMock.Setup(r => r.PartnersRepository.Update(It.IsAny<Partner>()));
+
         var handler = new UpdatePartnerHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
@@ -58,9 +60,7 @@ public class UpdatePartnerHandlerTests
 
         _repositoryMock.Verify(r => r.PartnerSourceLinkRepository.Delete(It.Is<PartnerSourceLink>(l => l.Id == 1)), Times.Once);
         _repositoryMock.Verify(r => r.PartnerStreetcodeRepository.Delete(It.Is<StreetcodePartner>(s => s.StreetcodeId == 1)), Times.Once);
-
         _repositoryMock.Verify(r => r.PartnerStreetcodeRepository.Create(It.Is<StreetcodePartner>(s => s.StreetcodeId == 3)), Times.Once);
-
         _repositoryMock.Verify(r => r.PartnersRepository.Update(partnerEntity), Times.Once);
         _repositoryMock.Verify(r => r.SaveChanges(), Times.Exactly(2));
     }
@@ -87,6 +87,8 @@ public class UpdatePartnerHandlerTests
         _repositoryMock.Setup(r => r.PartnerStreetcodeRepository.GetAllAsync(It.IsAny<Expression<Func<StreetcodePartner, bool>>>(), null))
             .ReturnsAsync(new List<StreetcodePartner>());
 
+        _repositoryMock.Setup(r => r.PartnersRepository.Update(It.IsAny<Partner>()));
+
         var handler = new UpdatePartnerHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
@@ -107,7 +109,10 @@ public class UpdatePartnerHandlerTests
 
         _mapperMock.Setup(m => m.Map<Partner>(updateDto)).Returns(partnerEntity);
 
-        _repositoryMock.Setup(r => r.SaveChanges()).Throws(new Exception(expectedError));
+        _repositoryMock
+            .Setup(r => r.PartnerSourceLinkRepository.GetAllAsync(
+                It.IsAny<Expression<Func<PartnerSourceLink, bool>>>(), null))
+            .ThrowsAsync(new Exception(expectedError));
 
         var handler = new UpdatePartnerHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 
