@@ -15,7 +15,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.Update;
 
 public class UpdateNewsHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IBlobService> _blobServiceMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
@@ -31,6 +31,8 @@ public class UpdateNewsHandlerTests
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(newsDto)).Returns(newsEntity);
         _mapperMock.Setup(m => m.Map<NewsDTO>(newsEntity)).Returns(returnedDto);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        _repositoryMock.Setup(r => r.NewsRepository.Update(It.IsAny<DAL.Entities.News.News>()));
 
         var handler = new UpdateNewsHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 
@@ -56,6 +58,9 @@ public class UpdateNewsHandlerTests
         _repositoryMock.Setup(r => r.ImageRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<Image, bool>>>(), null))
             .ReturnsAsync(oldImage);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        _repositoryMock.Setup(r => r.NewsRepository.Update(It.IsAny<DAL.Entities.News.News>()));
+        _repositoryMock.Setup(r => r.ImageRepository.Delete(It.IsAny<Image>()));
 
         var handler = new UpdateNewsHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 

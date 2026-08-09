@@ -13,7 +13,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.Delete;
 
 public class DeleteNewsHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
 
     [Fact]
@@ -27,6 +27,9 @@ public class DeleteNewsHandlerTests
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
             .ReturnsAsync(news);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        _repositoryMock.Setup(r => r.ImageRepository.Delete(It.IsAny<Image>()));
+        _repositoryMock.Setup(r => r.NewsRepository.Delete(It.IsAny<DAL.Entities.News.News>()));
 
         var handler = new DeleteNewsHandler(_repositoryMock.Object, _loggerMock.Object);
 
@@ -47,6 +50,8 @@ public class DeleteNewsHandlerTests
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
             .ReturnsAsync(news);
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+
+        _repositoryMock.Setup(r => r.NewsRepository.Delete(It.IsAny<DAL.Entities.News.News>()));
 
         var handler = new DeleteNewsHandler(_repositoryMock.Object, _loggerMock.Object);
 
