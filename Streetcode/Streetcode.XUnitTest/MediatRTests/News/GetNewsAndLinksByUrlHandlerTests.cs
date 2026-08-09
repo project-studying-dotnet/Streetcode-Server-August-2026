@@ -14,7 +14,7 @@ namespace Streetcode.XUnitTest.MediatRTests.News.GetNewsAndLinksByUrl;
 
 public class GetNewsAndLinksByUrlHandlerTests
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new Mock<IRepositoryWrapper> { DefaultValue = DefaultValue.Mock };
+    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IBlobService> _blobServiceMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
