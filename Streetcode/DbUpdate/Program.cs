@@ -7,8 +7,8 @@ public class Program
 {
     public static int Main(string[] args)
     {
-        string migrationPath = Path.
-            Combine(Directory.GetCurrentDirectory(),"Streetcode.DAL", "Persistence", "ScriptsMigration");
+        string migrationPath = Path.Combine(
+            Directory.GetCurrentDirectory(), "Streetcode.DAL", "Persistence", "ScriptsMigration");
 
         var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Local";
 
