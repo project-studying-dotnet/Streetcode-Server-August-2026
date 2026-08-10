@@ -44,8 +44,10 @@ jobs:
         run: echo "SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}" >> $GITHUB_ENV
 
       - name: SonarScanner Begin
-        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
-
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
+      
       - name: Build
         run: dotnet build ./Streetcode/Streetcode.sln --configuration Release
 
@@ -54,8 +56,10 @@ jobs:
 
       - name: SonarScanner End
         if: always()
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
+        
       - name: Publish Code Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
