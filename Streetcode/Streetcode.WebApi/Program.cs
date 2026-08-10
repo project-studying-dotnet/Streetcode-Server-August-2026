@@ -5,7 +5,7 @@ using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
 
-public partial class Program
+public class Program
 {
     public static async Task Main(string[] args)
     {
@@ -55,6 +55,6 @@ public partial class Program
 
         app.MapControllers();
 
-        app.Run();
+        await app.RunAsync();
     }
 }
