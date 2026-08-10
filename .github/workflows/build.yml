@@ -26,7 +26,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 6.0.x
 
       - name: Restore Dependencies
         run: dotnet restore ./Streetcode/Streetcode.sln
@@ -43,13 +43,18 @@ jobs:
       - name: Set SonarCloud Token
         run: echo "SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}" >> $GITHUB_ENV
 
-      - name: SonarScanner Analysis
-        id: sonar
-        run: |
-          dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
-          dotnet build ./Streetcode/Streetcode.sln --configuration Release
-          dotnet test ./Streetcode/Streetcode.XUnitTest/Streetcode.XUnitTest.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/coverage.opencover.xml
-          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: SonarScanner Begin
+        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
+
+      - name: Build
+        run: dotnet build ./Streetcode/Streetcode.sln --configuration Release
+
+      - name: Run Unit Tests
+        run: dotnet test ./Streetcode/Streetcode.XUnitTest/Streetcode.XUnitTest.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/coverage.opencover.xml
+
+      - name: SonarScanner End
+        if: always()
+        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Publish Code Coverage Report
         if: always()

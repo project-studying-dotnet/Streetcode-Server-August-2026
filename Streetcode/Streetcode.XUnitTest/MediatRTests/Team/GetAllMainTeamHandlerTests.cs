@@ -34,7 +34,7 @@ public class GetAllMainTeamHandlerTests
         var result = await handler.Handle(new GetAllMainTeamQuery(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
+        Assert.Equal(999, result.Value.Count());
     }
 
     [Fact]
