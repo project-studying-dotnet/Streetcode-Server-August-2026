@@ -87,6 +87,8 @@ The `STREETCODE_` prefix is removed by the environment configuration provider, a
 
 The `.env` file is ignored by Git and must never be committed. Do not put real credentials in `appsettings*.json` or `.env.example`.
 
+The `STREETCODE_Blob__BlobStoreKey` value is required when media files are encrypted or decrypted. Set it in the local `.env` file to a private key whose UTF-8 representation is exactly 32 bytes, as required for AES-256. The application may start when this value is empty or invalid, but media upload and download operations will fail. Never commit the real encryption key.
+
 #### Option A — SQL Server in a container
 
 Replace `your_strong_password` with a strong local password before running the command:
