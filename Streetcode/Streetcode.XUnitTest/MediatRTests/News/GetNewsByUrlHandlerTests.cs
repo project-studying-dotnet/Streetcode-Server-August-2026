@@ -18,6 +18,7 @@ public class GetNewsByUrlHandlerTests
     private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<IBlobService> _blobServiceMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
+    private readonly Mock<IMapper> _mapperMock = new();
 
     [Fact]
     public async Task Handle_ReturnsOkResult_WhenNewsExists()
