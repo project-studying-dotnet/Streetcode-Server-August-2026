@@ -6,7 +6,7 @@ public class Program
 {
     static int Main(string[] args)
     {
-        Env.TraversePath().Load();
+        Env.NoClobber().TraversePath().Load();
 
         string migrationPath = Path.Combine(Directory.GetCurrentDirectory(),
             "Streetcode.DAL", "Persistence", "ScriptsMigration");

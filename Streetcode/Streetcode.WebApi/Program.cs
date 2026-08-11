@@ -4,7 +4,7 @@ using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
 using DotNetEnv;
 
-Env.TraversePath().Load();
+Env.NoClobber().TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.ConfigureApplication();
