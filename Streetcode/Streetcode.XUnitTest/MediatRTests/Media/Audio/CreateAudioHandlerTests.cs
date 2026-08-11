@@ -9,7 +9,7 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 using AudioEntity = Streetcode.DAL.Entities.Media.Audio;
 
-namespace Streetcode.XUnitTest.MediatRTests.Media.Audio.Create;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Audio;
 
 public class CreateAudioHandlerTests
 {

@@ -12,7 +12,7 @@ using Streetcode.DAL.Repositories.Interfaces.Streetcode;
 using Xunit;
 using AudioEntity = Streetcode.DAL.Entities.Media.Audio;
 
-namespace Streetcode.XUnitTest.MediatRTests.Media.Audio.GetByStreetcodeId;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Audio;
 
 public class GetAudioByStreetcodeIdQueryHandlerTests
 {
@@ -20,7 +20,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
     private readonly Mock<IStreetcodeRepository> _streetcodeRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IBlobService> _blobServiceMock;
-    private readonly Mock<ILoggerService> _loggerServiceMock;
+    private readonly Mock<ILoggerService> _loggerMock;
 
     public GetAudioByStreetcodeIdQueryHandlerTests()
     {
@@ -28,7 +28,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
         _streetcodeRepositoryMock = new Mock<IStreetcodeRepository>();
         _mapperMock = new Mock<IMapper>();
         _blobServiceMock = new Mock<IBlobService>();
-        _loggerServiceMock = new Mock<ILoggerService>();
+        _loggerMock = new Mock<ILoggerService>();
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.StreetcodeRepository)
             .Returns(_streetcodeRepositoryMock.Object);
@@ -52,7 +52,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
             _repositoryWrapperMock.Object,
             _mapperMock.Object,
             _blobServiceMock.Object,
-            _loggerServiceMock.Object);
+            _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -68,7 +68,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
                     IIncludableQueryable<StreetcodeContent, object>>?>()),
             Times.Once());
 
-        _loggerServiceMock.Verify(
+        _loggerMock.Verify(
             logger => logger.LogError(query, expectedError),
             Times.Once());
         _mapperMock.Verify(
@@ -101,7 +101,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
             _repositoryWrapperMock.Object,
             _mapperMock.Object,
             _blobServiceMock.Object,
-            _loggerServiceMock.Object);
+            _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -121,7 +121,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
         _blobServiceMock.Verify(
             blob => blob.FindFileInStorageAsBase64(It.IsAny<string>()),
             Times.Never());
-        _loggerServiceMock.Verify(
+        _loggerMock.Verify(
             logger => logger.LogError(It.IsAny<object>(), It.IsAny<string>()),
             Times.Never());
     }
@@ -173,7 +173,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
             _repositoryWrapperMock.Object,
             _mapperMock.Object,
             _blobServiceMock.Object,
-            _loggerServiceMock.Object);
+            _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -188,9 +188,9 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
                     IQueryable<StreetcodeContent>,
                     IIncludableQueryable<StreetcodeContent, object>>?>()),
             Times.Once());
-        _mapperMock.Verify(mapper => mapper.Map<AudioDTO>(audioEntity), Times.AtLeastOnce());
-        _blobServiceMock.Verify(blob => blob.FindFileInStorageAsBase64(blobName), Times.Once);
-        _loggerServiceMock.Verify(
+        _mapperMock.Verify(mapper => mapper.Map<AudioDTO>(audioEntity), Times.Once());
+        _blobServiceMock.Verify(blob => blob.FindFileInStorageAsBase64(blobName), Times.Once());
+        _loggerMock.Verify(
             logger => logger.LogError(It.IsAny<object>(), It.IsAny<string>()),
             Times.Never());
     }
