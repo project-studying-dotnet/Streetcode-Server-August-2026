@@ -11,7 +11,7 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 using AudioEntity = Streetcode.DAL.Entities.Media.Audio;
 
-namespace Streetcode.XUnitTest.MediatRTests.Media.Audio.GetById;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Audio;
 
 public class GetAudioByIdHandlerTests
 {
@@ -40,10 +40,10 @@ public class GetAudioByIdHandlerTests
         var expectedError = $"Cannot find an audio with corresponding id: {query.Id}";
         _audioRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<AudioEntity, bool>>>(),
+                It.IsAny<Expression<Func<AudioEntity, bool>>>(),
                 It.IsAny<Func<
-                IQueryable<AudioEntity>,
-                IIncludableQueryable<AudioEntity, object>>?>()))
+                    IQueryable<AudioEntity>,
+                    IIncludableQueryable<AudioEntity, object>>?>()))
             .ReturnsAsync((AudioEntity?)null);
 
         var handler = new GetAudioByIdHandler(
@@ -58,18 +58,19 @@ public class GetAudioByIdHandlerTests
         Assert.Single(result.Errors);
         Assert.Equal(expectedError, result.Errors.First().Message);
 
-        _audioRepositoryMock.Verify(repo => repo.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<AudioEntity, bool>>>(),
-            It.IsAny<Func<IQueryable<AudioEntity>, IIncludableQueryable<AudioEntity, object>>?>()),
-                Times.Once());
+        _audioRepositoryMock.Verify(
+            repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<AudioEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<AudioEntity>, IIncludableQueryable<AudioEntity, object>>?>()),
+            Times.Once());
 
         _loggerMock.Verify(logger => logger.LogError(query, expectedError), Times.Once());
 
-        _mapperMock.Verify(mapper => mapper.Map<AudioDTO>(
-            It.IsAny<AudioEntity>()),
+        _mapperMock.Verify(
+            mapper => mapper.Map<AudioDTO>(It.IsAny<AudioEntity>()),
             Times.Never());
-        _blobServiceMock.Verify(blob => blob.FindFileInStorageAsBase64(
-                It.IsAny<string>()),
+        _blobServiceMock.Verify(
+            blob => blob.FindFileInStorageAsBase64(It.IsAny<string>()),
             Times.Never());
     }
 
@@ -81,28 +82,34 @@ public class GetAudioByIdHandlerTests
         var mimeType = "audio/mpeg";
         var expectedBase64 = "c2VsZpY2VyZG93bmM=";
 
-        AudioEntity audioEntity = new AudioEntity();
-        audioEntity.Id = query.Id;
-        audioEntity.BlobName = blobName;
-        audioEntity.MimeType = mimeType;
+        var audioEntity = new AudioEntity
+        {
+            Id = query.Id,
+            BlobName = blobName,
+            MimeType = mimeType,
+        };
 
-        var audioDto = new AudioDTO();
-        audioDto.Id = query.Id;
-        audioDto.BlobName = blobName;
-        audioDto.MimeType = mimeType;
-        audioDto.Base64 = string.Empty;
+        var audioDto = new AudioDTO
+        {
+            Id = query.Id,
+            BlobName = blobName,
+            MimeType = mimeType,
+            Base64 = string.Empty,
+        };
 
         _audioRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<AudioEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<AudioEntity>, IIncludableQueryable<AudioEntity, object>>?>()))
+                It.IsAny<Func<
+                    IQueryable<AudioEntity>,
+                    IIncludableQueryable<AudioEntity, object>>?>()))
             .ReturnsAsync(audioEntity);
 
-        _mapperMock.Setup(mapper => mapper.Map<AudioDTO>(
-            It.IsAny<AudioEntity>()))
+        _mapperMock
+            .Setup(mapper => mapper.Map<AudioDTO>(It.IsAny<AudioEntity>()))
             .Returns(audioDto);
-        _blobServiceMock.Setup(blob => blob.FindFileInStorageAsBase64(
-            blobName))
+        _blobServiceMock
+            .Setup(blob => blob.FindFileInStorageAsBase64(blobName))
             .Returns(expectedBase64);
 
         var handler = new GetAudioByIdHandler(
@@ -116,9 +123,11 @@ public class GetAudioByIdHandlerTests
         Assert.Same(audioDto, result.Value);
         Assert.Equal(expectedBase64, result.Value.Base64);
 
-        _audioRepositoryMock.Verify(repo => repo.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<AudioEntity, bool>>>(),
-            It.IsAny<Func<IQueryable<AudioEntity>, IIncludableQueryable<AudioEntity, object>>?>()), Times.Once());
+        _audioRepositoryMock.Verify(
+            repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<AudioEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<AudioEntity>, IIncludableQueryable<AudioEntity, object>>?>()),
+            Times.Once());
         _mapperMock.Verify(mapper => mapper.Map<AudioDTO>(audioEntity), Times.Once());
 
         _blobServiceMock.Verify(blob => blob.FindFileInStorageAsBase64(blobName), Times.Once());

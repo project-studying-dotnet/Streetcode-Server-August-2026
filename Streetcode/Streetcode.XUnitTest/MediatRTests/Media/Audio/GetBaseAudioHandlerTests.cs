@@ -9,21 +9,21 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 using AudioEntity = Streetcode.DAL.Entities.Media.Audio;
 
-namespace Streetcode.XUnitTest.MediatRTests.Media.Audio.GetBaseAudio;
+namespace Streetcode.XUnitTest.MediatRTests.Media.Audio;
 
 public class GetBaseAudioHandlerTests
 {
     private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock;
     private readonly Mock<IAudioRepository> _audioRepositoryMock;
     private readonly Mock<IBlobService> _blobServiceMock;
-    private readonly Mock<ILoggerService> _loggerServiceMock;
+    private readonly Mock<ILoggerService> _loggerMock;
 
     public GetBaseAudioHandlerTests()
     {
         _repositoryWrapperMock = new Mock<IRepositoryWrapper>();
         _audioRepositoryMock = new Mock<IAudioRepository>();
         _blobServiceMock = new Mock<IBlobService>();
-        _loggerServiceMock = new Mock<ILoggerService>();
+        _loggerMock = new Mock<ILoggerService>();
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.AudioRepository)
             .Returns(_audioRepositoryMock.Object);
@@ -45,7 +45,7 @@ public class GetBaseAudioHandlerTests
         var handler = new GetBaseAudioHandler(
             _blobServiceMock.Object,
             _repositoryWrapperMock.Object,
-            _loggerServiceMock.Object);
+            _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -59,7 +59,7 @@ public class GetBaseAudioHandlerTests
                 IQueryable<AudioEntity>,
                 IIncludableQueryable<AudioEntity, object>>?>()),
             Times.Once());
-        _loggerServiceMock.Verify(logger => logger.LogError(query, expectedError), Times.Once());
+        _loggerMock.Verify(logger => logger.LogError(query, expectedError), Times.Once());
         _blobServiceMock.Verify(blob => blob.FindFileInStorageAsMemoryStream(
             It.IsAny<string>()),
             Times.Never());
@@ -71,9 +71,11 @@ public class GetBaseAudioHandlerTests
         var query = new GetBaseAudioQuery(5);
         var blobName = "audio.mp3";
 
-        AudioEntity audioEntity = new AudioEntity();
-        audioEntity.Id = query.Id;
-        audioEntity.BlobName = blobName;
+        var audioEntity = new AudioEntity
+        {
+            Id = query.Id,
+            BlobName = blobName,
+        };
 
         using var expectedStream = new MemoryStream(new byte[] { 1, 2, 3 });
 
@@ -89,7 +91,7 @@ public class GetBaseAudioHandlerTests
         var handler = new GetBaseAudioHandler(
             _blobServiceMock.Object,
             _repositoryWrapperMock.Object,
-            _loggerServiceMock.Object);
+            _loggerMock.Object);
 
         var result = await handler.Handle(query, CancellationToken.None);
 
@@ -107,7 +109,7 @@ public class GetBaseAudioHandlerTests
             .Verify(blob => blob.FindFileInStorageAsMemoryStream(blobName),
                 Times.Once());
 
-        _loggerServiceMock.Verify(logger => logger.LogError(
+        _loggerMock.Verify(logger => logger.LogError(
             It.IsAny<object>(),
             It.IsAny<string>()),
             Times.Never());
