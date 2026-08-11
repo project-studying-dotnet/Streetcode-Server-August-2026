@@ -111,7 +111,7 @@ EF Core, Hangfire, and DbUpdate read the same `ConnectionStrings:DefaultConnecti
 
 The examples use `TrustServerCertificate=True` only for local development, where SQL Server may use a self-signed certificate. Production environments should use a properly configured and validated server certificate.
 
-`Env.TraversePath().Load()` searches for `.env` in the current directory and its parent directories, so locating the root `.env` file no longer requires the repository root to be used as the working directory.
+`Env.NoClobber().TraversePath().Load()` searches for `.env` in the current directory and its parent directories, so locating the root `.env` file no longer requires the repository root to be used as the working directory. Existing process environment variables take precedence, while `.env` only fills in values that are missing.
 
 The schema is created on startup — `ApplyMigrations` runs `MigrateAsync()`, so an empty database is enough. Seed data is **not** loaded: the `SeedDataAsync()` call in `Program.cs` is commented out, so endpoints return empty collections until data is added.
 
