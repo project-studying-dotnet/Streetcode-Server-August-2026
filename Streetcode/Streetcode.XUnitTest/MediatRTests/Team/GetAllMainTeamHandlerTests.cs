@@ -35,7 +35,6 @@ public class GetAllMainTeamHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value);
-
     }
 
     [Fact]

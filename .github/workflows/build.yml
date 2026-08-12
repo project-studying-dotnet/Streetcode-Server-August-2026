@@ -26,7 +26,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore Dependencies
         run: dotnet restore ./Streetcode/Streetcode.sln
@@ -40,13 +40,10 @@ jobs:
       - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Set SonarCloud Token
-        run: echo "SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}" >> $GITHUB_ENV
-
       - name: SonarScanner Begin
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml"
+        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
       
       - name: Build
         run: dotnet build ./Streetcode/Streetcode.sln --configuration Release
