@@ -57,4 +57,22 @@ public class SortedByDateTimeHandlerTests
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_ReturnsOkResult_WithEmptyList_WhenRepositoryReturnsEmpty()
+    {
+        var emptyNewsList = new List<DAL.Entities.News.News>();
+        var emptyNewsDtoList = new List<NewsDTO>();
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(null, It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+            .ReturnsAsync(emptyNewsList);
+        _mapperMock.Setup(m => m.Map<IEnumerable<NewsDTO>>(emptyNewsList)).Returns(emptyNewsDtoList);
+
+        var handler = new SortedByDateTimeHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(new SortedByDateTimeQuery(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
+    }
 }
