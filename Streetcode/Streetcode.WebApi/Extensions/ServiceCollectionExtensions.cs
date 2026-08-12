@@ -57,14 +57,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
-                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
-        }
-
+        var connectionString = configuration.GetRequiredConnectionString();
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
 

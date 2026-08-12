@@ -1,6 +1,7 @@
 ﻿using DbUp;
 using DotNetEnv;
 using Microsoft.Extensions.Configuration;
+using Streetcode.WebApi.Extensions;
 
 public class Program
 {
@@ -20,14 +21,7 @@ public class Program
             .AddEnvironmentVariables("STREETCODE_")
             .Build();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
-                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
-        }
+        var connectionString = configuration.GetRequiredConnectionString();
 
         string pathToScript = "";
 
@@ -35,7 +29,7 @@ public class Program
         pathToScript = Console.ReadLine();
 
         pathToScript = migrationPath;
-        
+
         var upgrader =
             DeployChanges.To
                 .SqlDatabase(connectionString)
