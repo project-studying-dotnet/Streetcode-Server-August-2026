@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: 
+        with:   
           fetch-depth: 0
 
       - name: Setup Java
@@ -44,7 +44,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
-      
+
       - name: Build
         run: dotnet build ./Streetcode/Streetcode.sln --configuration Release
 
@@ -56,7 +56,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
-        
+
       - name: Publish Code Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
