@@ -4,6 +4,7 @@ using DbUp;
 using DbUp;
 using DotNetEnv;
 using Microsoft.Extensions.Configuration;
+using Streetcode.WebApi.Extensions;
 
 public class Program
 {
@@ -21,21 +22,15 @@ public class Program
             .AddEnvironmentVariables("STREETCODE_")
             .Build();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetRequiredConnectionString();
 
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException(
-                "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
-                "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.");
-        }
-
-        string pathToScript = "";
+        string pathToScript = string.Empty;
 
         Console.WriteLine("Enter '-m' to MIGRATE or '-s' to SEED db:");
         pathToScript = Console.ReadLine();
 
         pathToScript = migrationPath;
+
         var upgrader =
             DeployChanges.To
                 .SqlDatabase(connectionString)
