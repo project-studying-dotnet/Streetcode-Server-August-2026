@@ -80,4 +80,27 @@ public class DeleteNewsHandlerTests
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(command, expectedError), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenSaveChangesFails()
+    {
+        int newsId = 1;
+        var news = new DAL.Entities.News.News { Id = newsId };
+        var command = new DeleteNewsCommand(newsId);
+        var expectedError = "Failed to delete a news";
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
+            .ReturnsAsync(news);
+        _repositoryMock.Setup(r => r.NewsRepository.Delete(It.IsAny<DAL.Entities.News.News>()));
+
+        _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
+
+        var handler = new DeleteNewsHandler(_repositoryMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedError, result.Errors.First().Message);
+        _loggerMock.Verify(l => l.LogError(command, expectedError), Times.Once);
+    }
 }

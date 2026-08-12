@@ -87,4 +87,27 @@ public class UpdateNewsHandlerTests
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(command, expectedError), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenSaveChangesFails()
+    {
+        var newsDto = new NewsDTO { Id = 1 };
+        var newsEntity = new DAL.Entities.News.News { Id = 1 };
+        var command = new UpdateNewsCommand(newsDto);
+        var expectedError = "Failed to update a news";
+
+        _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(newsDto)).Returns(newsEntity);
+        _mapperMock.Setup(m => m.Map<NewsDTO>(newsEntity)).Returns(new NewsDTO());
+
+        _repositoryMock.Setup(r => r.NewsRepository.Update(It.IsAny<DAL.Entities.News.News>()));    
+        _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
+
+        var handler = new UpdateNewsHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedError, result.Errors.First().Message);
+        _loggerMock.Verify(l => l.LogError(command, expectedError), Times.Once);
+    }
 }
