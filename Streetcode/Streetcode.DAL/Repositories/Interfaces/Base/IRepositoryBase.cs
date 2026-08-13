@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Ardalis.Specification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Query;
@@ -9,6 +10,14 @@ namespace Streetcode.DAL.Repositories.Interfaces.Base;
 public interface IRepositoryBase<T>
     where T : class
 {
+    Task<List<T>> ListAsync(ISpecification<T> specification, CancellationToken ct = default);
+
+    Task<T?> GetBySpecAsync(ISpecification<T> specification, CancellationToken ct = default);
+
+    Task<int> CountAsync(ISpecification<T> specification, CancellationToken ct = default);
+
+    Task<bool> AnyAsync(ISpecification<T> specification, CancellationToken ct = default);
+
     IQueryable<T> FindAll(Expression<Func<T, bool>>? predicate = default);
 
     T Create(T entity);
