@@ -131,13 +131,11 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
                 .Setup(repo => repo.FindAll(null))
                 .Returns(toponyms);
 
-            //IEnumerable<Toponym>? capturedItems = null;
+            IEnumerable<Toponym>? capturedItems = null;
 
             _mapperMock
                 .Setup(mapper => mapper.Map<IEnumerable<ToponymDTO>>(It.IsAny<IEnumerable<Toponym>>()))
-
-                // .Callback<object>(obj => capturedItems = (obj as IEnumerable<Toponym>)?.ToList()) //checks if the filtered items are passed to the mapper
-                // (in case if use It.Is<IEnumerable<Toponym>>() with condition)
+                .Callback<object>(o => capturedItems = ((IEnumerable<Toponym>)o).ToList())
                 .Returns(expectedDtos);
 
             var handler = new GetAllToponymsHandler(
@@ -150,9 +148,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
             var result = await handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsSuccess);
-            //Assert.NotNull(capturedItems);
-            //Assert.NotEmpty(capturedItems);
-            Assert.Single(result.Value.Toponyms);
+            Assert.NotNull(capturedItems!);
+            Assert.NotEmpty(capturedItems!);
+            Assert.Single(capturedItems!);
             Assert.Equal("First Street", result.Value.Toponyms.Single().StreetName);
         }
     }
