@@ -345,3 +345,7 @@ healthchecksdb
 # BlobStorage
 BlobStorageFolder/
 BlobStorageTestFolder/
+
+# Runtime-downloaded files
+/houses.zip
+/Streetcode/Streetcode.WebApi/Data/WebParsing/

@@ -101,27 +101,39 @@ public class WebParsingUtils
 
     public async Task ParseZipFileFromWebAsync()
     {
-        var projRootDirectory = Directory.GetParent(Environment.CurrentDirectory)?.FullName!;
-        var zipPath = $"houses.zip";
-        var extractTo = $"/root/build/StreetCode/Streetcode/Streetcode.DAL";
-
-        var cancellationToken = new CancellationTokenSource().Token;
-
+        var zipPath = Path.Combine(
+            Path.GetTempPath(),
+            $"houses-{Guid.NewGuid()}.zip");
+        var dataDirectory = Path.Combine(
+            AppContext.BaseDirectory,
+            "Data",
+            "WebParsing");
         try
         {
-            await DownloadAndExtractAsync(_fileToParseUrl, zipPath, extractTo, cancellationToken);
+            Directory.CreateDirectory(dataDirectory);
+
+            await DownloadAndExtractAsync(
+                _fileToParseUrl,
+                zipPath,
+                dataDirectory,
+                CancellationToken.None);
+
             Console.WriteLine("Download and extraction completed successfully.");
 
-            if (File.Exists(zipPath))
-            {
-                File.Delete(zipPath);
-            }
-
-            await ProcessCsvFileAsync(extractTo);
+            await ProcessCsvFileAsync(
+                dataDirectory,
+                deleteFile: true);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+        finally
+        {
+            if (File.Exists(zipPath))
+            {
+                File.Delete(zipPath);
+            }
         }
     }
 
@@ -145,7 +157,7 @@ public class WebParsingUtils
         // Following line is required for proper csv encoding
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-        string csvPath = $"{extractTo}/data.csv";
+        string csvPath = Path.Combine(extractTo, "data.csv");
 
         var allLinesFromDataCsv = new List<string>();
 
