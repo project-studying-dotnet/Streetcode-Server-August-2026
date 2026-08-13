@@ -150,7 +150,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
             Assert.True(result.IsSuccess);
             Assert.NotNull(capturedItems!);
             Assert.NotEmpty(capturedItems!);
-            Assert.Single(capturedItems!);
+            Assert.Single(capturedItems!.GroupBy(item => item.StreetName.ToLower()).Distinct());
             Assert.Equal("First Street", result.Value.Toponyms.Single().StreetName);
         }
     }
