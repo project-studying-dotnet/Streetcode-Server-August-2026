@@ -69,7 +69,13 @@ cd Streetcode-Server-August-2026
 
 ### Run with Docker Compose
 
-Make sure Docker Desktop is running in Linux containers mode and that the `.env` file in the repository root contains the required values:
+Make sure Docker Desktop is running in Linux containers mode. Copy the tracked environment template before starting the services:
+
+```bash
+cp .env.example .env
+```
+
+Then replace the Docker Compose placeholders in `.env` with values appropriate for the local environment:
 
 ```dotenv
 MS_SQL_DB_PORT=1433
@@ -96,6 +102,8 @@ When both services are running, the application is available at:
 | Hangfire dashboard | <http://localhost:5000/dash> |
 | SQL Server | `localhost:1433` |
 
+Docker Compose uses the `Local` environment to enable Swagger. The Hangfire dashboard remains available, but recurring background jobs are not registered in this environment, so the dashboard can be empty.
+
 Useful commands:
 
 ```bash
@@ -111,18 +119,7 @@ The `sqlserver-data` volume preserves database data when the containers are stop
 
 The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
 
-For local development, copy the tracked environment template:
-
-```bash
-cp .env.example .env
-```
-
-<<<<<<< HEAD
-Then replace the placeholder in `.env` with the connection string for the local SQL Server instance:
-
-```dotenv
-STREETCODE_ConnectionStrings__DefaultConnection="Server=localhost;Database=StreetcodeDb;User Id=sa;Password=your_password;TrustServerCertificate=True;MultipleActiveResultSets=true"
-```
+For host-based local development, replace the relevant placeholders in `.env` with values appropriate for the local environment.
 
 The `STREETCODE_` prefix is removed by the environment configuration provider, and the double underscore `__` represents the configuration section separator `:`. Therefore, `STREETCODE_ConnectionStrings__DefaultConnection` overrides `ConnectionStrings:DefaultConnection`.
 
@@ -130,24 +127,9 @@ The `.env` file is ignored by Git and must never be committed. Do not put real c
 
 The `STREETCODE_Blob__BlobStoreKey` value is required when media files are encrypted or decrypted. Set it in the local `.env` file to a private key whose UTF-8 representation is exactly 32 bytes, as required for AES-256. The application may start when this value is empty or invalid, but media upload and download operations will fail. Never commit the real encryption key.
 
-#### Option A — SQL Server in a container
-
-Replace `your_strong_password` with a strong local password before running the command:
-
-```bash
-docker run -d --name streetcode-db \
-  -e "ACCEPT_EULA=Y" \
-  -e "MSSQL_SA_PASSWORD=your_strong_password" \
-  -p 1433:1433 \
-  mcr.microsoft.com/mssql/server:2022-latest
-```
-
-For this setup, use `127.0.0.1,1433` as the server, `StreetcodeDb` as the database, `sa` as the user, and the same password that was supplied to the container.
-
-#### Option B — a local SQL Server instance
-=======
 Docker Compose configures the containerized API to connect to the `sqlserver` service automatically. The following override is only needed when running the API directly on the host with a local named SQL Server instance.
->>>>>>> 6116ad6 (docker-compose)
+
+#### Local SQL Server instance
 
 Set `STREETCODE_ConnectionStrings__DefaultConnection` to a complete connection string for the local SQL Server instance. For a named SQL Server instance, the `Server` value can be set to something such as `localhost\SQLEXPRESS`.
 
