@@ -4,11 +4,13 @@ using Hangfire;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
+using DotNetEnv;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
+        Env.NoClobber().TraversePath().Load();
         var builder = WebApplication.CreateBuilder(args);
         builder.Host.ConfigureApplication();
 

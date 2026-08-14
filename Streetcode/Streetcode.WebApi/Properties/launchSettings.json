@@ -25,7 +25,7 @@
       "commandName": "Project",
       "launchBrowser": false,
       "environmentVariables": {
-        "STREETCODE_ENVIRONMENT": "IntegrationTests"
+        "ASPNETCORE_ENVIRONMENT": "IntegrationTests"
       }
     },
     "Docker": {
