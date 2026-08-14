@@ -3,7 +3,7 @@ using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetParsed;
 using Xunit;
 
-namespace Streetcode.XUnitTest.MediatR.Text.GetParsed;
+namespace Streetcode.XUnitTest.MediatRTests.Text.GetParsed;
 
 public class GetParsedTextAdminPreviewHandlerTests
 {

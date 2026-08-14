@@ -8,7 +8,7 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Xunit;
 using TextEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Text;
 
-namespace Streetcode.XUnitTest.MediatR.Text.GetById;
+namespace Streetcode.XUnitTest.MediatRTests.Text.GetById;
 
 public class GetTextByIdHandlerTests
 {
