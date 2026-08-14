@@ -3,7 +3,7 @@
     "Streetcode.XIntegrationTest": {
       "commandName": "Project",
       "environmentVariables": {
-        "STREETCODE_ENVIRONMENT": "IntegrationTests"
+        "ASPNETCORE_ENVIRONMENT": "IntegrationTests"
       }
     }
   }
