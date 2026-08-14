@@ -23,12 +23,12 @@ RUN dotnet restore ./Streetcode.WebApi/Streetcode.WebApi.csproj
 # copying application sources and building the Web API project
 COPY ./Streetcode/ ./
 WORKDIR /src/Streetcode.WebApi
-RUN dotnet build Streetcode.WebApi.csproj -c $Configuration -o /app/build --no-restore
+RUN dotnet build Streetcode.WebApi.csproj -c "$Configuration" -o /app/build --no-restore
 
 # publishing application
 FROM build AS publish
 ARG Configuration=Release
-RUN dotnet publish Streetcode.WebApi.csproj -c $Configuration -o /app/publish --no-restore /p:UseAppHost=false
+RUN dotnet publish Streetcode.WebApi.csproj -c "$Configuration" -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
