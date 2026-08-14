@@ -1,12 +1,15 @@
-﻿namespace DbUpdate;
+namespace DbUpdate;
 
 using DbUp;
+using DotNetEnv;
 using Microsoft.Extensions.Configuration;
+using Streetcode.WebApi.Extensions;
 
 public class Program
 {
     public static int Main(string[] args)
     {
+        Env.NoClobber().TraversePath().Load();
         string migrationPath = Path.Combine(
             Directory.GetCurrentDirectory(), "Streetcode.DAL", "Persistence", "ScriptsMigration");
 
@@ -19,7 +22,7 @@ public class Program
             .AddEnvironmentVariables("STREETCODE_")
             .Build();
 
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetRequiredConnectionString();
 
         string? pathToScript = string.Empty;
 
@@ -27,6 +30,7 @@ public class Program
         pathToScript = Console.ReadLine();
 
         pathToScript = migrationPath;
+
         var upgrader =
             DeployChanges.To
                 .SqlDatabase(connectionString)
