@@ -31,7 +31,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Specifications\" />
     <Folder Include="Persistence\ScriptsMigration\" />
   </ItemGroup>
 </Project>
