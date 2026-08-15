@@ -94,12 +94,15 @@ public class UpdateNewsHandlerTests
         var newsDto = new NewsDTO { Id = 1 };
         var newsEntity = new DAL.Entities.News.News { Id = 1 };
         var command = new UpdateNewsCommand(newsDto);
-        var expectedError = "Failed to update a news";
+        var expectedError = "Failed to update news";
 
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(newsDto)).Returns(newsEntity);
         _mapperMock.Setup(m => m.Map<NewsDTO>(newsEntity)).Returns(new NewsDTO());
 
-        _repositoryMock.Setup(r => r.NewsRepository.Update(It.IsAny<DAL.Entities.News.News>()));    
+        _repositoryMock.Setup(r => r.ImageRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<Image, bool>>>(), null))
+            .ReturnsAsync((Image)null!);
+
+        _repositoryMock.Setup(r => r.NewsRepository.Update(It.IsAny<DAL.Entities.News.News>()));
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
 
         var handler = new UpdateNewsHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);

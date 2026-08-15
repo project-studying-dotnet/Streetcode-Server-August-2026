@@ -87,12 +87,11 @@ public class DeleteNewsHandlerTests
         int newsId = 1;
         var news = new DAL.Entities.News.News { Id = newsId };
         var command = new DeleteNewsCommand(newsId);
-        var expectedError = "Failed to delete a news";
+        var expectedError = "Failed to delete news";
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
             .ReturnsAsync(news);
         _repositoryMock.Setup(r => r.NewsRepository.Delete(It.IsAny<DAL.Entities.News.News>()));
-
         _repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
 
         var handler = new DeleteNewsHandler(_repositoryMock.Object, _loggerMock.Object);

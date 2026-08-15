@@ -131,13 +131,17 @@ public class GetNewsAndLinksByUrlHandlerTests
         var query = new GetNewsAndLinksByUrlQuery(url);
         var expectedError = "There are no news in the database";
 
-        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync(news);
-        _mapperMock.Setup(m => m.Map<NewsDTO>(news)).Returns(newsDto);
 
-        // Симулюємо null з GetAllAsync
-        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(null, null))
-            .ReturnsAsync((IEnumerable<DAL.Entities.News.News>)null!);
+        _mapperMock.Setup(m => m.Map<NewsDTO>(It.IsAny<DAL.Entities.News.News>())).Returns(newsDto);
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+            .ReturnsAsync((IEnumerable<DAL.Entities.News.News>?)null);
 
         var handler = new GetNewsAndLinksByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 
@@ -158,11 +162,16 @@ public class GetNewsAndLinksByUrlHandlerTests
         var emptyList = new List<DAL.Entities.News.News>();
         var expectedError = "There are no news in the database";
 
-        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync(news);
-        _mapperMock.Setup(m => m.Map<NewsDTO>(news)).Returns(newsDto);
 
-        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(null, null))
+        _mapperMock.Setup(m => m.Map<NewsDTO>(It.IsAny<DAL.Entities.News.News>())).Returns(newsDto);
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync(emptyList);
 
         var handler = new GetNewsAndLinksByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
