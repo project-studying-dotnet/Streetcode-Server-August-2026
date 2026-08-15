@@ -9,7 +9,7 @@ using Streetcode.DAL.Specifications.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.GetAllPartnerShort
 {
-    internal class GetAllPartnerShortHandler : IRequestHandler<GetAllPartnersShortQuery, Result<IEnumerable<PartnerShortDTO>>>
+    public class GetAllPartnerShortHandler : IRequestHandler<GetAllPartnersShortQuery, Result<IEnumerable<PartnerShortDTO>>>
     {
         private readonly IMapper _mapper;
         private readonly IRepositoryWrapper _repositoryWrapper;

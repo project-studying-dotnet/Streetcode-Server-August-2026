@@ -69,36 +69,49 @@ cd Streetcode-Server-August-2026
 
 ### Database
 
-The connection string shipped in `appsettings.json` and `appsettings.Local.json` expects a SQL Server on the default instance:
+The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
 
-```
-Server=127.0.0.1;Database=StreetcodeDb;User Id=sa;Password=Admin@1234;MultipleActiveResultSets=true
+For local development, copy the tracked environment template:
+
+```bash
+cp .env.example .env
 ```
 
-Pick whichever option matches the machine. **Option A** works with the shipped configuration unchanged; **Option B** overrides it without editing any file.
+Then replace the placeholder in `.env` with the connection string for the local SQL Server instance:
+
+```dotenv
+STREETCODE_ConnectionStrings__DefaultConnection="Server=localhost;Database=StreetcodeDb;User Id=sa;Password=your_password;TrustServerCertificate=True;MultipleActiveResultSets=true"
+```
+
+The `STREETCODE_` prefix is removed by the environment configuration provider, and the double underscore `__` represents the configuration section separator `:`. Therefore, `STREETCODE_ConnectionStrings__DefaultConnection` overrides `ConnectionStrings:DefaultConnection`.
+
+The `.env` file is ignored by Git and must never be committed. Do not put real credentials in `appsettings*.json` or `.env.example`.
+
+The `STREETCODE_Blob__BlobStoreKey` value is required when media files are encrypted or decrypted. Set it in the local `.env` file to a private key whose UTF-8 representation is exactly 32 bytes, as required for AES-256. The application may start when this value is empty or invalid, but media upload and download operations will fail. Never commit the real encryption key.
 
 #### Option A — SQL Server in a container
 
+Replace `your_strong_password` with a strong local password before running the command:
+
 ```bash
 docker run -d --name streetcode-db \
-  -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=Admin@1234" \
-  -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+  -e "ACCEPT_EULA=Y" \
+  -e "MSSQL_SA_PASSWORD=your_strong_password" \
+  -p 1433:1433 \
+  mcr.microsoft.com/mssql/server:2022-latest
 ```
+
+For this setup, use `127.0.0.1,1433` as the server, `StreetcodeDb` as the database, `sa` as the user, and the same password that was supplied to the container.
 
 #### Option B — a local SQL Server instance
 
-Set one environment variable and restart the IDE (it reads the environment at startup):
+Set `STREETCODE_ConnectionStrings__DefaultConnection` to a complete connection string for the local SQL Server instance. For a named SQL Server instance, the `Server` value can be set to something such as `localhost\SQLEXPRESS`.
 
-```powershell
-[Environment]::SetEnvironmentVariable(
-  "STREETCODE_ConnectionStrings__DefaultConnection",
-  "Server=localhost\SQLEXPRESS;Database=StreetcodeDb;Trusted_Connection=True;MultipleActiveResultSets=true",
-  "User")
-```
+EF Core, Hangfire, and DbUpdate read the same `ConnectionStrings:DefaultConnection` configuration value.
 
-The configuration pipeline registers `AddEnvironmentVariables("STREETCODE_")` as the last source, and `__` maps to `:`, so this value wins over both `appsettings.json` files while they stay untouched. The same string is used by EF Core and by Hangfire storage.
+The examples use `TrustServerCertificate=True` only for local development, where SQL Server may use a self-signed certificate. Production environments should use a properly configured and validated server certificate.
 
-> **Named instances:** address them as `localhost\SQLEXPRESS` or `.\SQLEXPRESS`. `Trusted_Connection` over the literal `127.0.0.1` fails on machines outside a domain with `Login failed. The login is from an untrusted domain`, surfacing as `Named Pipes Provider, error: 40`.
+`Env.NoClobber().TraversePath().Load()` searches for `.env` in the current directory and its parent directories, so locating the root `.env` file no longer requires the repository root to be used as the working directory. Existing process environment variables take precedence, while `.env` only fills in values that are missing.
 
 The schema is created on startup — `ApplyMigrations` runs `MigrateAsync()`, so an empty database is enough. Seed data is **not** loaded: the `SeedDataAsync()` call in `Program.cs` is commented out, so endpoints return empty collections until data is added.
 
@@ -120,7 +133,7 @@ The `Local` environment is what enables Swagger and suppresses the recurring bac
 
 Run `dotnet dev-certs https --trust` once, since the pipeline enforces HTTPS redirection.
 
-> A failed database connection does **not** stop the host: `ApplyMigrations` logs the exception and startup continues, after which every request fails. If endpoints misbehave, look for `An error occured during startup migration` in the console.
+> A missing connection string stops startup with an explicit configuration error. A non-empty but invalid or unreachable database connection is logged by `ApplyMigrations`, while the host continues to start and subsequent database requests fail. Look for `An error occured during startup migration` in the console.
 
 ### Tests
 
@@ -129,7 +142,7 @@ dotnet test Streetcode/Streetcode.XUnitTest        # unit tests
 dotnet test Streetcode/Streetcode.XIntegrationTest # integration tests
 ```
 
-Integration tests read `appsettings.IntegrationTests.json` and need a reachable database.
+Integration tests that require a database use the same `STREETCODE_ConnectionStrings__DefaultConnection` environment variable. Point it to a separate test database, such as `StreetcodeDbtest`, and never reuse production credentials. The `appsettings.IntegrationTests.json` file contains only non-sensitive environment-specific settings.
 
 ### Code style
 
