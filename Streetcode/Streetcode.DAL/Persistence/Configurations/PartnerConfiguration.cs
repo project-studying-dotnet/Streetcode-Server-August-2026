@@ -16,6 +16,6 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
 
         builder
             .Property(p => p.IsKeyPartner)
-            .HasDefaultValue("false");
+            .HasDefaultValue(false);
     }
 }
