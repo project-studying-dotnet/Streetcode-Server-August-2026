@@ -302,6 +302,10 @@ public class StreetcodeDbContext : DbContext
             .WithMany(t => t.RelatedTerms)
             .HasForeignKey(rt => rt.TermId);
 
+        modelBuilder.Entity<Term>()
+            .HasIndex(t => t.Title)
+            .IsUnique();
+
         modelBuilder.Entity<Coordinate>()
             .HasDiscriminator<string>("CoordinateType")
             .HasValue<Coordinate>("coordinate_base")

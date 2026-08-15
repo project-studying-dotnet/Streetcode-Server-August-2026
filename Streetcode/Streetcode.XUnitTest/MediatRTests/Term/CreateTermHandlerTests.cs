@@ -1,14 +1,15 @@
+using System.Linq.Expressions;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Streetcode.TextContent;
 using Streetcode.BLL.Interfaces.Logging;
-using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore.Query;
 using Streetcode.BLL.MediatR.Streetcode.Term.Create;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
-using TermEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Term;
 using Xunit;
+using TermEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Term;
 
 namespace Streetcode.XUnitTest.MediatRTests.Term;
 
@@ -42,7 +43,7 @@ public class CreateTermHandlerTests
         var termCreateDto = new TermCreateDTO
         {
             Title = " Test term ",
-            Description = "Test description",
+            Description = " Test description ",
         };
         var command = new CreateTermCommand(termCreateDto);
         var expectedTermDto = new TermDTO
@@ -54,7 +55,7 @@ public class CreateTermHandlerTests
         var termEntity = new TermEntity
         {
             Title = " Test term ",
-            Description = "Test description",
+            Description = " Test description ",
         };
         _termRepositoryMock
             .Setup(repo => repo.Create(termEntity))
@@ -86,6 +87,7 @@ public class CreateTermHandlerTests
         Assert.Equal(expectedTermDto.Title, result.Value.Title);
         Assert.Equal(expectedTermDto.Description, result.Value.Description);
         Assert.Equal("Test term", termEntity.Title);
+        Assert.Equal("Test description", termEntity.Description);
 
         _termRepositoryMock.Verify(
             repo => repo.Create(termEntity),
@@ -215,7 +217,7 @@ public class CreateTermHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenMappingToEntityFails_ShouldReturnFailure()
+    public async Task Handle_WhenSaveChangesThrowsDbUpdateException_ShouldReturnFailure()
     {
         var termCreateDto = new TermCreateDTO
         {
@@ -223,73 +225,33 @@ public class CreateTermHandlerTests
             Description = "Test description",
         };
         var command = new CreateTermCommand(termCreateDto);
-        const string expectedError = "Term could not be created.";
 
-        _mapperMock
-            .Setup(mapper => mapper.Map<TermEntity>(termCreateDto))
-            .Returns((TermEntity?)null);
-
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        Assert.True(result.IsFailed);
-        Assert.Equal(expectedError, result.Errors.First().Message);
-
-        _loggerMock.Verify(
-            logger => logger.LogError(command, expectedError),
-            Times.Once());
-
-        _termRepositoryMock.Verify(
-            repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<TermEntity, bool>>>(),
-                It.IsAny<Func<
-                    IQueryable<TermEntity>,
-                    IIncludableQueryable<TermEntity, object>>?>()),
-            Times.Never());
-
-        _termRepositoryMock.Verify(
-            repository => repository.Create(It.IsAny<TermEntity>()),
-            Times.Never());
-
-        _repositoryWrapperMock.Verify(
-            wrapper => wrapper.SaveChangesAsync(),
-            Times.Never());
-    }
-
-    [Fact]
-    public async Task Handle_WhenMappingToDtoFails_ShouldReturnFailure()
-    {
-        var termCreateDto = new TermCreateDTO
-        {
-            Title = "Test term",
-            Description = "Test description",
-        };
-        var command = new CreateTermCommand(termCreateDto);
         var termEntity = new TermEntity
         {
             Title = "Test term",
             Description = "Test description",
         };
-        const string expectedError = "Cannot create term";
-
-        _mapperMock
-            .Setup(mapper => mapper.Map<TermEntity>(termCreateDto))
-            .Returns(termEntity);
         _termRepositoryMock
-            .Setup(repository => repository.GetFirstOrDefaultAsync(
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<TermEntity, bool>>>(),
                 It.IsAny<Func<
                     IQueryable<TermEntity>,
                     IIncludableQueryable<TermEntity, object>>?>()))
             .ReturnsAsync((TermEntity?)null);
-        _termRepositoryMock
-            .Setup(repository => repository.Create(termEntity))
+
+        _mapperMock
+            .Setup(mapper => mapper.Map<TermEntity>(termCreateDto))
             .Returns(termEntity);
+
+        _termRepositoryMock
+            .Setup(repo => repo.Create(termEntity))
+            .Returns(termEntity);
+
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
-            .ReturnsAsync(1);
-        _mapperMock
-            .Setup(mapper => mapper.Map<TermDTO>(termEntity))
-            .Returns((TermDTO?)null);
+            .ThrowsAsync(new DbUpdateException());
+
+        const string expectedError = "A term with the title 'Test term' already exists.";
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -297,16 +259,19 @@ public class CreateTermHandlerTests
         Assert.Equal(expectedError, result.Errors.First().Message);
 
         _termRepositoryMock.Verify(
-            repository => repository.Create(termEntity),
+            repo => repo.Create(termEntity),
             Times.Once());
+
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
             Times.Once());
-        _mapperMock.Verify(
-            mapper => mapper.Map<TermDTO>(termEntity),
-            Times.Once());
+
         _loggerMock.Verify(
             logger => logger.LogError(command, expectedError),
             Times.Once());
+
+        _mapperMock.Verify(
+            mapper => mapper.Map<TermDTO>(It.IsAny<TermEntity>()),
+            Times.Never());
     }
 }
