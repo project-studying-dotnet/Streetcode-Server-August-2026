@@ -13,8 +13,7 @@ public class StreetcodeDbContextModelTests
     {
         var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
             .UseSqlServer(
-                "Server=localhost;Database=StreetcodeModelTests;" +
-                "Trusted_Connection=True;TrustServerCertificate=True;")
+                "Server=.;Database=Test;")
             .Options;
 
         using var context = new StreetcodeDbContext(options);
@@ -42,8 +41,7 @@ public class StreetcodeDbContextModelTests
     {
         var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
             .UseSqlServer(
-                "Server=localhost;Database=StreetcodeModelTests;" +
-                "Trusted_Connection=True;TrustServerCertificate=True;")
+                "Server=.;Database=Test;")
             .Options;
 
         using var context = new StreetcodeDbContext(options);
