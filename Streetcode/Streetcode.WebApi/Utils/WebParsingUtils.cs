@@ -4,6 +4,7 @@ using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 using Polly;
+using Hangfire;
 using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
 using Streetcode.DAL.Entities.Toponyms;
 using Streetcode.DAL.Persistence;
@@ -27,11 +28,15 @@ public class WebParsingUtils
 
     private readonly IRepositoryWrapper _repository;
     private readonly StreetcodeDbContext _streetcodeContext;
+    private readonly IHostEnvironment _hostEnvironment;
 
-    public WebParsingUtils(StreetcodeDbContext streetcodeContext)
+    public WebParsingUtils(
+        StreetcodeDbContext streetcodeContext,
+        IHostEnvironment hostEnvironment)
     {
         _repository = new RepositoryWrapper(streetcodeContext);
         _streetcodeContext = streetcodeContext;
+        _hostEnvironment = hostEnvironment;
     }
 
     public static async Task DownloadAndExtractAsync(
@@ -99,15 +104,11 @@ public class WebParsingUtils
         }
     }
 
+    [DisableConcurrentExecution(timeoutInSeconds: 3600)]
     public async Task ParseZipFileFromWebAsync()
     {
-        var zipPath = Path.Combine(
-            Path.GetTempPath(),
-            $"houses-{Guid.NewGuid()}.zip");
-        var dataDirectory = Path.Combine(
-            AppContext.BaseDirectory,
-            "Data",
-            "WebParsing");
+        var zipPath = GetZipPath(Path.GetTempPath(), Guid.NewGuid());
+        var dataDirectory = GetDataDirectory(_hostEnvironment.ContentRootPath);
         try
         {
             Directory.CreateDirectory(dataDirectory);
@@ -127,6 +128,7 @@ public class WebParsingUtils
         catch (Exception ex)
         {
             Console.WriteLine($"An error occurred: {ex.Message}");
+            throw;
         }
         finally
         {
@@ -167,7 +169,7 @@ public class WebParsingUtils
             Console.OutputEncoding = Encoding.GetEncoding(1251);
         }
 
-        string excelPath = Directory.GetFiles(extractTo).First(fName => fName.EndsWith("houses.csv"));
+        string excelPath = FindHousesCsv(extractTo);
 
         var rows = new List<string>(await File.ReadAllLinesAsync(excelPath, Encoding.GetEncoding(1251)));
 
@@ -314,6 +316,40 @@ public class WebParsingUtils
         }
 
         return (null, null);
+    }
+
+    internal static string GetZipPath(string temporaryDirectory, Guid operationId)
+    {
+        return Path.Combine(
+            temporaryDirectory,
+            $"houses-{operationId}.zip");
+    }
+
+    internal static string GetDataDirectory(string contentRootPath)
+    {
+        return Path.Combine(
+            contentRootPath,
+            "Data",
+            "WebParsing");
+    }
+
+    internal static string FindHousesCsv(string extractDirectory)
+    {
+        var housesCsvPath = Directory
+            .EnumerateFiles(extractDirectory, "*", SearchOption.AllDirectories)
+            .FirstOrDefault(path =>
+                string.Equals(
+                    Path.GetFileName(path),
+                    "houses.csv",
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (housesCsvPath is null)
+        {
+            throw new FileNotFoundException(
+                "houses.csv file not found in the extracted directory.");
+        }
+
+        return housesCsvPath;
     }
 
     /// <summary>
