@@ -7,6 +7,7 @@ using Streetcode.BLL.DTO.Team;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Partners.GetById;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Team;
 
 namespace Streetcode.BLL.MediatR.Team.GetById
 {
@@ -25,12 +26,11 @@ namespace Streetcode.BLL.MediatR.Team.GetById
 
         public async Task<Result<TeamMemberDTO>> Handle(GetByIdTeamQuery request, CancellationToken cancellationToken)
         {
+            var specification = new GetByIdTeamSpecification(request.Id);
             var team = await _repositoryWrapper
                 .TeamRepository
-                .GetSingleOrDefaultAsync(
-                    predicate: p => p.Id == request.Id,
-                    include: x => x.Include(x => x.TeamMemberLinks)
-                    .Include(x => x.Positions));
+                .GetBySpecAsync(
+                specification, cancellationToken);
 
             if (team is null)
             {
