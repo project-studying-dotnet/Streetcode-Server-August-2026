@@ -182,4 +182,37 @@ public class GetNewsAndLinksByUrlHandlerTests
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenNewsNotInGetAllAsyncList()
+    {
+        var url = "url1";
+        var news = new DAL.Entities.News.News { Id = 99, URL = url };
+        var newsDto = new NewsDTO { Id = 99, URL = url };
+        var query = new GetNewsAndLinksByUrlQuery(url);
+        var expectedError = "No news found by entered Id - 99";
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+            .ReturnsAsync(news);
+
+        _mapperMock.Setup(m => m.Map<NewsDTO>(It.IsAny<DAL.Entities.News.News>())).Returns(newsDto);
+
+        var differentNews = new DAL.Entities.News.News { Id = 1, URL = "other-url" };
+        var listWithoutOurNews = new List<DAL.Entities.News.News> { differentNews };
+
+        _repositoryMock.Setup(r => r.NewsRepository.GetAllAsync(
+            It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
+            It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
+            .ReturnsAsync(listWithoutOurNews);
+
+        var handler = new GetNewsAndLinksByUrlHandler(_mapperMock.Object, _repositoryMock.Object, _blobServiceMock.Object, _loggerMock.Object);
+
+        var result = await handler.Handle(query, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedError, result.Errors.First().Message);
+        _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+    }
 }
