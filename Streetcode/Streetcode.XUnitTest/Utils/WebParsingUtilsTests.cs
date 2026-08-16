@@ -1,7 +1,7 @@
 using Streetcode.WebApi.Utils;
 using Xunit;
 
-namespace Streetcode.XUnitTest.UtilsTests;
+namespace Streetcode.XUnitTest.Utils;
 
 public class WebParsingUtilsTests
 {
