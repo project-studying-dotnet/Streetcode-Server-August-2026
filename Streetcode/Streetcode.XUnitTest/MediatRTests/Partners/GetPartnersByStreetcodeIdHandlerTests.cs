@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Partners;
@@ -7,6 +6,8 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Partners.GetByStreetcodeId;
 using Streetcode.DAL.Entities.Partners;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Partners.GetByStreetcodeId;
@@ -27,7 +28,8 @@ public class GetPartnersByStreetcodeIdHandlerTests
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync(streetcode);
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(It.IsAny<Expression<Func<Partner, bool>>>(), It.IsAny<Func<IQueryable<Partner>, IIncludableQueryable<Partner, object>>>()))
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetPartnersByStreetcodeIdSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(partners);
         _mapperMock.Setup(m => m.Map<IEnumerable<PartnerDTO>>(partners)).Returns(partnersDto);
 
@@ -46,7 +48,8 @@ public class GetPartnersByStreetcodeIdHandlerTests
         var query = new GetPartnersByStreetcodeIdQuery(streetcodeId);
         var expectedError = $"Cannot find any partners with corresponding streetcode id: {streetcodeId}";
 
-        _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
+        _repositoryMock.Setup(r => r.StreetcodeRepository
+        .GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync((DAL.Entities.Streetcode.StreetcodeContent)null!);
 
         var handler = new GetPartnersByStreetcodeIdHandler(_mapperMock.Object, _repositoryMock.Object, _loggerMock.Object);
@@ -56,7 +59,7 @@ public class GetPartnersByStreetcodeIdHandlerTests
         Assert.True(result.IsFailed);
         Assert.Equal(expectedError, result.Errors.First().Message);
         _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
-        _repositoryMock.Verify(r => r.PartnersRepository.GetAllAsync(It.IsAny<Expression<Func<Partner, bool>>>(), null), Times.Never);
+        _repositoryMock.Verify(r => r.PartnersRepository.ListAsync(It.IsAny<GetPartnersByStreetcodeIdSpecification>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -69,8 +72,9 @@ public class GetPartnersByStreetcodeIdHandlerTests
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync(streetcode);
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(It.IsAny<Expression<Func<Partner, bool>>>(), It.IsAny<Func<IQueryable<Partner>, IIncludableQueryable<Partner, object>>>()))
-            .ReturnsAsync((IEnumerable<Partner>)null!);
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetPartnersByStreetcodeIdSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((List<Partner>)null!);
 
         var handler = new GetPartnersByStreetcodeIdHandler(_mapperMock.Object, _repositoryMock.Object, _loggerMock.Object);
 
@@ -91,7 +95,8 @@ public class GetPartnersByStreetcodeIdHandlerTests
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync(streetcode);
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(It.IsAny<Expression<Func<Partner, bool>>>(), It.IsAny<Func<IQueryable<Partner>, IIncludableQueryable<Partner, object>>>()))
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetPartnersByStreetcodeIdSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(emptyPartners);
         _mapperMock.Setup(m => m.Map<IEnumerable<PartnerDTO>>(emptyPartners)).Returns(emptyPartnersDto);
 
