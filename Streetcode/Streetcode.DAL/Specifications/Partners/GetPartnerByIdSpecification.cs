@@ -10,7 +10,6 @@ namespace Streetcode.DAL.Specifications.Partners
             Query
                 .Where(pl => pl.Id == id)
                 .Include(pl => pl.PartnerSourceLinks);
-
         }
     }
 }
