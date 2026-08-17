@@ -29,8 +29,7 @@ namespace Streetcode.BLL.MediatR.Team.GetById
             var specification = new GetByIdTeamSpecification(request.Id);
             var team = await _repositoryWrapper
                 .TeamRepository
-                .GetBySpecAsync(
-                specification, cancellationToken);
+                .GetBySpecAsync(specification, cancellationToken);
 
             if (team is null)
             {

@@ -8,8 +8,8 @@ namespace Streetcode.DAL.Specifications.Partners
         public GetPartnersByStreetcodeIdSpecification(int streetcodeId)
         {
             Query
-        .Where(p => p.Streetcodes.Any(sc => sc.Id == streetcodeId) || p.IsVisibleEverywhere)
-        .Include(p => p.PartnerSourceLinks);
+                .Where(p => p.Streetcodes.Any(sc => sc.Id == streetcodeId) || p.IsVisibleEverywhere)
+                .Include(p => p.PartnerSourceLinks);
         }
     }
 }

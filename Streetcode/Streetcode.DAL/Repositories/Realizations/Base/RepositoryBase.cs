@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Query;
 using MimeKit;
 using Streetcode.DAL.Persistence;
-using Streetcode.DAL.Repositories.Interfaces.Base;
+using RepoInterfaces = Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.DAL.Repositories.Realizations.Base;
 
-public abstract class RepositoryBase<T> : Interfaces.Base.IRepositoryBase<T>
+public abstract class RepositoryBase<T> : RepoInterfaces.IRepositoryBase<T>
     where T : class
 {
     private readonly StreetcodeDbContext _dbContext;
@@ -141,12 +141,6 @@ public abstract class RepositoryBase<T> : Interfaces.Base.IRepositoryBase<T>
     public async Task<T?> GetBySpecAsync(ISpecification<T> specification, CancellationToken ct = default)
         => await ApplySpecification(specification).FirstOrDefaultAsync(ct);
 
-    public async Task<int> CountAsync(ISpecification<T> specification, CancellationToken ct = default)
-        => await ApplySpecification(specification).CountAsync(ct);
-
-    public async Task<bool> AnyAsync(ISpecification<T> specification, CancellationToken ct = default)
-        => await ApplySpecification(specification).AnyAsync(ct);
-
     private IQueryable<T> GetQueryable(
         Expression<Func<T, bool>>? predicate = default,
         Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = default,
@@ -173,5 +167,5 @@ public abstract class RepositoryBase<T> : Interfaces.Base.IRepositoryBase<T>
     }
 
     private IQueryable<T> ApplySpecification(ISpecification<T> specification)
-        => SpecificationEvaluator.Default.GetQuery(_dbContext.Set<T>().AsQueryable(), specification);
+        => SpecificationEvaluator.Default.GetQuery(_dbContext.Set<T>().AsNoTracking(), specification);
 }
