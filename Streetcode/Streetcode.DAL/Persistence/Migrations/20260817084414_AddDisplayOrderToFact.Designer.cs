@@ -12,8 +12,8 @@ using Streetcode.DAL.Persistence;
 namespace Streetcode.DAL.Persistence.Migrations
 {
     [DbContext(typeof(StreetcodeDbContext))]
-    [Migration("20260817065124_AddIndexToFact")]
-    partial class AddIndexToFact
+    [Migration("20260817084414_AddDisplayOrderToFact")]
+    partial class AddDisplayOrderToFact
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -622,15 +622,15 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("FactContent")
                         .IsRequired()
                         .HasMaxLength(600)
                         .HasColumnType("nvarchar(600)");
 
                     b.Property<int?>("ImageId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Index")
                         .HasColumnType("int");
 
                     b.Property<int>("StreetcodeId")
