@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Streetcode.DAL.Entities.Streetcode;
+using Streetcode.DAL.Enums;
 
 namespace Streetcode.DAL.Entities.Media.Images
 {
@@ -14,5 +15,7 @@ namespace Streetcode.DAL.Entities.Media.Images
         public Image? Image { get; set; }
 
         public StreetcodeContent? Streetcode { get; set; }
+
+        public ImageAssigment? ImageAssigment { get; set; }
     }
 }
