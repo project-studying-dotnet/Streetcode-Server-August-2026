@@ -619,15 +619,15 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("FactContent")
                         .IsRequired()
                         .HasMaxLength(600)
                         .HasColumnType("nvarchar(600)");
 
                     b.Property<int?>("ImageId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Index")
                         .HasColumnType("int");
 
                     b.Property<int>("StreetcodeId")
