@@ -11,13 +11,15 @@ public class Fact
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
+    public int Index { get; set; }
+
     [Required]
-    [MaxLength(100)]
-    public string? Title { get; set; }
+    [MaxLength(68)]
+    public string Title { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(600)]
-    public string? FactContent { get; set; }
+    public string FactContent { get; set; } = string.Empty;
 
     public int? ImageId { get; set; }
 
