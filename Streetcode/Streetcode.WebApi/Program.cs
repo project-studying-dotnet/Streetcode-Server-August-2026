@@ -23,6 +23,8 @@ public class Program
         builder.Services.ConfigureSerilog(builder);
         var app = builder.Build();
 
+        app.UseExceptionHandler();
+
         if (app.Environment.EnvironmentName == "Local")
         {
             app.UseSwagger();
