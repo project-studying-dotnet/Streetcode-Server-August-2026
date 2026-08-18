@@ -29,7 +29,7 @@ public class GetAllFactsHandler : IRequestHandler<GetAllFactsQuery, Result<IEnum
 
         var orderedFacts = facts
             .OrderBy(f => f.StreetcodeId)
-            .ThenBy(f => f.Index);
+            .ThenBy(f => f.DisplayOrder);
 
         return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(orderedFacts));
     }

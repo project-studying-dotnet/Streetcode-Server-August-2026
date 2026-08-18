@@ -33,12 +33,12 @@ public class DeleteFactHandler : IRequestHandler<DeleteFactCommand, Result<Unit>
             .GetAllAsync(
                 predicate: f =>
                     f.StreetcodeId == fact.StreetcodeId &&
-                    f.Index > fact.Index))
+                    f.DisplayOrder > fact.DisplayOrder))
             .ToList();
 
         foreach (var followingFact in followingFacts)
         {
-            followingFact.Index -= 1;
+            followingFact.DisplayOrder -= 1;
         }
 
         _repositoryWrapper.FactRepository.UpdateRange(followingFacts);

@@ -27,7 +27,7 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
                     .Include(f => f.Image)
                     .ThenInclude(image => image.ImageDetails)!);
 
-        var orderedFacts = facts.OrderBy(f => f.Index);
+        var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
 
         return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(orderedFacts));
     }

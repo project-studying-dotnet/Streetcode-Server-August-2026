@@ -3,7 +3,7 @@ namespace Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
 public class FactDto
 {
     public int Id { get; set; }
-    public int Index { get; set; }
+    public int DisplayOrder { get; set; }
     public int StreetcodeId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? ImageDescription { get; set; }

@@ -53,12 +53,12 @@ public class CreateFactHandler : IRequestHandler<CreateFactCommand, Result<FactD
         var existingFacts = await _repositoryWrapper.FactRepository.GetAllAsync(
             predicate: f => f.StreetcodeId == request.Fact.StreetcodeId);
 
-        int nextIndex = existingFacts.Any()
-            ? existingFacts.Max(f => f.Index) + 1
-            : 0;
+        int nextDisplayOrder = existingFacts.Any()
+            ? existingFacts.Max(f => f.DisplayOrder) + 1
+            : 1;
 
         var fact = _mapper.Map<FactEntity>(request.Fact);
-        fact.Index = nextIndex;
+        fact.DisplayOrder = nextDisplayOrder;
         fact.Title = request.Fact.Title.Trim();
         fact.FactContent = request.Fact.FactContent.Trim();
 
