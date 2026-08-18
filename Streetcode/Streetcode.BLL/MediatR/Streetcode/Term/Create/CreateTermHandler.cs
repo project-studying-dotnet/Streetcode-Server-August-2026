@@ -1,6 +1,7 @@
 using AutoMapper;
 using FluentResults;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.TextContent;
 using Streetcode.BLL.Interfaces.Logging;
@@ -50,10 +51,18 @@ public class CreateTermHandler : IRequestHandler<CreateTermCommand, Result<TermD
                 return Result.Fail<TermDTO>(errorMessage);
             }
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex)
+            when (ex.InnerException is SqlException { Number: 2601 or 2627 })
         {
             string errorMessage = $"A term with the title '{trimmedTitle}' already exists.";
             _logger.LogError(request, errorMessage);
+            return Result.Fail<TermDTO>(errorMessage);
+        }
+        catch (DbUpdateException ex)
+        {
+            const string errorMessage =
+                "Cannot save changes in the database after creation";
+            _logger.LogError(request, ex.ToString());
             return Result.Fail<TermDTO>(errorMessage);
         }
 
