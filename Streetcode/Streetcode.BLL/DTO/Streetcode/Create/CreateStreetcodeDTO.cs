@@ -16,5 +16,9 @@ namespace Streetcode.BLL.DTO.Streetcode.Create
         public string Teaser { get; set; }
         public string TransliterationUrl { get; set; }
         public IEnumerable<StreetcodeTagDTO> Tags { get; set; }
+        public int? AnimationImageId { get; set; }
+        public int? BlackAndWhiteImageId { get; set; }
+        public int? RelatedFigureImageId { get; set; }
+        public int? AudioId { get; set; }
     }
 }
