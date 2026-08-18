@@ -3,10 +3,11 @@ using FluentResults;
 using MediatR;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.DAL.Entities.Media.Images;
 using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.DAL.Entities.Streetcode.Types;
-using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Enums;
+using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
 {
@@ -38,7 +39,42 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var existingTags = await _repositoryWrapper.TagRepository.GetAllAsync(t => tagIds.Contains(t.Id));
                 entity.Tags.AddRange(existingTags);
 
+                var animationImage = dto.AnimationImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.AnimationImageId.Value)
+                    : null;
+                if (animationImage is not null && animationImage.MimeType != "image/gif")
+                {
+                    const string errorMsg = "Animation image must be a GIF file.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
+                var blackAndWhiteImage = dto.BlackAndWhiteImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.BlackAndWhiteImageId.Value)
+                    : null;
+
+                var relatedImage = dto.RelatedFigureImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.RelatedFigureImageId.Value)
+                    : null;
+
+                var imagesToAdd = new List<StreetcodeImage>();
+                if (animationImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = entity, ImageAssigment = ImageAssigment.Animation });
+                }
+
+                if (blackAndWhiteImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = entity, ImageAssigment = ImageAssigment.Blackandwhite });
+                }
+
+                if (relatedImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = entity, ImageAssigment = ImageAssigment.Relatedfigure });
+                }
+
                 await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);
+                await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);
                 var success = await _repositoryWrapper.SaveChangesAsync() > 0;
 
                 if (!success)

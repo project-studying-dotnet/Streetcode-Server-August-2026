@@ -15,6 +15,7 @@ public class PersonStreetcodeProfile : Profile
             .IncludeBase<StreetcodeContent, StreetcodeDTO>().ReverseMap();
 
         CreateMap<CreateStreetcodeDTO, PersonStreetcode>()
-            .ForMember(dest => dest.Tags, opt => opt.Ignore());
+            .ForMember(dest => dest.Tags, opt => opt.Ignore())
+            .ForMember(dest => dest.Images, opt => opt.Ignore());
     }
 }

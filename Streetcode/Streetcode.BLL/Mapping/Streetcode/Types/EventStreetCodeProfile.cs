@@ -15,6 +15,7 @@ public class EventStreetcodeProfile : Profile
             .IncludeBase<StreetcodeContent, StreetcodeDTO>().ReverseMap();
 
         CreateMap<CreateStreetcodeDTO, EventStreetcode>()
-            .ForMember(dest => dest.Tags, opt => opt.Ignore());
+            .ForMember(dest => dest.Tags, opt => opt.Ignore())
+            .ForMember(dest => dest.Images, opt => opt.Ignore());
     }
 }
