@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Streetcode.DAL.Entities.AdditionalContent;
+using Streetcode.DAL.Entities.AdditionalContent.Coordinates;
 using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
 using Streetcode.DAL.Entities.Analytics;
 using Streetcode.DAL.Entities.Feedback;
@@ -10,11 +12,13 @@ using Streetcode.DAL.Entities.Partners;
 using Streetcode.DAL.Entities.Sources;
 using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.DAL.Entities.Streetcode.TextContent;
+using Streetcode.DAL.Entities.Streetcode.Types;
 using Streetcode.DAL.Entities.Team;
 using Streetcode.DAL.Entities.Timeline;
 using Streetcode.DAL.Entities.Toponyms;
 using Streetcode.DAL.Entities.Transactions;
 using Streetcode.DAL.Entities.Users;
+using Streetcode.DAL.Enums;
 
 namespace Streetcode.DAL.Persistence;
 
@@ -71,6 +75,7 @@ public class StreetcodeDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.UseCollation("SQL_Ukrainian_CP1251_CI_AS");
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(StreetcodeDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(StreetcodeDbContext).Assembly);
     }
 }

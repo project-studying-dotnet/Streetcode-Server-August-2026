@@ -35,7 +35,7 @@ public class StreetcodeDbContextModelTests
         Assert.Equal(DeleteBehavior.Restrict, observerForeignKey.DeleteBehavior);
         Assert.Equal(DeleteBehavior.Cascade, targetForeignKey.DeleteBehavior);
     }
-    
+
     [Fact]
     public void Model_WhenBuilt_ShouldConfigurePartnerDefaultValueAsBooleanFalse()
     {
