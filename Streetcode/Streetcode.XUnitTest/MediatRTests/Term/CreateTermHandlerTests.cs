@@ -231,6 +231,7 @@ public class CreateTermHandlerTests
             Title = "Test term",
             Description = "Test description",
         };
+        var dbUpdateException = new DbUpdateException("Database failure");
         _termRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<TermEntity, bool>>>(),
@@ -249,9 +250,10 @@ public class CreateTermHandlerTests
 
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
-            .ThrowsAsync(new DbUpdateException());
+            .ThrowsAsync(dbUpdateException);
 
-        const string expectedError = "A term with the title 'Test term' already exists.";
+        const string expectedError =
+            "Cannot save changes in the database after creation";
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -267,7 +269,7 @@ public class CreateTermHandlerTests
             Times.Once());
 
         _loggerMock.Verify(
-            logger => logger.LogError(command, expectedError),
+            logger => logger.LogError(command, dbUpdateException.ToString()),
             Times.Once());
 
         _mapperMock.Verify(
