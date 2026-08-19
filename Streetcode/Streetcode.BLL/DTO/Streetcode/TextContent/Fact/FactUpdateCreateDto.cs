@@ -1,11 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
 
 public class FactUpdateCreateDto
 {
     [MaxLength(200)]
-    public string? ImageDescription { get; set; }
+    public string? ImageAlt { get; set; }
 
     [Required]
     [MaxLength(68)]

@@ -153,7 +153,7 @@ public class UpdateFactHandlerTests
     [Fact]
     public async Task Handle_WhenDescriptionProvidedAndDetailsDoNotExist_ShouldCreateImageDetails()
     {
-        var factDto = CreateFactDto(imageDescription: "  New description  ");
+        var factDto = CreateFactDto(imageAlt: "  New description  ");
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -174,7 +174,7 @@ public class UpdateFactHandlerTests
         Assert.NotNull(createdImageDetails);
         Assert.Same(createdImageDetails, image.ImageDetails);
         Assert.Equal("New description", createdImageDetails.Alt);
-        Assert.Equal("New description", result.Value.ImageDescription);
+        Assert.Equal("New description", result.Value.ImageAlt);
 
         _imageDetailsRepositoryMock.Verify(
             repository => repository.CreateAsync(createdImageDetails),
@@ -185,9 +185,9 @@ public class UpdateFactHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDescriptionIsWhitespaceAndDetailsExist_ShouldClearDescription()
+    public async Task Handle_WhenImageAltIsWhitespaceAndDetailsExist_ShouldClearAlt()
     {
-        var factDto = CreateFactDto(imageDescription: "   ");
+        var factDto = CreateFactDto(imageAlt: "   ");
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Old description" };
@@ -201,13 +201,39 @@ public class UpdateFactHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Null(imageDetails.Alt);
-        Assert.Null(result.Value.ImageDescription);
+        Assert.Null(result.Value.ImageAlt);
 
         _imageDetailsRepositoryMock.Verify(repository => repository.Update(imageDetails), Times.Once());
         _imageDetailsRepositoryMock.Verify(
             repository => repository.CreateAsync(It.IsAny<ImageDetailsEntity>()),
             Times.Never());
         _loggerServiceMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_WhenImageAltIsNull_ShouldNotTouchImageDetails()
+    {
+        var factDto = CreateFactDto(imageAlt: null);
+        var command = new UpdateFactCommand(15, factDto);
+        var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
+        var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Existing alt" };
+        var image = new ImageEntity { Id = factDto.ImageId, ImageDetails = imageDetails };
+        var resultDto = new FactDto { Id = command.Id };
+
+        SetupValidDependencies(factDto, fact, image);
+        SetupSuccessfulSave(fact, resultDto);
+
+        var result = await CreateHandler().Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Existing alt", imageDetails.Alt);
+
+        _imageDetailsRepositoryMock.Verify(
+            repository => repository.Update(It.IsAny<ImageDetailsEntity>()),
+            Times.Never());
+        _imageDetailsRepositoryMock.Verify(
+            repository => repository.CreateAsync(It.IsAny<ImageDetailsEntity>()),
+            Times.Never());
     }
 
     private UpdateFactHandler CreateHandler() =>
@@ -249,13 +275,13 @@ public class UpdateFactHandlerTests
     private static FactUpdateCreateDto CreateFactDto(
         string title = "Updated fact",
         string factContent = "Updated content",
-        string? imageDescription = null,
+        string? imageAlt = null,
         int streetcodeId = 10) =>
         new()
         {
             Title = title,
             FactContent = factContent,
-            ImageDescription = imageDescription,
+            ImageAlt = imageAlt,
             ImageId = 5,
             StreetcodeId = streetcodeId,
         };

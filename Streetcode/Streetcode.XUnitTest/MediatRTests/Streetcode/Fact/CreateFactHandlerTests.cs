@@ -202,7 +202,7 @@ public class CreateFactHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Same(createdFactDto, result.Value);
         Assert.Equal(4, fact.DisplayOrder);
-        Assert.Null(result.Value.ImageDescription);
+        Assert.Null(result.Value.ImageAlt);
 
         _factRepositoryMock.Verify(repository => repository.CreateAsync(fact), Times.Once());
         _repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
@@ -211,9 +211,9 @@ public class CreateFactHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenImageDescriptionProvidedAndDetailsDoNotExist_ShouldCreateImageDetails()
+    public async Task Handle_WhenImageAltProvidedAndDetailsDoNotExist_ShouldCreateImageDetails()
     {
-        var factDto = CreateFactDto(imageDescription: "  Accessible description  ");
+        var factDto = CreateFactDto(imageAlt: "  Accessible description  ");
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -240,7 +240,7 @@ public class CreateFactHandlerTests
         Assert.Same(createdImageDetails, image.ImageDetails);
         Assert.Equal(image.Id, createdImageDetails.ImageId);
         Assert.Equal("Accessible description", createdImageDetails.Alt);
-        Assert.Equal("Accessible description", result.Value.ImageDescription);
+        Assert.Equal("Accessible description", result.Value.ImageAlt);
 
         _imageDetailsRepositoryMock.Verify(
             repository => repository.CreateAsync(createdImageDetails),
@@ -253,7 +253,7 @@ public class CreateFactHandlerTests
     [Fact]
     public async Task Handle_WhenImageDetailsExist_ShouldUpdateDescription()
     {
-        var factDto = CreateFactDto(imageDescription: "  Updated description  ");
+        var factDto = CreateFactDto(imageAlt: "  Updated description  ");
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Old description" };
@@ -273,7 +273,7 @@ public class CreateFactHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Updated description", imageDetails.Alt);
-        Assert.Equal("Updated description", result.Value.ImageDescription);
+        Assert.Equal("Updated description", result.Value.ImageAlt);
 
         _imageDetailsRepositoryMock.Verify(repository => repository.Update(imageDetails), Times.Once());
         _imageDetailsRepositoryMock.Verify(
@@ -320,12 +320,12 @@ public class CreateFactHandlerTests
     private static FactUpdateCreateDto CreateFactDto(
         string title = "Test fact",
         string factContent = "Test content",
-        string? imageDescription = null) =>
+        string? imageAlt = null) =>
         new()
         {
             Title = title,
             FactContent = factContent,
-            ImageDescription = imageDescription,
+            ImageAlt = imageAlt,
             ImageId = 5,
             StreetcodeId = 10,
         };

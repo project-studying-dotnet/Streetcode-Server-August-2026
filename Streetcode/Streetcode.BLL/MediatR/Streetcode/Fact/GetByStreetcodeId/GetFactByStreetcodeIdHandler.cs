@@ -1,8 +1,9 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentResults;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
+using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Fact.GetByStreetcodeId;
@@ -11,11 +12,13 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
 {
     private readonly IMapper _mapper;
     private readonly IRepositoryWrapper _repositoryWrapper;
+    private readonly ILoggerService _loggerService;
 
-    public GetFactByStreetcodeIdHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper)
+    public GetFactByStreetcodeIdHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper, ILoggerService loggerService)
     {
         _repositoryWrapper = repositoryWrapper;
         _mapper = mapper;
+        _loggerService = loggerService;
     }
 
     public async Task<Result<IEnumerable<FactDto>>> Handle(GetFactByStreetcodeIdQuery request, CancellationToken cancellationToken)
@@ -26,6 +29,13 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
                 include: query => query
                     .Include(f => f.Image)
                     .ThenInclude(image => image.ImageDetails)!);
+
+        if (!facts.Any())
+        {
+            var errorMsg = $"Cannot find any fact by the streetcode id: {request.StreetcodeId}";
+            _loggerService.LogError(request, errorMsg);
+            return Result.Fail<IEnumerable<FactDto>>(new Error(errorMsg));
+        }
 
         var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
 

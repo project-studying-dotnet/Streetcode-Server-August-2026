@@ -19,7 +19,7 @@ public class FactUpdateCreateDtoValidationTests
     [Theory]
     [InlineData(nameof(FactUpdateCreateDto.Title), 69)]
     [InlineData(nameof(FactUpdateCreateDto.FactContent), 601)]
-    [InlineData(nameof(FactUpdateCreateDto.ImageDescription), 201)]
+    [InlineData(nameof(FactUpdateCreateDto.ImageAlt), 201)]
     public void Validate_WhenTextExceedsLimit_ShouldReturnValidationError(
         string propertyName,
         int valueLength)
@@ -74,7 +74,7 @@ public class FactUpdateCreateDtoValidationTests
         {
             Title = new string('a', 68),
             FactContent = new string('a', 600),
-            ImageDescription = new string('a', 200),
+            ImageAlt = new string('a', 200),
             ImageId = 1,
             StreetcodeId = 1,
         };

@@ -3,6 +3,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
+using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Streetcode.Fact.GetByStreetcodeId;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
@@ -16,12 +17,40 @@ public class GetFactByStreetcodeIdHandlerTests
     private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock = new();
     private readonly Mock<IFactRepository> _factRepositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
+    private readonly Mock<ILoggerService> _loggerServiceMock = new();
 
     public GetFactByStreetcodeIdHandlerTests()
     {
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.FactRepository)
             .Returns(_factRepositoryMock.Object);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoFactsExist_ShouldReturnFailure()
+    {
+        var query = new GetFactByStreetcodeIdQuery(10);
+        const string expectedMessage = "Cannot find any fact by the streetcode id: 10";
+
+        _factRepositoryMock
+            .Setup(repository => repository.GetAllAsync(
+                It.IsAny<Expression<Func<FactEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>()))
+            .ReturnsAsync(Array.Empty<FactEntity>());
+
+        var handler = new GetFactByStreetcodeIdHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerServiceMock.Object);
+        var result = await handler.Handle(query, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedMessage, result.Errors.Single().Message);
+
+        _loggerServiceMock.Verify(
+            logger => logger.LogError(query, expectedMessage),
+            Times.Once());
+        _mapperMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -45,7 +74,10 @@ public class GetFactByStreetcodeIdHandlerTests
                 .Select(fact => new FactDto { Id = fact.Id })
                 .ToList());
 
-        var handler = new GetFactByStreetcodeIdHandler(_repositoryWrapperMock.Object, _mapperMock.Object);
+        var handler = new GetFactByStreetcodeIdHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerServiceMock.Object);
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);

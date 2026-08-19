@@ -62,26 +62,26 @@ public class CreateFactHandler : IRequestHandler<CreateFactCommand, Result<FactD
         fact.Title = request.Fact.Title.Trim();
         fact.FactContent = request.Fact.FactContent.Trim();
 
-        string? imageDescription =
-            string.IsNullOrWhiteSpace(request.Fact.ImageDescription)
+        string? imageAlt =
+            string.IsNullOrWhiteSpace(request.Fact.ImageAlt)
                 ? null
-                : request.Fact.ImageDescription.Trim();
+                : request.Fact.ImageAlt.Trim();
 
-        if (imageDescription is not null)
+        if (imageAlt is not null)
         {
             if (image.ImageDetails is null)
             {
                 var imageDetailsEntity = new ImageDetailsEntity
                 {
                     ImageId = image.Id,
-                    Alt = imageDescription,
+                    Alt = imageAlt,
                 };
                 image.ImageDetails = imageDetailsEntity;
                 await _repositoryWrapper.ImageDetailsRepository.CreateAsync(imageDetailsEntity);
             }
             else
             {
-                image.ImageDetails.Alt = imageDescription;
+                image.ImageDetails.Alt = imageAlt;
                 _repositoryWrapper.ImageDetailsRepository.Update(image.ImageDetails);
             }
         }
@@ -97,7 +97,7 @@ public class CreateFactHandler : IRequestHandler<CreateFactCommand, Result<FactD
         }
 
         var createdFactDto = _mapper.Map<FactDto>(fact);
-        createdFactDto.ImageDescription = image.ImageDetails?.Alt;
+        createdFactDto.ImageAlt = image.ImageDetails?.Alt;
 
         return Result.Ok(createdFactDto);
     }

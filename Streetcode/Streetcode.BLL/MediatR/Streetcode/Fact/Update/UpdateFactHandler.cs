@@ -62,33 +62,30 @@ public class UpdateFactHandler : IRequestHandler<UpdateFactCommand, Result<FactD
         fact.Title = request.Fact.Title.Trim();
         fact.FactContent = request.Fact.FactContent.Trim();
 
-        var imageDescription = request.Fact.ImageDescription;
-        if (string.IsNullOrWhiteSpace(imageDescription))
-        {
-            imageDescription = null;
-        }
-        else
-        {
-            imageDescription = imageDescription.Trim();
-        }
+        var imageAlt = request.Fact.ImageAlt;
 
-        if (image.ImageDetails is null)
+        if (imageAlt is not null)
         {
-            if (imageDescription is not null)
+            var trimmedAlt = string.IsNullOrWhiteSpace(imageAlt) ? null : imageAlt.Trim();
+
+            if (image.ImageDetails is null)
             {
-                var imageDetailsEntity = new ImageDetailsEntity
+                if (trimmedAlt is not null)
                 {
-                    ImageId = image.Id,
-                    Alt = imageDescription,
-                };
-                image.ImageDetails = imageDetailsEntity;
-                await _repositoryWrapper.ImageDetailsRepository.CreateAsync(imageDetailsEntity);
+                    var imageDetailsEntity = new ImageDetailsEntity
+                    {
+                        ImageId = image.Id,
+                        Alt = trimmedAlt,
+                    };
+                    image.ImageDetails = imageDetailsEntity;
+                    await _repositoryWrapper.ImageDetailsRepository.CreateAsync(imageDetailsEntity);
+                }
             }
-        }
-        else
-        {
-            image.ImageDetails.Alt = imageDescription;
-            _repositoryWrapper.ImageDetailsRepository.Update(image.ImageDetails);
+            else
+            {
+                image.ImageDetails.Alt = trimmedAlt;
+                _repositoryWrapper.ImageDetailsRepository.Update(image.ImageDetails);
+            }
         }
 
         _repositoryWrapper.FactRepository.Update(fact);
@@ -103,7 +100,7 @@ public class UpdateFactHandler : IRequestHandler<UpdateFactCommand, Result<FactD
         }
 
         var factDto = _mapper.Map<FactDto>(fact);
-        factDto.ImageDescription = image.ImageDetails?.Alt;
+        factDto.ImageAlt = image.ImageDetails?.Alt;
 
         return Result.Ok(factDto);
     }

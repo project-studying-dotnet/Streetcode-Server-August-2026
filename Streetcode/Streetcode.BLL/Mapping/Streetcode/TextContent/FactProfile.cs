@@ -10,7 +10,7 @@ public class FactProfile : Profile
     {
         CreateMap<Fact, FactDto>()
             .ForMember(
-                dest => dest.ImageDescription,
+                dest => dest.ImageAlt,
                 opt => opt.MapFrom(source =>
                     source.Image != null && source.Image.ImageDetails != null
                         ? source.Image.ImageDetails.Alt

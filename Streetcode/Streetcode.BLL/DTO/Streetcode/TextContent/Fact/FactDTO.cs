@@ -6,7 +6,7 @@ public class FactDto
     public int DisplayOrder { get; set; }
     public int StreetcodeId { get; set; }
     public string Title { get; set; } = string.Empty;
-    public string? ImageDescription { get; set; }
+    public string? ImageAlt { get; set; }
     public int ImageId { get; set; }
     public string FactContent { get; set; } = string.Empty;
 }
