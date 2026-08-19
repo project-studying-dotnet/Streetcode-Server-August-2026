@@ -49,13 +49,26 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                     return Result.Fail(errorMsg);
                 }
 
+                if (animationImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(animationImage);
+                }
+
                 var blackAndWhiteImage = dto.BlackAndWhiteImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.BlackAndWhiteImageId.Value)
                     : null;
+                if (blackAndWhiteImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(blackAndWhiteImage);
+                }
 
                 var relatedImage = dto.RelatedFigureImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.RelatedFigureImageId.Value)
                     : null;
+                if (relatedImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(relatedImage);
+                }
 
                 var imagesToAdd = new List<StreetcodeImage>();
                 if (animationImage is not null)
@@ -88,8 +101,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
             }
             catch (Exception ex)
             {
-                _logger.LogError(request, ex.Message);
-                return Result.Fail(ex.Message);
+                var detailedMessage = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(request, detailedMessage);
+                return Result.Fail(detailedMessage);
             }
         }
     }
