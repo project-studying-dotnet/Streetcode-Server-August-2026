@@ -32,6 +32,8 @@ public class GetAllFactsHandler : IRequestHandler<GetAllFactsQuery, Result<IEnum
             return Result.Fail(new Error(errorMsg));
         }
 
-        return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(facts));
+        var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
+
+        return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(orderedFacts));
     }
 }
