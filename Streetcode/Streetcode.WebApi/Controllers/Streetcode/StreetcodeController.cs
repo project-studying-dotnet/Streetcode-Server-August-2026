@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using Streetcode.BLL.DTO.AdditionalContent.Filter;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.DTO.Streetcode.Create;
+using Streetcode.BLL.DTO.Streetcode.Update;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Create;
+using Streetcode.BLL.MediatR.Streetcode.Streetcode.Update;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.DeleteSoft;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAll;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAllCatalog;
@@ -82,5 +84,11 @@ public class StreetcodeController : BaseApiController
     public async Task<IActionResult> DeleteSoft([FromRoute] int id)
     {
         return HandleResult(await Mediator.Send(new DeleteSoftStreetcodeCommand(id)));
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStreetcodeDTO streetcode)
+    {
+        return HandleResult(await Mediator.Send(new UpdateStreetcodeCommand(id, streetcode)));
     }
 }
