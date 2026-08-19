@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Media.Video.GetById;
 
 namespace Streetcode.BLL.MediatR.Media.Video.Validators;
@@ -9,7 +10,6 @@ public sealed class GetVideoByIdQueryValidator
     public GetVideoByIdQueryValidator()
     {
         RuleFor(query => query.Id)
-            .GreaterThan(0)
-            .WithMessage("Video ID must be greater than 0.");
+            .MustBeValidId("Video");
     }
 }

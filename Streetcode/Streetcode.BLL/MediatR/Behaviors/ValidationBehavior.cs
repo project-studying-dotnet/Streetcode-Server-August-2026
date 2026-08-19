@@ -26,16 +26,15 @@ public sealed class ValidationBehavior<TRequest, TResponse>
         }
 
         var validationContext = new ValidationContext<TRequest>(request);
-        var failures = new List<ValidationFailure>();
+        ValidationResult[] validationResults = await Task.WhenAll(
+            _validators.Select(validator =>
+                validator.ValidateAsync(
+                    validationContext,
+                    cancellationToken)));
 
-        foreach (var validator in _validators)
-        {
-            var validationResult = await validator.ValidateAsync(
-                validationContext,
-                cancellationToken);
-
-            failures.AddRange(validationResult.Errors);
-        }
+        List<ValidationFailure> failures = validationResults
+            .SelectMany(result => result.Errors)
+            .ToList();
 
         if (failures.Count > 0)
         {

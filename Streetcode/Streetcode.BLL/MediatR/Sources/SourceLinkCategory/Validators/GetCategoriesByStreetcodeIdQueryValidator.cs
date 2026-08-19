@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Sources.SourceLink.GetCategoriesByStreetcodeId;
 
 namespace Streetcode.BLL.MediatR.Sources.SourceLinkCategory.Validators;
@@ -9,7 +10,6 @@ public sealed class GetCategoriesByStreetcodeIdQueryValidator
     public GetCategoriesByStreetcodeIdQueryValidator()
     {
         RuleFor(query => query.StreetcodeId)
-            .GreaterThan(0)
-            .WithMessage("Streetcode ID must be greater than 0.");
+            .MustBeValidId("Streetcode");
     }
 }

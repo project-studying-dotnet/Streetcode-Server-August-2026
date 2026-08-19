@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Transactions.TransactionLink.GetById;
 
 namespace Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
@@ -9,7 +10,6 @@ public sealed class GetTransactLinkByIdQueryValidator
     public GetTransactLinkByIdQueryValidator()
     {
         RuleFor(query => query.Id)
-            .GreaterThan(0)
-            .WithMessage("Transaction link ID must be greater than 0.");
+            .MustBeValidId("Transaction link");
     }
 }

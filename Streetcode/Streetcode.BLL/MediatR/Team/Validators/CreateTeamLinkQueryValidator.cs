@@ -12,7 +12,7 @@ public sealed class CreateTeamLinkQueryValidator
     {
         RuleFor(query => query.teamMember)
             .NotNull()
-            .WithMessage("Team member link cannot be null.")
+            .WithMessage("Team member link is required.")
             .SetValidator(linkValidator);
     }
 }

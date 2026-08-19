@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Media.Image.GetBaseImage;
 
 namespace Streetcode.BLL.MediatR.Media.Image.Validators;
@@ -9,7 +10,6 @@ public sealed class GetBaseImageQueryValidator
     public GetBaseImageQueryValidator()
     {
         RuleFor(query => query.Id)
-            .GreaterThan(0)
-            .WithMessage("Image ID must be greater than 0.");
+            .MustBeValidId("Image");
     }
 }

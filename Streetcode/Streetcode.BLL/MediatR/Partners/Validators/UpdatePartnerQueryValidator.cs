@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.MediatR.Partners.Update;
 
@@ -12,12 +13,11 @@ public sealed class UpdatePartnerQueryValidator
     {
         RuleFor(query => query.Partner)
             .NotNull()
-            .WithMessage("Partner cannot be null.")
+            .WithMessage("Partner is required.")
             .SetValidator(partnerValidator);
 
         RuleFor(query => query.Partner.Id)
-            .GreaterThan(0)
-            .WithMessage("Partner ID must be greater than 0.")
+            .MustBeValidId("Partner")
             .When(query => query.Partner is not null);
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Streetcode.Term.GetById;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Term.Validators;
@@ -9,7 +10,6 @@ public sealed class GetTermByIdQueryValidator
     public GetTermByIdQueryValidator()
     {
         RuleFor(query => query.Id)
-            .GreaterThan(0)
-            .WithMessage("Term ID must be greater than 0.");
+            .MustBeValidId("Term");
     }
 }

@@ -23,8 +23,6 @@ public class Program
         builder.Services.ConfigureSerilog(builder);
         var app = builder.Build();
 
-        app.UseExceptionHandler();
-
         if (app.Environment.EnvironmentName == "Local")
         {
             app.UseSwagger();
@@ -38,9 +36,11 @@ public class Program
         await app.ApplyMigrations();
 
         // await app.SeedDataAsync(); // uncomment for seeding data in local
-        app.UseCors();
         app.UseHttpsRedirection();
         app.UseRouting();
+
+        app.UseCors();
+        app.UseExceptionHandler();
 
         app.UseAuthentication();
         app.UseAuthorization();

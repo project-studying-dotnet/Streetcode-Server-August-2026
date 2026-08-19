@@ -14,6 +14,9 @@ public sealed class GetAllStreetcodesCatalogQueryValidator
 
         RuleFor(query => query.count)
             .GreaterThan(0)
-            .WithMessage("Count must be greater than 0.");
+            .WithMessage("Count must be greater than 0.")
+            .LessThanOrEqualTo(StreetcodePaginationLimits.MaxPageSize)
+            .WithMessage(
+                $"Count must not exceed {StreetcodePaginationLimits.MaxPageSize}.");
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Streetcode.RelatedFigure.GetByStreetcodeId;
 
 namespace Streetcode.BLL.MediatR.Streetcode.RelatedFigure.Validators;
@@ -9,7 +10,6 @@ public sealed class GetRelatedFigureByStreetcodeIdQueryValidator
     public GetRelatedFigureByStreetcodeIdQueryValidator()
     {
         RuleFor(query => query.StreetcodeId)
-            .GreaterThan(0)
-            .WithMessage("Streetcode id must be greater than zero.");
+            .MustBeValidId("Streetcode");
     }
 }

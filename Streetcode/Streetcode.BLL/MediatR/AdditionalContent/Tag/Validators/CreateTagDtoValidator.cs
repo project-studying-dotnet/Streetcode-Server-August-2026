@@ -1,5 +1,7 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.AdditionalContent.Tag;
+using TagEntity = Streetcode.DAL.Entities.AdditionalContent.Tag;
 
 namespace Streetcode.BLL.MediatR.AdditionalContent.Tag.Validators;
 
@@ -11,8 +13,6 @@ public sealed class CreateTagDtoValidator
         RuleFor(tag => tag.Title)
             .NotEmpty()
             .WithMessage("Tag title is required.")
-            .MaximumLength(50)
-            .WithMessage(
-                "Tag title must not exceed 50 characters.");
+            .MustNotExceedLength(TagEntity.TitleMaxLength, "Tag title");
     }
 }

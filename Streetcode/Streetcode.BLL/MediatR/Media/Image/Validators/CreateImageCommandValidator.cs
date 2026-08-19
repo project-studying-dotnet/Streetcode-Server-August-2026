@@ -12,7 +12,7 @@ public sealed class CreateImageCommandValidator
     {
         RuleFor(command => command.Image)
             .NotNull()
-            .WithMessage("Image cannot be null.")
+            .WithMessage("Image is required.")
             .SetValidator(imageValidator);
     }
 }

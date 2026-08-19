@@ -1,5 +1,7 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetParsed;
+using TextEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Text;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Text.Validators;
 
@@ -10,8 +12,9 @@ public sealed class GetParsedTextForAdminPreviewCommandValidator
     {
         RuleFor(command => command.textToParse)
             .NotEmpty()
-            .WithMessage("Text to parse cannot be empty.")
-            .MaximumLength(15000)
-            .WithMessage("Text to parse cannot exceed 15000 characters.");
+            .WithMessage("Text to parse is required.")
+            .MustNotExceedLength(
+                TextEntity.TextContentMaxLength,
+                "Text to parse");
     }
 }

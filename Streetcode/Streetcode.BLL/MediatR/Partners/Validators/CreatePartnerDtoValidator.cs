@@ -1,6 +1,8 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.DTO.Partners.Create;
+using Streetcode.DAL.Entities.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.Validators;
 
@@ -13,30 +15,27 @@ public sealed class CreatePartnerDtoValidator
         RuleFor(partner => partner.Title)
             .NotEmpty()
             .WithMessage("Partner title is required.")
-            .MaximumLength(255)
-            .WithMessage("Partner title must not exceed 255 characters.");
+            .MustNotExceedLength(Partner.TitleMaxLength, "Partner title");
 
         RuleFor(partner => partner.LogoId)
-            .GreaterThan(0)
-            .WithMessage("Partner logo ID must be greater than 0.");
+            .MustBeValidId("Partner logo");
 
         RuleFor(partner => partner.Description)
-            .MaximumLength(600)
-            .WithMessage("Partner description must not exceed 600 characters.");
+            .MustNotExceedLength(
+                Partner.DescriptionMaxLength,
+                "Partner description");
 
         RuleFor(partner => partner.UrlTitle)
-            .MaximumLength(255)
-            .WithMessage("Partner URL title must not exceed 255 characters.");
+            .MustNotExceedLength(
+                Partner.UrlTitleMaxLength,
+                "Partner URL title");
 
         RuleFor(partner => partner.TargetUrl)
             .Cascade(CascadeMode.Stop)
-            .MaximumLength(255)
-            .WithMessage("Partner URL must not exceed 255 characters.")
-            .Must(url =>
-                Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttp
-                    || uri.Scheme == Uri.UriSchemeHttps))
-            .WithMessage("Partner URL must be a valid HTTP or HTTPS URL.")
+            .MustNotExceedLength(
+                Partner.TargetUrlMaxLength,
+                "Partner URL")
+            .MustBeValidHttpUrl("Partner URL")
             .When(partner => !string.IsNullOrWhiteSpace(partner.TargetUrl));
 
         RuleForEach(partner => partner.PartnerSourceLinks)

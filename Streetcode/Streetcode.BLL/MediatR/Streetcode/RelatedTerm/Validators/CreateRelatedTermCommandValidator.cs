@@ -12,7 +12,7 @@ public sealed class CreateRelatedTermCommandValidator
     {
         RuleFor(command => command.RelatedTerm)
             .NotNull()
-            .WithMessage("Related term cannot be null.")
+            .WithMessage("Related term is required.")
             .SetValidator(termValidator);
     }
 }

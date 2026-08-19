@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.DAL.Entities.Streetcode;
 
@@ -7,6 +8,25 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 public sealed class GetAllStreetcodesRequestDtoValidator
     : AbstractValidator<GetAllStreetcodesRequestDTO>
 {
+    private static readonly HashSet<string> AllowedSortProperties =
+        new(StringComparer.OrdinalIgnoreCase)
+    {
+        nameof(StreetcodeContent.Id),
+        nameof(StreetcodeContent.Index),
+        nameof(StreetcodeContent.Teaser),
+        nameof(StreetcodeContent.DateString),
+        nameof(StreetcodeContent.Alias),
+        nameof(StreetcodeContent.Status),
+        nameof(StreetcodeContent.Title),
+        nameof(StreetcodeContent.TransliterationUrl),
+        nameof(StreetcodeContent.ViewCount),
+        nameof(StreetcodeContent.CreatedAt),
+        nameof(StreetcodeContent.UpdatedAt),
+        nameof(StreetcodeContent.EventStartOrPersonBirthDate),
+        nameof(StreetcodeContent.EventEndOrPersonDeathDate),
+        nameof(StreetcodeContent.AudioId),
+    };
+
     public GetAllStreetcodesRequestDtoValidator()
     {
         RuleFor(dto => dto.Page)
@@ -15,16 +35,20 @@ public sealed class GetAllStreetcodesRequestDtoValidator
 
         RuleFor(dto => dto.Amount)
             .GreaterThan(0)
-            .WithMessage("Amount must be greater than 0.");
+            .WithMessage("Amount must be greater than 0.")
+            .LessThanOrEqualTo(StreetcodePaginationLimits.MaxPageSize)
+            .WithMessage(
+                $"Amount must not exceed {StreetcodePaginationLimits.MaxPageSize}.");
 
         RuleFor(dto => dto.Title)
-            .MaximumLength(100)
-            .WithMessage("Title cannot exceed 100 characters.")
+            .MustNotExceedLength(
+                StreetcodeContent.TitleMaxLength,
+                "Title")
             .When(dto => dto.Title is not null);
 
         RuleFor(dto => dto.Sort)
             .Must(BeValidSortProperty)
-            .WithMessage("Sort must contain a valid Streetcode property.")
+            .WithMessage("Sort must contain a valid sortable Streetcode property.")
             .When(dto => dto.Sort is not null);
 
         RuleFor(dto => dto.Filter)
@@ -40,9 +64,14 @@ public sealed class GetAllStreetcodesRequestDtoValidator
             return false;
         }
 
-        string propertyName = sort.Trim().TrimStart('-');
+        string propertyName = sort.Trim();
 
-        return typeof(StreetcodeContent).GetProperty(propertyName) is not null;
+        if (propertyName.StartsWith('-'))
+        {
+            propertyName = propertyName[1..];
+        }
+
+        return AllowedSortProperties.Contains(propertyName);
     }
 
     private static bool HaveValidFilterFormat(string? filter)

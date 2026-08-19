@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.AdditionalContent.GetById;
 
 namespace Streetcode.BLL.MediatR.AdditionalContent.Subtitle.Validators;
@@ -9,7 +10,6 @@ public sealed class GetSubtitleByIdQueryValidator
     public GetSubtitleByIdQueryValidator()
     {
         RuleFor(query => query.Id)
-            .GreaterThan(0)
-            .WithMessage("Subtitle ID must be greater than zero.");
+            .MustBeValidId("Subtitle");
     }
 }

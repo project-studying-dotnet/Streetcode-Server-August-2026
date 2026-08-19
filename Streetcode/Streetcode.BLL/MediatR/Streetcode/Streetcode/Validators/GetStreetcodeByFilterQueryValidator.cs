@@ -12,7 +12,7 @@ public sealed class GetStreetcodeByFilterQueryValidator
     {
         RuleFor(query => query.Filter)
             .NotNull()
-            .WithMessage("Filter cannot be null.")
+            .WithMessage("Filter is required.")
             .SetValidator(filterValidator);
     }
 }

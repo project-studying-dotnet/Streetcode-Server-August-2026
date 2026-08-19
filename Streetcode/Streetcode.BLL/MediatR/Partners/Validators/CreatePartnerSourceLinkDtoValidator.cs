@@ -1,5 +1,7 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Partners.Create;
+using Streetcode.DAL.Entities.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.Validators;
 
@@ -12,13 +14,10 @@ public sealed class CreatePartnerSourceLinkDtoValidator
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
             .WithMessage("Partner source URL is required.")
-            .MaximumLength(255)
-            .WithMessage("Partner source URL must not exceed 255 characters.")
-            .Must(url =>
-                Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                && (uri.Scheme == Uri.UriSchemeHttp
-                    || uri.Scheme == Uri.UriSchemeHttps))
-            .WithMessage("Partner source URL must be a valid HTTP or HTTPS URL.");
+            .MustNotExceedLength(
+                PartnerSourceLink.TargetUrlMaxLength,
+                "Partner source URL")
+            .MustBeValidHttpUrl("Partner source URL");
 
         RuleFor(link => link.LogoType)
             .IsInEnum()

@@ -10,6 +10,6 @@ public sealed class StreetcodeFilterRequestDtoValidator
     {
         RuleFor(dto => dto.SearchQuery)
             .NotEmpty()
-            .WithMessage("Search query cannot be empty.");
+            .WithMessage("Search query is required.");
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode.TextContent;
 using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Update;
 
@@ -11,12 +12,11 @@ public sealed class UpdateRelatedTermCommandValidator
         IValidator<RelatedTermDTO> termValidator)
     {
         RuleFor(command => command.id)
-            .GreaterThan(0)
-            .WithMessage("Related term ID must be greater than 0.");
+            .MustBeValidId("Related term");
 
         RuleFor(command => command.RelatedTerm)
             .NotNull()
-            .WithMessage("Related term cannot be null.")
+            .WithMessage("Related term is required.")
             .SetValidator(termValidator);
     }
 }

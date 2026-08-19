@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Streetcode.RelatedFigure.Create;
 
 namespace Streetcode.BLL.MediatR.Streetcode.RelatedFigure.Validators;
@@ -9,11 +10,9 @@ public sealed class CreateRelatedFigureCommandValidator
     public CreateRelatedFigureCommandValidator()
     {
         RuleFor(command => command.ObserverId)
-            .GreaterThan(0)
-            .WithMessage("Observer id must be greater than zero.");
+            .MustBeValidId("Observer");
 
         RuleFor(command => command.TargetId)
-            .GreaterThan(0)
-            .WithMessage("Target id must be greater than zero.");
+            .MustBeValidId("Target");
     }
 }

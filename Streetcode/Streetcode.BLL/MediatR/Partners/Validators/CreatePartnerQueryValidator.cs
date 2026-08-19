@@ -12,7 +12,7 @@ public sealed class CreatePartnerQueryValidator
     {
         RuleFor(query => query.newPartner)
             .NotNull()
-            .WithMessage("Partner cannot be null.")
+            .WithMessage("Partner is required.")
             .SetValidator(partnerValidator);
     }
 }

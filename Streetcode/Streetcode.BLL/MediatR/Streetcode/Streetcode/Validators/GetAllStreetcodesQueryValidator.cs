@@ -12,7 +12,7 @@ public sealed class GetAllStreetcodesQueryValidator
     {
         RuleFor(query => query.request)
             .NotNull()
-            .WithMessage("Request cannot be null.")
+            .WithMessage("Request is required.")
             .SetValidator(requestValidator);
     }
 }

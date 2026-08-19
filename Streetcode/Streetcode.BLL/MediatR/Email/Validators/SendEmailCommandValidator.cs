@@ -11,7 +11,7 @@ public sealed class SendEmailCommandValidator
     {
         RuleFor(command => command.Email)
             .NotNull()
-            .WithMessage("Email is required")
+            .WithMessage("Email is required.")
             .SetValidator(emailDtoValidator);
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetShortById;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
@@ -9,7 +10,6 @@ public sealed class GetStreetcodeShortByIdQueryValidator
     public GetStreetcodeShortByIdQueryValidator()
     {
         RuleFor(query => query.id)
-            .GreaterThan(0)
-            .WithMessage("Streetcode ID must be greater than 0.");
+            .MustBeValidId("Streetcode");
     }
 }
