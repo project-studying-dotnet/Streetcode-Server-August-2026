@@ -11,29 +11,28 @@ EXPOSE 5000
 EXPOSE 5001
 EXPOSE 80
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG Configuration=debug
+ARG Configuration=Release
+WORKDIR /src
 
-#restoring dependencies
-COPY ./Streetcode/*.sln ./
+# restoring application dependencies
 COPY ./Streetcode/Streetcode.WebApi/*.csproj ./Streetcode.WebApi/
 COPY ./Streetcode/Streetcode.BLL/*.csproj ./Streetcode.BLL/
 COPY ./Streetcode/Streetcode.DAL/*.csproj ./Streetcode.DAL/
-COPY ./Streetcode/Streetcode.XUnitTest/*.csproj ./Streetcode.XUnitTest/
-COPY ./Streetcode/Streetcode.XIntegrationTest/*.csproj ./Streetcode.XIntegrationTest/
-COPY ./Streetcode/DbUpdate/*.csproj ./DbUpdate/
-RUN dotnet restore
+RUN dotnet restore ./Streetcode.WebApi/Streetcode.WebApi.csproj
 
-# copying other neccessary data and building application
+# copying application sources and building the Web API project
 COPY ./Streetcode/ ./
-RUN dotnet build -c $Configuration -o /app/build
+WORKDIR /src/Streetcode.WebApi
+RUN dotnet build Streetcode.WebApi.csproj -c "$Configuration" -o /app/build --no-restore
 
-# publishishing application
+# publishing application
 FROM build AS publish
-RUN dotnet publish -c $Configuration -o /app/publish
+ARG Configuration=Release
+RUN dotnet publish Streetcode.WebApi.csproj -c "$Configuration" -o /app/publish --no-restore /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish ./
 
 LABEL atom="Streetcode"
-ENTRYPOINT ["dotnet", "Streetcode.WebApi.dll", "--environment=Production"]
+ENTRYPOINT ["dotnet", "Streetcode.WebApi.dll"]

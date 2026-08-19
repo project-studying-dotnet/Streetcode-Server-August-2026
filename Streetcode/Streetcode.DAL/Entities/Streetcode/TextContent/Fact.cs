@@ -11,6 +11,8 @@ public class Fact
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
+    public int DisplayOrder { get; set; }
+
     [Required]
     [MaxLength(100)]
     public string? Title { get; set; }
