@@ -5,6 +5,8 @@ using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
 using DotNetEnv;
+using Streetcode.BLL.Services.Jwt;
+using Streetcode.BLL.Interfaces.Jwt;
 
 public class Program
 {
@@ -14,6 +16,7 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.Host.ConfigureApplication();
 
+        builder.Services.AddJwtServices(builder.Configuration);
         builder.Services.AddApplicationServices(builder.Configuration);
         builder.Services.AddSwaggerServices();
         builder.Services.AddCustomServices();
