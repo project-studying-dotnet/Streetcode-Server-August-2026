@@ -86,6 +86,17 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                     imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = entity, ImageAssigment = ImageAssigment.Relatedfigure });
                 }
 
+                if (dto.AudioId.HasValue)
+                {
+                    var audio = await _repositoryWrapper.AudioRepository.GetFirstOrDefaultAsync(a => a.Id == dto.AudioId.Value);
+                    if (audio is not null && audio.MimeType != "audio/mpeg")
+                    {
+                        const string errorMsg = "Audio must be an MP3 file.";
+                        _logger.LogError(request, errorMsg);
+                        return Result.Fail(errorMsg);
+                    }
+                }
+
                 await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);
                 await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);
                 var success = await _repositoryWrapper.SaveChangesAsync() > 0;
