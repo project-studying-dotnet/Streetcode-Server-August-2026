@@ -8,8 +8,6 @@ namespace Streetcode.BLL.MediatR.Toponyms.Validators;
 public sealed class GetAllToponymsRequestDtoValidator
     : AbstractValidator<GetAllToponymsRequestDTO>
 {
-    private const int MaxPageSize = 100;
-
     public GetAllToponymsRequestDtoValidator()
     {
         RuleFor(dto => dto.Page)
@@ -19,8 +17,8 @@ public sealed class GetAllToponymsRequestDtoValidator
         RuleFor(dto => dto.Amount)
             .GreaterThan(0)
             .WithMessage("Amount must be greater than 0.")
-            .LessThanOrEqualTo(MaxPageSize)
-            .WithMessage($"Amount must not exceed {MaxPageSize}.");
+            .LessThanOrEqualTo(PaginationLimits.MaxPageSize)
+            .WithMessage($"Amount must not exceed {PaginationLimits.MaxPageSize}.");
 
         RuleFor(dto => dto.Title)
             .MustNotExceedLength(

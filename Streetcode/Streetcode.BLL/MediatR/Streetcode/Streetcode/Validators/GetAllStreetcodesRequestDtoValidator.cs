@@ -36,9 +36,9 @@ public sealed class GetAllStreetcodesRequestDtoValidator
         RuleFor(dto => dto.Amount)
             .GreaterThan(0)
             .WithMessage("Amount must be greater than 0.")
-            .LessThanOrEqualTo(StreetcodePaginationLimits.MaxPageSize)
+            .LessThanOrEqualTo(PaginationLimits.MaxPageSize)
             .WithMessage(
-                $"Amount must not exceed {StreetcodePaginationLimits.MaxPageSize}.");
+                $"Amount must not exceed {PaginationLimits.MaxPageSize}.");
 
         RuleFor(dto => dto.Title)
             .MustNotExceedLength(

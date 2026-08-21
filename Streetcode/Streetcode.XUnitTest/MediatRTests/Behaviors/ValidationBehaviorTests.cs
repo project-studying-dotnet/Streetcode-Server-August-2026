@@ -79,6 +79,63 @@ namespace Streetcode.XUnitTest.MediatRTests.Behaviors
             Assert.False(nextCalled);
         }
 
+        [Fact]
+        public async Task Handle_WhenTwoValidatorsFail_ShouldCombineErrors()
+        {
+            var request = new TestRequest(string.Empty);
+
+            var validators = new IValidator<TestRequest>[]
+            {
+                new TestRequestValidator(),
+                new SecondTestRequestValidator(),
+            };
+
+            var behavior =
+                new ValidationBehavior<TestRequest, string>(validators);
+
+            Task<string> Next(CancellationToken cancellationToken)
+            {
+                return Task.FromResult("Handled");
+            }
+
+            ValidationException exception =
+                await Assert.ThrowsAsync<ValidationException>(
+                    () => behavior.Handle(
+                        request,
+                        Next,
+                        CancellationToken.None));
+
+            Assert.Equal(2, exception.Errors.Count());
+        }
+
+        [Fact]
+        public async Task Handle_WhenNoValidators_ShouldCallNext()
+        {
+            var request = new TestRequest("Valid Name");
+
+            IValidator<TestRequest>[] validators =
+                Array.Empty<IValidator<TestRequest>>();
+
+            var behavior =
+                new ValidationBehavior<TestRequest, string>(validators);
+
+            bool nextCalled = false;
+
+            Task<string> Next(CancellationToken cancellationToken)
+            {
+                nextCalled = true;
+                return Task.FromResult("Handled");
+            }
+
+            string result = await behavior.Handle(
+                request,
+                Next,
+                CancellationToken.None);
+
+            Assert.True(nextCalled);
+            Assert.Equal("Handled", result);
+        }
+
         private sealed class TestRequest : IRequest<string>
         {
             public TestRequest(string name)
@@ -96,6 +153,17 @@ namespace Streetcode.XUnitTest.MediatRTests.Behaviors
             {
                 this.RuleFor(request => request.Name)
                     .NotEmpty();
+            }
+        }
+
+        private sealed class SecondTestRequestValidator
+            : AbstractValidator<TestRequest>
+        {
+            public SecondTestRequestValidator()
+            {
+                this.RuleFor(request => request.Name)
+                    .NotEmpty()
+                    .WithMessage("Name is required by the second validator.");
             }
         }
     }

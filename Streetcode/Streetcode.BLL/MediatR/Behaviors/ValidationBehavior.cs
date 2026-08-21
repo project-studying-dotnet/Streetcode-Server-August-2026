@@ -25,11 +25,10 @@ public sealed class ValidationBehavior<TRequest, TResponse>
             return await next(cancellationToken);
         }
 
-        var validationContext = new ValidationContext<TRequest>(request);
         ValidationResult[] validationResults = await Task.WhenAll(
             _validators.Select(validator =>
                 validator.ValidateAsync(
-                    validationContext,
+                    request,
                     cancellationToken)));
 
         List<ValidationFailure> failures = validationResults

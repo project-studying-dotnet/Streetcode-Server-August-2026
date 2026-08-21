@@ -1,5 +1,6 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAllCatalog;
+using Streetcode.BLL.MediatR.Validators;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -15,8 +16,8 @@ public sealed class GetAllStreetcodesCatalogQueryValidator
         RuleFor(query => query.count)
             .GreaterThan(0)
             .WithMessage("Count must be greater than 0.")
-            .LessThanOrEqualTo(StreetcodePaginationLimits.MaxPageSize)
+            .LessThanOrEqualTo(PaginationLimits.MaxPageSize)
             .WithMessage(
-                $"Count must not exceed {StreetcodePaginationLimits.MaxPageSize}.");
+                $"Count must not exceed {PaginationLimits.MaxPageSize}.");
     }
 }

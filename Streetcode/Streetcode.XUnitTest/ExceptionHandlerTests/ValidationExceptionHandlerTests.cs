@@ -99,11 +99,12 @@ namespace Streetcode.XUnitTest.ExceptionHandlerTests
                     "Email is invalid.",
                     error));
 
-            Assert.Collection(
-                problemDetails.Errors["Name"],
-                error => Assert.Equal(
-                    "Name is required.",
-                    error));
+            string nameError = Assert.Single(
+                problemDetails.Errors["Name"]);
+
+            Assert.Equal(
+                "Name is required.",
+                nameError);
         }
     }
 }
