@@ -148,9 +148,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
             var result = await handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsSuccess);
-            Assert.NotNull(capturedItems!);
-            Assert.NotEmpty(capturedItems!);
-            Assert.Single(capturedItems!.GroupBy(item => item.StreetName.ToLower()).Distinct());
+            Assert.NotNull(capturedItems);
+            Assert.Collection(
+                capturedItems!,
+                item => Assert.Equal(1, item.Id));
             Assert.Equal("First Street", result.Value.Toponyms.Single().StreetName);
         }
     }

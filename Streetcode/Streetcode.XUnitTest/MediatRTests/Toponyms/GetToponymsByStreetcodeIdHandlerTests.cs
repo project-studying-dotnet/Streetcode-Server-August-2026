@@ -14,10 +14,12 @@ using Microsoft.EntityFrameworkCore.Query;
 using Streetcode.BLL.MediatR.Timeline.TimelineItem.GetAll;
 using Streetcode.BLL.MediatR.Toponyms.GetAll;
 using Streetcode.DAL.Entities.Toponyms;
+using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.BLL.DTO.Toponyms;
 using Streetcode.BLL.MediatR.Toponyms.GetByStreetcodeId;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetById;
 using Streetcode.BLL.MediatR.Toponyms.GetById;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Streetcode.XUnitTest.MediatRTests.Toponyms
 {
@@ -45,13 +47,20 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
         {
             var toponyms = new List<Toponym>
             {
-                new Toponym { Id = 1, StreetName = "First" },
+                new Toponym
+                {
+                    Id = 1,
+                    StreetName = "First",
+                    Streetcodes = { new StreetcodeContent { Id = 123 } },
+                },
                 new Toponym { Id = 2, StreetName = "Second" },
             };
 
             _toponymRepositoryMock
                 .Setup(repo => repo.GetAllAsync(
-                    It.IsAny<Expression<Func<Toponym, bool>>>(),
+                    It.Is<Expression<Func<Toponym, bool>>>(predicate =>
+                        predicate.Compile()(toponyms[0]) &&
+                        !predicate.Compile()(new Toponym { Streetcodes = { new StreetcodeContent { Id = 999 } } })),
                     It.IsAny<Func<IQueryable<Toponym>, IIncludableQueryable<Toponym, object>>?>()))
                 .ReturnsAsync(toponyms);
 
@@ -79,18 +88,45 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
         }
 
         [Fact]
+        public async Task Handle_WhenToponymRepositoryReturnsEmptyList_ShouldReturnFailure()
+        {
+            _toponymRepositoryMock
+                .Setup(repo => repo.GetAllAsync(
+                    It.IsAny<Expression<Func<Toponym, bool>>>(),
+                    It.IsAny<Func<IQueryable<Toponym>, IIncludableQueryable<Toponym, object>>?>()))
+                .ReturnsAsync(Array.Empty<Toponym>());
+
+            var handler = new GetToponymsByStreetcodeIdHandler(
+                _repositoryWrapperMock.Object,
+                _mapperMock.Object,
+                _loggerMock.Object);
+
+            var query = new GetToponymsByStreetcodeIdQuery(12);
+            var expectedMessage = "Cannot find any toponym by the streetcode id: 12";
+
+            var result = await handler.Handle(query, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            _loggerMock.Verify(
+                logger => logger.LogError(query, expectedMessage),
+                Times.Once);
+        }
+
+        [Fact]
         public async Task Handle_WhenToponymRepositoryReturnsNull_ShouldReturnFailure()
         {
             _toponymRepositoryMock
                 .Setup(repo => repo.GetAllAsync(
                     It.IsAny<Expression<Func<Toponym, bool>>>(),
                     It.IsAny<Func<IQueryable<Toponym>, IIncludableQueryable<Toponym, object>>?>()))
-                .ReturnsAsync((IEnumerable<Toponym>?)null);
+                .ReturnsAsync((IEnumerable<Toponym>)null!);
 
             var handler = new GetToponymsByStreetcodeIdHandler(
                 _repositoryWrapperMock.Object,
                 _mapperMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object
+            );
 
             var query = new GetToponymsByStreetcodeIdQuery(12);
             var expectedMessage = "Cannot find any toponym by the streetcode id: 12";

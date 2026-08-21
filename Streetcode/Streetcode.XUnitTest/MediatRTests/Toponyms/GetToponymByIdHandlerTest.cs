@@ -49,7 +49,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Toponyms
 
             _toponymRepositoryMock
                 .Setup(repo => repo.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<Toponym, bool>>>(),
+                    It.Is<Expression<Func<Toponym, bool>>>(predicate =>
+                        predicate.Compile()(toponym) &&
+                        !predicate.Compile()(new Toponym { Id = 41 })),
                     null))
                 .ReturnsAsync(toponym);
 
