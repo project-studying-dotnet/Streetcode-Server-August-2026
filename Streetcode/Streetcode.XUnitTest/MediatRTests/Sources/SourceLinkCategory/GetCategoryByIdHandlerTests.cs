@@ -27,18 +27,14 @@ public class GetCategoryByIdHandlerTests
         var dto = new SourceLinkCategoryDTO { Id = id, Image = new ImageDTO { BlobName = "test.jpg" } };
 
         _repositoryMock.Setup(r => r.SourceCategoryRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(),
+            It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(category)),
             It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
             .ReturnsAsync(category);
 
-        _mapperMock.Setup(m => m.Map<SourceLinkCategoryDTO>(category))
-            .Returns(dto);
-
-        _blobServiceMock.Setup(b => b.FindFileInStorageAsBase64("test.jpg"))
-            .Returns("base64string");
+        _mapperMock.Setup(m => m.Map<SourceLinkCategoryDTO>(category)).Returns(dto);
+        _blobServiceMock.Setup(b => b.FindFileInStorageAsBase64("test.jpg")).Returns("base64string");
 
         var handler = new GetCategoryByIdHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(new GetCategoryByIdQuery(id), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -47,19 +43,19 @@ public class GetCategoryByIdHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenRepositoryReturnsNull()
+    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenEntityNotFound()
     {
         int id = 1;
         var query = new GetCategoryByIdQuery(id);
         var expectedError = $"Cannot find any srcCategory by the corresponding id: {id}";
+        var category = new DAL.Entities.Sources.SourceLinkCategory { Id = id };
 
         _repositoryMock.Setup(r => r.SourceCategoryRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(),
+            It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(category)),
             It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
             .ReturnsAsync((DAL.Entities.Sources.SourceLinkCategory)null!);
 
         var handler = new GetCategoryByIdHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsFailed);

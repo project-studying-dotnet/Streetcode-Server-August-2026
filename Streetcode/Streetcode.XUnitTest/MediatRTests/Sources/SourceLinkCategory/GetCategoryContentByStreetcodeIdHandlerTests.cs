@@ -1,6 +1,5 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
-using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Sources;
 using Streetcode.BLL.Interfaces.Logging;
@@ -27,18 +26,16 @@ public class GetCategoryContentByStreetcodeIdHandlerTests
         var dto = new StreetcodeCategoryContentDTO { StreetcodeId = streetcodeId, SourceLinkCategoryId = categoryId };
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<StreetcodeContent, bool>>>(), null))
+            It.Is<Expression<Func<StreetcodeContent, bool>>>(expr => expr.Compile()(streetcode)), null))
             .ReturnsAsync(streetcode);
 
         _repositoryMock.Setup(r => r.StreetcodeCategoryContentRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<DAL.Entities.Sources.StreetcodeCategoryContent, bool>>>(), null))
+            It.Is<Expression<Func<DAL.Entities.Sources.StreetcodeCategoryContent, bool>>>(expr => expr.Compile()(categoryContent)), null))
             .ReturnsAsync(categoryContent);
 
-        _mapperMock.Setup(m => m.Map<StreetcodeCategoryContentDTO>(categoryContent))
-            .Returns(dto);
+        _mapperMock.Setup(m => m.Map<StreetcodeCategoryContentDTO>(categoryContent)).Returns(dto);
 
         var handler = new GetCategoryContentByStreetcodeIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(new GetCategoryContentByStreetcodeIdQuery(streetcodeId, categoryId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -52,13 +49,13 @@ public class GetCategoryContentByStreetcodeIdHandlerTests
         int categoryId = 1;
         var query = new GetCategoryContentByStreetcodeIdQuery(streetcodeId, categoryId);
         var expectedError = $"No such streetcode with id = {streetcodeId}";
+        var streetcode = new StreetcodeContent { Id = streetcodeId };
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<StreetcodeContent, bool>>>(), null))
+            It.Is<Expression<Func<StreetcodeContent, bool>>>(expr => expr.Compile()(streetcode)), null))
             .ReturnsAsync((StreetcodeContent)null!);
 
         var handler = new GetCategoryContentByStreetcodeIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsFailed);
@@ -72,19 +69,19 @@ public class GetCategoryContentByStreetcodeIdHandlerTests
         int streetcodeId = 1;
         int categoryId = 1;
         var query = new GetCategoryContentByStreetcodeIdQuery(streetcodeId, categoryId);
-        var streetcode = new StreetcodeContent { Id = streetcodeId };
         var expectedError = "The streetcode content is null";
+        var streetcode = new StreetcodeContent { Id = streetcodeId };
+        var categoryContent = new DAL.Entities.Sources.StreetcodeCategoryContent { StreetcodeId = streetcodeId, SourceLinkCategoryId = categoryId };
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<StreetcodeContent, bool>>>(), null))
+            It.Is<Expression<Func<StreetcodeContent, bool>>>(expr => expr.Compile()(streetcode)), null))
             .ReturnsAsync(streetcode);
 
         _repositoryMock.Setup(r => r.StreetcodeCategoryContentRepository.GetFirstOrDefaultAsync(
-            It.IsAny<Expression<Func<DAL.Entities.Sources.StreetcodeCategoryContent, bool>>>(), null))
+            It.Is<Expression<Func<DAL.Entities.Sources.StreetcodeCategoryContent, bool>>>(expr => expr.Compile()(categoryContent)), null))
             .ReturnsAsync((DAL.Entities.Sources.StreetcodeCategoryContent)null!);
 
         var handler = new GetCategoryContentByStreetcodeIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsFailed);

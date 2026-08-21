@@ -17,24 +17,13 @@ public class GetAllCategoryNamesHandlerTests
     [Fact]
     public async Task Handle_ReturnsOkResult_WithExpectedCount_WhenDataExists()
     {
-        var categories = new List<DAL.Entities.Sources.SourceLinkCategory>
-        {
-            new DAL.Entities.Sources.SourceLinkCategory { Id = 1, Title = "Test" }
-        };
+        var categories = new List<DAL.Entities.Sources.SourceLinkCategory> { new() { Id = 1, Title = "Test" } };
+        var dtos = new List<CategoryWithNameDTO> { new() { Id = 1, Title = "Test" } };
 
-        var dtos = new List<CategoryWithNameDTO>
-        {
-            new CategoryWithNameDTO { Id = 1, Title = "Test" }
-        };
-
-        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null))
-            .ReturnsAsync(categories);
-
-        _mapperMock.Setup(m => m.Map<IEnumerable<CategoryWithNameDTO>>(categories))
-            .Returns(dtos);
+        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null)).ReturnsAsync(categories);
+        _mapperMock.Setup(m => m.Map<IEnumerable<CategoryWithNameDTO>>(categories)).Returns(dtos);
 
         var handler = new GetAllCategoryNamesHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(new GetAllCategoryNamesQuery(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -52,7 +41,6 @@ public class GetAllCategoryNamesHandlerTests
             .ReturnsAsync((IEnumerable<DAL.Entities.Sources.SourceLinkCategory>)null!);
 
         var handler = new GetAllCategoryNamesHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsFailed);
