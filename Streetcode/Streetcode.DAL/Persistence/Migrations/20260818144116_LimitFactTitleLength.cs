@@ -15,7 +15,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                 IF EXISTS (
                     SELECT 1
                     FROM [streetcode].[facts]
-                    WHERE LEN([Title]) > 68
+                    WHERE DATALENGTH([Title]) / 2 > 68
                 )
                 BEGIN
                     THROW 50001, 'Cannot limit facts.Title to 68 characters because longer values exist.', 1;

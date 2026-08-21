@@ -122,6 +122,36 @@ public class ReorderFactsHandlerTests
         _loggerServiceMock.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task Handle_WhenNoFactsAndOrderIsEmpty_ShouldReturnSuccess()
+    {
+        var command = CreateCommand(10);
+        SetupStoredFacts(Array.Empty<FactEntity>());
+
+        var result = await CreateHandler().Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(Unit.Value, result.Value);
+
+        _factRepositoryMock.Verify(
+            repo => repo.GetAllAsync(
+                It.Is<Expression<Func<FactEntity, bool>>>(predicate =>
+                    predicate.Compile()(new FactEntity { StreetcodeId = 10 }) &&
+                    !predicate.Compile()(new FactEntity { StreetcodeId = 11 })),
+                null),
+            Times.Once());
+
+        _factRepositoryMock.Verify(
+            repo => repo.UpdateRange(It.IsAny<IEnumerable<FactEntity>>()),
+            Times.Never());
+
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+
+        _loggerServiceMock.VerifyNoOtherCalls();
+    }
+
     private ReorderFactsHandler CreateHandler() =>
         new(_repositoryWrapperMock.Object, _loggerServiceMock.Object);
 

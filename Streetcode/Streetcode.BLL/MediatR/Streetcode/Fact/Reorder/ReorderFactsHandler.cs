@@ -44,6 +44,11 @@ public class ReorderFactsHandler : IRequestHandler<ReorderFactsCommand, Result<U
             return Result.Fail<Unit>(new Error(errorMsg));
         }
 
+        if (facts.Count == 0)
+        {
+            return Result.Ok(Unit.Value);
+        }
+
         var factsById = facts.ToDictionary(fact => fact.Id);
 
         for (int index = 0; index < orderedFactIds.Count; index++)

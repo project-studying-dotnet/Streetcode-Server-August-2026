@@ -8,6 +8,5 @@ public class FactReorderDto
     public int StreetcodeId { get; set; }
 
     [Required]
-    [MinLength(1)]
     public List<int> OrderedFactIds { get; set; } = new();
 }

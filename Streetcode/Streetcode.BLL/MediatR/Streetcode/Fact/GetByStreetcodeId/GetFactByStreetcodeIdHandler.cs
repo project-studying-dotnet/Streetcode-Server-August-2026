@@ -30,13 +30,6 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
                     .Include(f => f.Image)
                     .ThenInclude(image => image.ImageDetails)!);
 
-        if (!facts.Any())
-        {
-            var errorMsg = $"Cannot find any fact by the streetcode id: {request.StreetcodeId}";
-            _loggerService.LogError(request, errorMsg);
-            return Result.Fail<IEnumerable<FactDto>>(new Error(errorMsg));
-        }
-
         var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
 
         return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(orderedFacts));

@@ -27,10 +27,9 @@ public class GetFactByStreetcodeIdHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoFactsExist_ShouldReturnFailure()
+    public async Task Handle_WhenNoFactsExist_ShouldReturnEmptySuccessResult()
     {
         var query = new GetFactByStreetcodeIdQuery(10);
-        const string expectedMessage = "Cannot find any fact by the streetcode id: 10";
 
         _factRepositoryMock
             .Setup(repository => repository.GetAllAsync(
@@ -38,19 +37,23 @@ public class GetFactByStreetcodeIdHandlerTests
                 It.IsAny<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>()))
             .ReturnsAsync(Array.Empty<FactEntity>());
 
+        _mapperMock
+            .Setup(mapper => mapper.Map<IEnumerable<FactDto>>(It.IsAny<object>()))
+            .Returns(Array.Empty<FactDto>());
+
         var handler = new GetFactByStreetcodeIdHandler(
             _repositoryWrapperMock.Object,
             _mapperMock.Object,
             _loggerServiceMock.Object);
         var result = await handler.Handle(query, CancellationToken.None);
 
-        Assert.True(result.IsFailed);
-        Assert.Equal(expectedMessage, result.Errors.Single().Message);
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Value);
 
-        _loggerServiceMock.Verify(
-            logger => logger.LogError(query, expectedMessage),
+        _loggerServiceMock.VerifyNoOtherCalls();
+        _mapperMock.Verify(
+            mapper => mapper.Map<IEnumerable<FactDto>>(It.IsAny<object>()),
             Times.Once());
-        _mapperMock.VerifyNoOtherCalls();
     }
 
     [Fact]
