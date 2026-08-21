@@ -97,11 +97,6 @@ public class WebParsingUtils
             Console.WriteLine("The operation was cancelled.");
             throw;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            throw;
-        }
     }
 
     [DisableConcurrentExecution(timeoutInSeconds: 3600)]
@@ -124,11 +119,6 @@ public class WebParsingUtils
             await ProcessCsvFileAsync(
                 dataDirectory,
                 deleteFile: true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
-            throw;
         }
         finally
         {
