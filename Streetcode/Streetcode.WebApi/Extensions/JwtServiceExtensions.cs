@@ -1,9 +1,8 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Streetcode.BLL.Interfaces.Jwt;
 using Streetcode.BLL.Services.Jwt;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Streetcode.WebApi.Extensions
 {
