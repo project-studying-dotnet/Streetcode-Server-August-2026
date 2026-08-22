@@ -10,12 +10,12 @@ public class Text
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     [Required]
-    [MaxLength(300)]
+    [MaxLength(50)]
     public string? Title { get; set; }
     [Required]
-    [MaxLength(15000)]
+    [MaxLength(25000)]
     public string? TextContent { get; set; }
-    [MaxLength(500)]
+    [MaxLength(200)]
     public string? AdditionalText { get; set; }
     [Required]
     public int StreetcodeId { get; set; }

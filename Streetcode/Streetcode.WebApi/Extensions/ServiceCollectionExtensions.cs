@@ -25,6 +25,9 @@ using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
+using FluentValidation;
+using Streetcode.BLL.MediatR.Behaviors;
+using Streetcode.WebApi.ExceptionHandlers;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -42,9 +45,12 @@ public static class ServiceCollectionExtensions
         services.AddFeatureManagement();
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         services.AddAutoMapper(currentAssemblies);
+        var bllAssembly = typeof(ValidationBehavior<,>).Assembly;
+        services.AddValidatorsFromAssembly(bllAssembly);
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssemblies(currentAssemblies);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
         services.AddScoped<IBlobService, BlobService>();
@@ -57,7 +63,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
-        var connectionString = configuration.GetRequiredConnectionString();
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
 
@@ -96,6 +102,8 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddLogging();
+        services.AddProblemDetails();
+        services.AddExceptionHandler<ValidationExceptionHandler>();
         services.AddControllers();
     }
 
