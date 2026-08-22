@@ -46,17 +46,10 @@ jobs:
       - name: SonarScanner Analysis
         id: sonar
         run: |
-          dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
+          dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./Streetcode/Streetcode.XUnitTest/coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
           dotnet build ./Streetcode/Streetcode.sln --configuration Release
           dotnet test ./Streetcode/Streetcode.XUnitTest/Streetcode.XUnitTest.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/coverage.opencover.xml
           dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-
-      - name: Find coverage files
-        if: always()
-        shell: bash
-        run: |
-          pwd
-          find . -type f \( -name "coverage.opencover.xml" -o -name "coverage.cobertura.xml" \) -print
 
       - name: Publish Code Coverage Report
         if: always()
@@ -64,4 +57,4 @@ jobs:
         with:
           name: Code Coverage Report
           path: |
-            ./coverage/coverage.opencover.xml
+            ./Streetcode/Streetcode.XUnitTest/coverage/coverage.opencover.xml
