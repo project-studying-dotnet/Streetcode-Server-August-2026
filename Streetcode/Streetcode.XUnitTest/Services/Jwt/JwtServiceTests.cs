@@ -80,14 +80,5 @@ namespace Streetcode.XUnitTest.Services.Jwt
             Assert.NotNull(roleClaim);
             Assert.Equal(role.ToString(), roleClaim.Value);
         }
-
-        [Fact]
-        public void TEMP_PrintToken()
-        {
-            var result = _jwtService.GenerateToken(1, "admin@streetcode.ua", UserRole.MainAdministrator);
-            Console.WriteLine(result.Token);
-
-            Assert.True(true);
-        }
     }
 }
