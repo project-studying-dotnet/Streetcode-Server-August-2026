@@ -46,5 +46,27 @@ services:
       sqlserver:
         condition: service_healthy
 
+  identity-api:
+    container_name: streetcode-identity-api
+    restart: unless-stopped
+
+    build:
+      context: .
+      dockerfile: Streetcode.Identity/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      STREETCODE_IDENTITY_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${IDENTITY_DB_NAME:-StreetcodeIdentityDb};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
+
+    ports:
+      - "${IDENTITY_API_PORT:-5001}:8080"
+
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+
 volumes:
   sqlserver-data:
