@@ -1,5 +1,6 @@
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
+using Streetcode.Identity.WebApi.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,14 @@ builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
+builder.Services.AddProblemDetails();
+
+builder.Services
+    .AddExceptionHandler<ValidationExceptionHandler>();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
