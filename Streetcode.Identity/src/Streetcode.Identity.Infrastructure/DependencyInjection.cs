@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Streetcode.Identity.Application.Abstractions;
 using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Persistence;
 
@@ -23,6 +24,8 @@ public static class DependencyInjection
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<StreetcodeIdentityDbContext>()
             .AddSignInManager();
+
+        services.AddScoped<IIdentityService, IdentityService>();
 
         return services;
     }
