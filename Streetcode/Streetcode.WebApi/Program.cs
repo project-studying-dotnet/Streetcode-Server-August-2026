@@ -3,6 +3,7 @@ namespace Streetcode.WebApi;
 using Hangfire;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
+using Streetcode.WebApi.ExceptionHandlers;
 using Streetcode.WebApi.Utils;
 using DotNetEnv;
 
@@ -21,7 +22,11 @@ public class Program
         builder.Services.ConfigurePayment(builder);
         builder.Services.ConfigureInstagram(builder);
         builder.Services.ConfigureSerilog(builder);
+        builder.Services.AddProblemDetails();
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         var app = builder.Build();
+
+        app.UseExceptionHandler();
 
         if (app.Environment.EnvironmentName == "Local")
         {
@@ -56,6 +61,11 @@ public class Program
             RecurringJob.AddOrUpdate<BlobService>(
                 b => b.CleanBlobStorage(), Cron.Monthly);
         }
+
+        app.MapGet("/api/test-error", () =>
+        {
+            throw new InvalidOperationException("Sensitive manual test message");
+        });
 
         app.MapControllers();
 
