@@ -62,11 +62,6 @@ public class Program
                 b => b.CleanBlobStorage(), Cron.Monthly);
         }
 
-        app.MapGet("/api/test-error", () =>
-        {
-            throw new InvalidOperationException("Sensitive manual test message");
-        });
-
         app.MapControllers();
 
         await app.RunAsync();
