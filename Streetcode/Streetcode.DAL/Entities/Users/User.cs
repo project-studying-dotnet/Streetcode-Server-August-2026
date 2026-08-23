@@ -27,5 +27,13 @@ namespace Streetcode.DAL.Entities.Users
         public string Password { get; set; }
         [Required]
         public UserRole Role { get; set; }
+
+        [MaxLength(20)]
+        public string? Phone { get; set; }
+
+        public DateTime? BirthDate { get; set; }
+
+        [MaxLength(20)]
+        public string? Gender { get; set; }
     }
 }
