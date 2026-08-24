@@ -13,12 +13,6 @@ namespace Streetcode.XUnitTest.MediatRTests.Sources.SourceLinkCategory
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using Microsoft.EntityFrameworkCore.Query;
     using Moq;
-    using global::Streetcode.BLL.DTO.Media.Images;
-    using global::Streetcode.BLL.DTO.Sources;
-    using global::Streetcode.BLL.Interfaces.BlobStorage;
-    using global::Streetcode.BLL.Interfaces.Logging;
-    using global::Streetcode.BLL.MediatR.Sources.SourceLinkCategory.GetAll;
-    using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using System;
     using System.Collections.Generic;
     using System.Linq;
