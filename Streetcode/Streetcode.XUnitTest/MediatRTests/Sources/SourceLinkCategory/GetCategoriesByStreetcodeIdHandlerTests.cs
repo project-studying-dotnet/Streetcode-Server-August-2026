@@ -1,74 +1,136 @@
-﻿using System.Linq.Expressions;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore.Query;
-using Moq;
-using Streetcode.BLL.DTO.Media.Images;
-using Streetcode.BLL.DTO.Sources;
-using Streetcode.BLL.Interfaces.BlobStorage;
-using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.Sources.SourceLink.GetCategoriesByStreetcodeId;
-using Streetcode.DAL.Repositories.Interfaces.Base;
-using Xunit;
+﻿// <copyright file="GetCategoriesByStreetcodeIdHandlerTests.cs" company="Streetcode">
+// Copyright (c) Streetcode. All rights reserved.
+// </copyright>
 
-namespace Streetcode.XUnitTest.MediatRTests.Sources.SourceLinkCategory;
-
-public class GetCategoriesByStreetcodeIdHandlerTests
+namespace Streetcode.XUnitTest.MediatRTests.Sources.SourceLinkCategory
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
-    private readonly Mock<IMapper> _mapperMock = new();
-    private readonly Mock<IBlobService> _blobServiceMock = new();
-    private readonly Mock<ILoggerService> _loggerMock = new();
+    using AutoMapper;
+    using global::Streetcode.BLL.DTO.Media.Images;
+    using global::Streetcode.BLL.DTO.Sources;
+    using global::Streetcode.BLL.Interfaces.BlobStorage;
+    using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Sources.SourceLink.GetCategoriesByStreetcodeId;
+    using global::Streetcode.DAL.Repositories.Interfaces.Base;
+    using Microsoft.EntityFrameworkCore.Query;
+    using Moq;
+    using Streetcode.BLL.DTO.Media.Images;
+    using Streetcode.BLL.DTO.Sources;
+    using Streetcode.BLL.Interfaces.BlobStorage;
+    using Streetcode.BLL.Interfaces.Logging;
+    using Streetcode.BLL.MediatR.Sources.SourceLink.GetCategoriesByStreetcodeId;
+    using Streetcode.DAL.Repositories.Interfaces.Base;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Linq.Expressions;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Xunit;
 
-    [Fact]
-    public async Task Handle_ReturnsOkResult_WithExpectedCount_WhenDataExists()
+    public class GetCategoriesByStreetcodeIdHandlerTests
     {
-        int streetcodeId = 1;
-        var category = new DAL.Entities.Sources.SourceLinkCategory
+        private readonly Mock<IRepositoryWrapper> repositoryMock = new Mock<IRepositoryWrapper>();
+        private readonly Mock<IMapper> mapperMock = new Mock<IMapper>();
+        private readonly Mock<IBlobService> blobServiceMock = new Mock<IBlobService>();
+        private readonly Mock<ILoggerService> loggerMock = new Mock<ILoggerService>();
+
+        [Fact]
+        public async Task Handle_ReturnsOkResult_WithExpectedCount_WhenDataExists()
         {
-            Id = 1,
-            Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent> { new() { Id = streetcodeId } }
-        };
-        var categories = new List<DAL.Entities.Sources.SourceLinkCategory> { category };
-        var dtos = new List<SourceLinkCategoryDTO> { new() { Id = 1, Image = new ImageDTO { BlobName = "test.jpg" } } };
+            int streetcodeId = 1;
+            var category = new DAL.Entities.Sources.SourceLinkCategory()
+            {
+                Id = 1,
+                Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent>()
+                {
+                    new DAL.Entities.Streetcode.StreetcodeContent() { Id = streetcodeId, },
+                },
+            };
+            var categories = new List<DAL.Entities.Sources.SourceLinkCategory>() { category };
+            var dtos = new List<SourceLinkCategoryDTO>()
+            {
+                new SourceLinkCategoryDTO()
+                {
+                    Id = 1,
+                    Image = new ImageDTO() { BlobName = "test.jpg", },
+                },
+            };
 
-        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(
-            It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(category)),
-            It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
-            .ReturnsAsync(categories);
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(
+                It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(category)),
+                It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
+                .ReturnsAsync(categories);
 
-        _mapperMock.Setup(m => m.Map<IEnumerable<SourceLinkCategoryDTO>>(categories)).Returns(dtos);
-        _blobServiceMock.Setup(b => b.FindFileInStorageAsBase64("test.jpg")).Returns("base64string");
+            this.mapperMock.Setup(m => m.Map<IEnumerable<SourceLinkCategoryDTO>>(categories))
+                .Returns(dtos);
+            this.blobServiceMock.Setup(b => b.FindFileInStorageAsBase64("test.jpg"))
+                .Returns("base64string");
 
-        var handler = new GetCategoriesByStreetcodeIdHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-        var result = await handler.Handle(new GetCategoriesByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
+            var handler = new GetCategoriesByStreetcodeIdHandler(this.repositoryMock.Object, this.mapperMock.Object, this.blobServiceMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(new GetCategoriesByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
-        Assert.IsAssignableFrom<IEnumerable<SourceLinkCategoryDTO>>(result.Value);
-    }
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value);
+            this.blobServiceMock.Verify(b => b.FindFileInStorageAsBase64("test.jpg"), Times.Once);
+            Assert.Equal("base64string", result.Value.First().Image.Base64);
+        }
 
-    [Fact]
-    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenEntityNotFound()
-    {
-        int streetcodeId = 1;
-        var query = new GetCategoriesByStreetcodeIdQuery(streetcodeId);
-        var expectedError = $"Cant find any source category with the streetcode id {streetcodeId}";
-
-        var categoryToMatch = new DAL.Entities.Sources.SourceLinkCategory
+        [Fact]
+        public async Task Handle_ReturnsFailedResult_AndLogsError_WhenEntityNotFound()
         {
-            Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent> { new() { Id = streetcodeId } }
-        };
+            int streetcodeId = 1;
+            var query = new GetCategoriesByStreetcodeIdQuery(streetcodeId);
+            var expectedError = $"Cant find any source category with the streetcode id {streetcodeId}";
 
-        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(
-            It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(categoryToMatch)),
-            It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
-            .ReturnsAsync((IEnumerable<DAL.Entities.Sources.SourceLinkCategory>)null!);
+            var categoryToMatch = new DAL.Entities.Sources.SourceLinkCategory()
+            {
+                Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent>()
+                {
+                    new DAL.Entities.Streetcode.StreetcodeContent() { Id = streetcodeId, },
+                },
+            };
 
-        var handler = new GetCategoriesByStreetcodeIdHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
-        var result = await handler.Handle(query, CancellationToken.None);
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(
+                It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(categoryToMatch)),
+                It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
+                .ReturnsAsync((IEnumerable<DAL.Entities.Sources.SourceLinkCategory>)null!);
 
-        Assert.True(result.IsFailed);
-        Assert.Equal(expectedError, result.Errors.First().Message);
-        _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+            var handler = new GetCategoriesByStreetcodeIdHandler(this.repositoryMock.Object, this.mapperMock.Object, this.blobServiceMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(query, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.Equal(expectedError, result.Errors.First().Message);
+            this.loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+        }
+
+        [Fact]
+        public async Task Handle_ReturnsOkResult_WithEmptyList_WhenRepositoryReturnsEmptyCollection()
+        {
+            int streetcodeId = 1;
+            var emptyList = new List<DAL.Entities.Sources.SourceLinkCategory>();
+            var emptyDtos = new List<SourceLinkCategoryDTO>();
+
+            var categoryToMatch = new DAL.Entities.Sources.SourceLinkCategory()
+            {
+                Streetcodes = new List<DAL.Entities.Streetcode.StreetcodeContent>()
+                {
+                    new DAL.Entities.Streetcode.StreetcodeContent() { Id = streetcodeId, },
+                },
+            };
+
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(
+                It.Is<Expression<Func<DAL.Entities.Sources.SourceLinkCategory, bool>>>(expr => expr.Compile()(categoryToMatch)),
+                It.IsAny<Func<IQueryable<DAL.Entities.Sources.SourceLinkCategory>, IIncludableQueryable<DAL.Entities.Sources.SourceLinkCategory, object>>>()))
+                .ReturnsAsync(emptyList);
+
+            this.mapperMock.Setup(m => m.Map<IEnumerable<SourceLinkCategoryDTO>>(emptyList))
+                .Returns(emptyDtos);
+
+            var handler = new GetCategoriesByStreetcodeIdHandler(this.repositoryMock.Object, this.mapperMock.Object, this.blobServiceMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(new GetCategoriesByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value);
+        }
     }
 }

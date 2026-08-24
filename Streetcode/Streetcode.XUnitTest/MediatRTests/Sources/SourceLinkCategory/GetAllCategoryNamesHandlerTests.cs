@@ -1,50 +1,84 @@
-﻿using AutoMapper;
-using Moq;
-using Streetcode.BLL.DTO.Sources;
-using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.Sources.SourceLinkCategory.GetAll;
-using Streetcode.DAL.Repositories.Interfaces.Base;
-using Xunit;
+﻿// <copyright file="GetAllCategoryNamesHandlerTests.cs" company="Streetcode">
+// Copyright (c) Streetcode. All rights reserved.
+// </copyright>
 
-namespace Streetcode.XUnitTest.MediatRTests.Sources.SourceLinkCategory;
-
-public class GetAllCategoryNamesHandlerTests
+namespace Streetcode.XUnitTest.MediatRTests.Sources.SourceLinkCategory
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
-    private readonly Mock<IMapper> _mapperMock = new();
-    private readonly Mock<ILoggerService> _loggerMock = new();
+    using AutoMapper;
+    using global::Streetcode.BLL.DTO.Sources;
+    using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Sources.SourceLinkCategory.GetAll;
+    using global::Streetcode.DAL.Repositories.Interfaces.Base;
+    using Moq;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Xunit;
 
-    [Fact]
-    public async Task Handle_ReturnsOkResult_WithExpectedCount_WhenDataExists()
+    public class GetAllCategoryNamesHandlerTests
     {
-        var categories = new List<DAL.Entities.Sources.SourceLinkCategory> { new() { Id = 1, Title = "Test" } };
-        var dtos = new List<CategoryWithNameDTO> { new() { Id = 1, Title = "Test" } };
+        private readonly Mock<IRepositoryWrapper> repositoryMock = new Mock<IRepositoryWrapper>();
+        private readonly Mock<IMapper> mapperMock = new Mock<IMapper>();
+        private readonly Mock<ILoggerService> loggerMock = new Mock<ILoggerService>();
 
-        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null)).ReturnsAsync(categories);
-        _mapperMock.Setup(m => m.Map<IEnumerable<CategoryWithNameDTO>>(categories)).Returns(dtos);
+        [Fact]
+        public async Task Handle_ReturnsOkResult_WithExpectedCount_WhenDataExists()
+        {
+            var categories = new List<DAL.Entities.Sources.SourceLinkCategory>()
+            {
+                new DAL.Entities.Sources.SourceLinkCategory() { Id = 1, Title = "Test", },
+            };
+            var dtos = new List<CategoryWithNameDTO>()
+            {
+                new CategoryWithNameDTO() { Id = 1, Title = "Test", },
+            };
 
-        var handler = new GetAllCategoryNamesHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-        var result = await handler.Handle(new GetAllCategoryNamesQuery(), CancellationToken.None);
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null))
+                .ReturnsAsync(categories);
+            this.mapperMock.Setup(m => m.Map<IEnumerable<CategoryWithNameDTO>>(categories))
+                .Returns(dtos);
 
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
-        Assert.IsAssignableFrom<IEnumerable<CategoryWithNameDTO>>(result.Value);
-    }
+            var handler = new GetAllCategoryNamesHandler(this.repositoryMock.Object, this.mapperMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(new GetAllCategoryNamesQuery(), CancellationToken.None);
 
-    [Fact]
-    public async Task Handle_ReturnsFailedResult_AndLogsError_WhenRepositoryReturnsNull()
-    {
-        var expectedError = "Categories is null";
-        var query = new GetAllCategoryNamesQuery();
+            Assert.True(result.IsSuccess);
+            Assert.Single(result.Value);
+        }
 
-        _repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null))
-            .ReturnsAsync((IEnumerable<DAL.Entities.Sources.SourceLinkCategory>)null!);
+        [Fact]
+        public async Task Handle_ReturnsFailedResult_AndLogsError_WhenRepositoryReturnsNull()
+        {
+            var expectedError = "Categories is null";
+            var query = new GetAllCategoryNamesQuery();
 
-        var handler = new GetAllCategoryNamesHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
-        var result = await handler.Handle(query, CancellationToken.None);
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null))
+                .ReturnsAsync((IEnumerable<DAL.Entities.Sources.SourceLinkCategory>)null!);
 
-        Assert.True(result.IsFailed);
-        Assert.Equal(expectedError, result.Errors.First().Message);
-        _loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+            var handler = new GetAllCategoryNamesHandler(this.repositoryMock.Object, this.mapperMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(query, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.Equal(expectedError, result.Errors.First().Message);
+            this.loggerMock.Verify(l => l.LogError(query, expectedError), Times.Once);
+        }
+
+        [Fact]
+        public async Task Handle_ReturnsOkResult_WithEmptyList_WhenRepositoryReturnsEmptyCollection()
+        {
+            var emptyList = new List<DAL.Entities.Sources.SourceLinkCategory>();
+            var emptyDtos = new List<CategoryWithNameDTO>();
+
+            this.repositoryMock.Setup(r => r.SourceCategoryRepository.GetAllAsync(null, null))
+                .ReturnsAsync(emptyList);
+            this.mapperMock.Setup(m => m.Map<IEnumerable<CategoryWithNameDTO>>(emptyList))
+                .Returns(emptyDtos);
+
+            var handler = new GetAllCategoryNamesHandler(this.repositoryMock.Object, this.mapperMock.Object, this.loggerMock.Object);
+            var result = await handler.Handle(new GetAllCategoryNamesQuery(), CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value);
+        }
     }
 }
