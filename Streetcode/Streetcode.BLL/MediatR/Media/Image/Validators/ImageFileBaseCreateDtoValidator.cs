@@ -9,6 +9,26 @@ namespace Streetcode.BLL.MediatR.Media.Image.Validators;
 public sealed class ImageFileBaseCreateDtoValidator
     : AbstractValidator<ImageFileBaseCreateDTO>
 {
+    private static readonly IReadOnlyDictionary<string, HashSet<string>>
+        AllowedFileTypes =
+            new Dictionary<string, HashSet<string>>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["image/jpeg"] = new(StringComparer.OrdinalIgnoreCase)
+                {
+                    "jpg",
+                    "jpeg",
+                },
+                ["image/png"] = new(StringComparer.OrdinalIgnoreCase)
+                {
+                    "png",
+                },
+                ["image/gif"] = new(StringComparer.OrdinalIgnoreCase)
+                {
+                    "gif",
+                },
+            };
+
     public ImageFileBaseCreateDtoValidator()
     {
         RuleFor(image => image.BaseFormat)
@@ -30,5 +50,26 @@ public sealed class ImageFileBaseCreateDtoValidator
         RuleFor(image => image.Extension)
             .NotEmpty()
             .WithMessage("Image extension is required.");
+
+        RuleFor(image => image.Extension)
+            .Must((image, _) => HaveSupportedFileType(image))
+            .WithMessage(
+                "Image MIME type and extension combination is not supported.")
+            .When(image =>
+                !string.IsNullOrWhiteSpace(image.MimeType) &&
+                !string.IsNullOrWhiteSpace(image.Extension));
+    }
+
+    private static bool HaveSupportedFileType(
+        ImageFileBaseCreateDTO image)
+    {
+        string extension = image.Extension!
+            .Trim()
+            .TrimStart('.');
+
+        return AllowedFileTypes.TryGetValue(
+                   image.MimeType!.Trim(),
+                   out HashSet<string>? extensions) &&
+               extensions.Contains(extension);
     }
 }

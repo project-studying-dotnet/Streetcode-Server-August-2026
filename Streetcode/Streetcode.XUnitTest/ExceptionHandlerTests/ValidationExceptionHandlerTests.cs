@@ -3,6 +3,7 @@
 // </copyright>
 namespace Streetcode.XUnitTest.ExceptionHandlerTests
 {
+    using System.Text.Json;
     using FluentValidation;
     using FluentValidation.Results;
     using Microsoft.AspNetCore.Http;
@@ -105,6 +106,59 @@ namespace Streetcode.XUnitTest.ExceptionHandlerTests
             Assert.Equal(
                 "Name is required.",
                 nameError);
+        }
+
+        [Fact]
+        public async Task TryHandleAsync_WhenProblemDetailsWriterReturnsFalse_ShouldWriteFallbackResponse()
+        {
+            var problemDetailsServiceMock =
+                new Mock<IProblemDetailsService>();
+
+            problemDetailsServiceMock
+                .Setup(service => service.TryWriteAsync(
+                    It.IsAny<ProblemDetailsContext>()))
+                .Returns(new ValueTask<bool>(false));
+
+            var handler = new ValidationExceptionHandler(
+                problemDetailsServiceMock.Object);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.TraceIdentifier = "fallback-trace-id";
+            httpContext.Response.Body = new MemoryStream();
+
+            var exception = new ValidationException(
+                [
+                    new ValidationFailure(
+                        "Email",
+                        "Email is required."),
+                ]);
+
+            bool handled = await handler.TryHandleAsync(
+                httpContext,
+                exception,
+                CancellationToken.None);
+
+            httpContext.Response.Body.Position = 0;
+            using JsonDocument document = await JsonDocument.ParseAsync(
+                httpContext.Response.Body);
+            JsonElement response = document.RootElement;
+
+            Assert.True(handled);
+            Assert.Equal(
+                StatusCodes.Status400BadRequest,
+                httpContext.Response.StatusCode);
+            Assert.Equal(
+                "application/problem+json",
+                httpContext.Response.ContentType);
+            Assert.Equal(
+                "fallback-trace-id",
+                response.GetProperty("traceId").GetString());
+            Assert.Equal(
+                "Email is required.",
+                response
+                    .GetProperty("errors")
+                    .GetProperty("Email")[0]
+                    .GetString());
         }
     }
 }

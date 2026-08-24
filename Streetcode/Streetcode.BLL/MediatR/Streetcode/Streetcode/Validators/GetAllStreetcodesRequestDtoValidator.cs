@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode;
+using Streetcode.BLL.MediatR.Streetcode.Streetcode.Filters;
 using Streetcode.DAL.Entities.Streetcode;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
@@ -52,8 +53,10 @@ public sealed class GetAllStreetcodesRequestDtoValidator
             .When(dto => dto.Sort is not null);
 
         RuleFor(dto => dto.Filter)
-            .Must(HaveValidFilterFormat)
-            .WithMessage("Filter must have the format 'name:value'.")
+            .Must(filter =>
+                StreetcodeFilterParser.TryParse(filter, out _))
+            .WithMessage(
+                "Filter must have the format 'status:<Draft|Published|Deleted>'.")
             .When(dto => dto.Filter is not null);
     }
 
@@ -72,17 +75,5 @@ public sealed class GetAllStreetcodesRequestDtoValidator
         }
 
         return AllowedSortProperties.Contains(propertyName);
-    }
-
-    private static bool HaveValidFilterFormat(string? filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter))
-        {
-            return false;
-        }
-
-        int separatorIndex = filter.IndexOf(':');
-
-        return separatorIndex > 0 && separatorIndex < filter.Length - 1;
     }
 }

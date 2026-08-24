@@ -9,6 +9,17 @@ namespace Streetcode.BLL.MediatR.Media.Audio.Validators;
 public sealed class AudioFileBaseCreateDtoValidator
     : AbstractValidator<AudioFileBaseCreateDTO>
 {
+    private static readonly IReadOnlyDictionary<string, HashSet<string>>
+        AllowedFileTypes =
+            new Dictionary<string, HashSet<string>>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["audio/mpeg"] = new(StringComparer.OrdinalIgnoreCase)
+                {
+                    "mp3",
+                },
+            };
+
     public AudioFileBaseCreateDtoValidator()
     {
         RuleFor(audio => audio.Title)
@@ -35,5 +46,26 @@ public sealed class AudioFileBaseCreateDtoValidator
         RuleFor(audio => audio.Extension)
             .NotEmpty()
             .WithMessage("Audio extension is required.");
+
+        RuleFor(audio => audio.Extension)
+            .Must((audio, _) => HaveSupportedFileType(audio))
+            .WithMessage(
+                "Audio MIME type and extension combination is not supported.")
+            .When(audio =>
+                !string.IsNullOrWhiteSpace(audio.MimeType) &&
+                !string.IsNullOrWhiteSpace(audio.Extension));
+    }
+
+    private static bool HaveSupportedFileType(
+        AudioFileBaseCreateDTO audio)
+    {
+        string extension = audio.Extension!
+            .Trim()
+            .TrimStart('.');
+
+        return AllowedFileTypes.TryGetValue(
+                   audio.MimeType!.Trim(),
+                   out HashSet<string>? extensions) &&
+               extensions.Contains(extension);
     }
 }

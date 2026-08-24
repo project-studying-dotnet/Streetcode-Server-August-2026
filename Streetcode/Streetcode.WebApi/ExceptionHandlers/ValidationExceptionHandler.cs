@@ -47,12 +47,23 @@ public sealed class ValidationExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode =
             StatusCodes.Status400BadRequest;
 
-        return await _problemDetailsService.TryWriteAsync(
+        bool wasWritten = await _problemDetailsService.TryWriteAsync(
             new ProblemDetailsContext
             {
                 HttpContext = httpContext,
                 ProblemDetails = problemDetails,
                 Exception = exception,
             });
+
+        if (!wasWritten)
+        {
+            await httpContext.Response.WriteAsJsonAsync(
+                problemDetails,
+                options: null,
+                contentType: "application/problem+json",
+                cancellationToken: cancellationToken);
+        }
+
+        return true;
     }
 }
