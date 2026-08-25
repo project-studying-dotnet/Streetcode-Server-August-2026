@@ -41,7 +41,9 @@ public class GetTextByStreetcodeIdHandlerTests
     {
         SetupText(null);
         _repositoryWrapper.Setup(x => x.StreetcodeRepository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<StreetcodeContent, bool>>>(), null))
+                It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                    predicate.Compile()(new StreetcodeContent { Id = 9 }) &&
+                    !predicate.Compile()(new StreetcodeContent { Id = 10 })), null))
             .ReturnsAsync(new StreetcodeContent { Id = 9 });
 
         var result = await CreateHandler().Handle(new GetTextByStreetcodeIdQuery(9), CancellationToken.None);
@@ -59,7 +61,9 @@ public class GetTextByStreetcodeIdHandlerTests
         const string expectedMessage = "Cannot find a transaction link by a streetcode id: 99, because such streetcode doesn`t exist";
         SetupText(null);
         _repositoryWrapper.Setup(x => x.StreetcodeRepository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<StreetcodeContent, bool>>>(), null))
+                It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                    predicate.Compile()(new StreetcodeContent { Id = 99 }) &&
+                    !predicate.Compile()(new StreetcodeContent { Id = 100 })), null))
             .ReturnsAsync((StreetcodeContent?)null);
 
         var result = await CreateHandler().Handle(query, CancellationToken.None);
