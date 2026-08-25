@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.Identity.Infrastructure.Identity;
+using Streetcode.Identity.Infrastructure.Persistence.Configurations;
+using Streetcode.Identity.Infrastructure.Persistence.Outbox;
 
 namespace Streetcode.Identity.Infrastructure.Persistence;
 
@@ -12,6 +14,8 @@ public sealed class StreetcodeIdentityDbContext
         : base(options)
     {
     }
+
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,5 +39,7 @@ public sealed class StreetcodeIdentityDbContext
         userBuilder.Property(x => x.AccessVersion)
             .HasDefaultValue(1L)
             .IsConcurrencyToken();
+
+        modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
     }
 }

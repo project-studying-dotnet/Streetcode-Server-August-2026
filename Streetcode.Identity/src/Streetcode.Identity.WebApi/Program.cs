@@ -1,5 +1,6 @@
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
+using Streetcode.Identity.Infrastructure.Messaging.Kafka;
 using Streetcode.Identity.WebApi.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 

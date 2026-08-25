@@ -4,7 +4,8 @@ using Streetcode.Identity.IntegrationTests.Fixtures;
 
 namespace Streetcode.Identity.IntegrationTests.Infrastructure;
 
-public class MsSqlContainerSmokeTests : IClassFixture<MsSqlContainerFixture>
+[Collection(MsSqlCollection.Name)]
+public class MsSqlContainerSmokeTests
 {
     private readonly MsSqlContainerFixture _fixture;
 

@@ -1,15 +1,19 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Streetcode.Identity.Application.Abstractions;
+using Streetcode.Identity.Application.IntegrationEvents;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Identity;
+using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.IntegrationTests.Fixtures;
 
 namespace Streetcode.Identity.IntegrationTests.Identity;
 
+[Collection(MsSqlCollection.Name)]
 public sealed class IdentityServiceIntegrationTests
-    : IClassFixture<MsSqlContainerFixture>, IDisposable
+    : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
 
@@ -43,6 +47,9 @@ public sealed class IdentityServiceIntegrationTests
             scope.ServiceProvider
                 .GetRequiredService<UserManager<ApplicationUser>>();
 
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
+
         var creationResult = await identityService.CreateUserAsync(
             email,
             password,
@@ -68,6 +75,23 @@ public sealed class IdentityServiceIntegrationTests
             await userManager.CheckPasswordAsync(user, password);
 
         Assert.True(passwordIsValid);
+
+        var outboxMessage = await dbContext.OutboxMessages
+            .AsNoTracking()
+            .SingleAsync(message =>
+                message.Key == creationResult.Value.ToString("D"));
+
+        var integrationEvent = JsonSerializer.Deserialize<UserAccessChangedV1>(
+            outboxMessage.Payload,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(integrationEvent);
+        Assert.Equal(outboxMessage.Id, integrationEvent.EventId);
+        Assert.Equal(user.Id, integrationEvent.UserId);
+        Assert.True(integrationEvent.IsActive);
+        Assert.Equal(1, integrationEvent.AccessVersion);
+        Assert.Equal("UserAccessChangedV1", outboxMessage.Type);
+        Assert.Null(outboxMessage.ProcessedAt);
     }
 
     [Fact]
@@ -84,6 +108,9 @@ public sealed class IdentityServiceIntegrationTests
         var userManager =
             scope.ServiceProvider
                 .GetRequiredService<UserManager<ApplicationUser>>();
+
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
 
         var firstResult = await identityService.CreateUserAsync(
             email,
@@ -109,6 +136,10 @@ public sealed class IdentityServiceIntegrationTests
         var usersCount = await userManager.Users.CountAsync(
             user => user.NormalizedEmail == normalizedEmail);
 
+        var outboxMessagesCount = await dbContext.OutboxMessages.CountAsync(
+            message => message.Key == firstResult.Value.ToString("D"));
+
         Assert.Equal(1, usersCount);
+        Assert.Equal(1, outboxMessagesCount);
     }
 }
