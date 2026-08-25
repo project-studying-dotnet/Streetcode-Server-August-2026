@@ -61,7 +61,7 @@ services:
       ASPNETCORE_HTTP_PORTS: "8080"
       STREETCODE_IDENTITY_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${IDENTITY_DB_NAME:-StreetcodeIdentityDb};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
       STREETCODE_IDENTITY_Kafka__BootstrapServers: "kafka:19092"
-
+      STREETCODE_IDENTITY_Kafka__Topics__UserAccessChangedV1: "${KAFKA_USER_ACCESS_CHANGED_TOPIC:-identity.user-access-changed.v1}"
 
     ports:
       - "${IDENTITY_API_PORT:-5001}:8080"
@@ -71,6 +71,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
 
   kafka:
     image: apache/kafka:4.3.1
@@ -116,6 +118,26 @@ services:
       timeout: 5s
       retries: 15
       start_period: 20s
+
+  kafka-init:
+    image: apache/kafka:4.3.1
+    container_name: streetcode-kafka-init
+    restart: "no"
+
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        /opt/kafka/bin/kafka-topics.sh
+        --bootstrap-server kafka:19092
+        --create
+        --if-not-exists
+        --topic "${KAFKA_USER_ACCESS_CHANGED_TOPIC:-identity.user-access-changed.v1}"
+        --partitions 3
+        --replication-factor 1
+
+    depends_on:
+      kafka:
+        condition: service_healthy
 
 volumes:
   sqlserver-data:
