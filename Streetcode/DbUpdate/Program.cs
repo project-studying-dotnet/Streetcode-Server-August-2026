@@ -1,7 +1,6 @@
 namespace DbUpdate;
 
 using DbUp;
-using DbUp;
 using DotNetEnv;
 using Microsoft.Extensions.Configuration;
 using Streetcode.WebApi.Extensions;
@@ -10,6 +9,7 @@ public class Program
 {
     public static int Main(string[] args)
     {
+        Env.NoClobber().TraversePath().Load();
         string migrationPath = Path.Combine(
             Directory.GetCurrentDirectory(), "Streetcode.DAL", "Persistence", "ScriptsMigration");
 
@@ -24,7 +24,7 @@ public class Program
 
         var connectionString = configuration.GetRequiredConnectionString();
 
-        string pathToScript = string.Empty;
+        string? pathToScript = string.Empty;
 
         Console.WriteLine("Enter '-m' to MIGRATE or '-s' to SEED db:");
         pathToScript = Console.ReadLine();

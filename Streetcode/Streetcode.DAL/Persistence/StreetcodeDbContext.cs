@@ -71,6 +71,7 @@ public class StreetcodeDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.UseCollation("SQL_Ukrainian_CP1251_CI_AS");
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(StreetcodeDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(StreetcodeDbContext).Assembly);
     }
 }

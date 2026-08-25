@@ -11,7 +11,6 @@ public class Program
     public static async Task Main(string[] args)
     {
         Env.NoClobber().TraversePath().Load();
-
         var builder = WebApplication.CreateBuilder(args);
         builder.Host.ConfigureApplication();
 
