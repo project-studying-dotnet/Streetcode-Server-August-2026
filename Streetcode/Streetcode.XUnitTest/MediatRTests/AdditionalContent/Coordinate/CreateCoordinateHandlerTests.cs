@@ -52,7 +52,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal("Cannot convert null to streetcodeCoordinate", result.Errors[0].Message);
+            Assert.Equal(TestMessages.CannotConvertNullToStreetcodeCoordinate, result.Errors[0].Message);
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal("Failed to create a streetcodeCoordinate", result.Errors[0].Message);
+            Assert.Equal(TestMessages.FailedToCreateStreetcodeCoordinate, result.Errors[0].Message);
         }
     }
 }

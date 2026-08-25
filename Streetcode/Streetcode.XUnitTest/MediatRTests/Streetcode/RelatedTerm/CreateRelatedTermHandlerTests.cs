@@ -36,7 +36,7 @@ public class CreateRelatedTermHandlerTests
     public async Task Handle_WhenInputMappingFails_ShouldReturnFailure()
     {
         var command = new CreateRelatedTermCommand(CreateRelatedTermDto());
-        const string expectedError = "Cannot create new related word for a term!";
+        var expectedError = TestMessages.CannotCreateNewRelatedWordForTerm;
 
         _mapperMock
             .Setup(mapper => mapper.Map<RelatedTermEntity>(command.RelatedTerm))
@@ -70,7 +70,7 @@ public class CreateRelatedTermHandlerTests
     {
         var command = new CreateRelatedTermCommand(CreateRelatedTermDto());
         var relatedTerm = CreateRelatedTermEntity();
-        const string expectedError = "Слово з цим визначенням уже існує";
+        var expectedError = TestMessages.RelatedWordAlreadyExists;
 
         _mapperMock
             .Setup(mapper => mapper.Map<RelatedTermEntity>(command.RelatedTerm))
@@ -105,7 +105,7 @@ public class CreateRelatedTermHandlerTests
         var command = new CreateRelatedTermCommand(CreateRelatedTermDto());
         var relatedTerm = CreateRelatedTermEntity();
         var existingTerms = new List<RelatedTermEntity> { relatedTerm };
-        const string expectedError = "Слово з цим визначенням уже існує";
+        var expectedError = TestMessages.RelatedWordAlreadyExists;
 
         _mapperMock
             .Setup(mapper => mapper.Map<RelatedTermEntity>(command.RelatedTerm))
@@ -139,7 +139,7 @@ public class CreateRelatedTermHandlerTests
     {
         var command = new CreateRelatedTermCommand(CreateRelatedTermDto());
         var relatedTerm = CreateRelatedTermEntity();
-        const string expectedError = "Cannot save changes in the database after related word creation!";
+        var expectedError = TestMessages.CannotSaveChangesAfterRelatedWordCreation;
 
         SetupCreation(command, relatedTerm, saveChangesResult: 0);
 
@@ -167,7 +167,7 @@ public class CreateRelatedTermHandlerTests
     {
         var command = new CreateRelatedTermCommand(CreateRelatedTermDto());
         var relatedTerm = CreateRelatedTermEntity();
-        const string expectedError = "Cannot map entity!";
+        var expectedError = TestMessages.CannotMapEntity;
 
         SetupCreation(command, relatedTerm, saveChangesResult: 1);
         _mapperMock

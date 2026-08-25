@@ -60,7 +60,7 @@ public class GetAllPartnersHandlerTests
 
         var handler = new GetAllPartnersHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllPartnersQuery();
-        var expectedError = "Cannot find any partners";
+        var expectedError = TestMessages.CannotFindAnyPartners;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

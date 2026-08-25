@@ -44,7 +44,7 @@ public class CreateTeamLinkHandlerTests
         var result = await handler.Handle(new CreateTeamLinkQuery(new TeamMemberLinkDTO()), CancellationToken.None);
 
         Assert.True(result.IsFailed);
-        Assert.Equal("Cannot convert null to team link", result.Errors.First().Message);
+        Assert.Equal(TestMessages.CannotConvertNullToTeamLink, result.Errors.First().Message);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class CreateTeamLinkHandlerTests
         var result = await handler.Handle(new CreateTeamLinkQuery(new TeamMemberLinkDTO()), CancellationToken.None);
 
         Assert.True(result.IsFailed);
-        Assert.Equal("Cannot create team link", result.Errors.First().Message);
+        Assert.Equal(TestMessages.CannotCreateTeamLink, result.Errors.First().Message);
     }
 
     [Fact]
@@ -73,6 +73,6 @@ public class CreateTeamLinkHandlerTests
         var result = await handler.Handle(new CreateTeamLinkQuery(new TeamMemberLinkDTO()), CancellationToken.None);
 
         Assert.True(result.IsFailed);
-        Assert.Equal("Failed to create a team", result.Errors.First().Message);
+        Assert.Equal(TestMessages.FailedToCreateTeam, result.Errors.First().Message);
     }
 }

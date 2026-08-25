@@ -36,7 +36,7 @@ public class GetAllRelatedTermsByTermIdHandlerTests
     public async Task Handle_WhenRepositoryReturnsNull_ShouldReturnFailure()
     {
         var query = new GetAllRelatedTermsByTermIdQuery(5);
-        const string expectedError = "Cannot get words by term id";
+        var expectedError = TestMessages.CannotGetWordsByTermId;
 
         _relatedTermRepositoryMock
             .Setup(repository => repository.GetAllAsync(
@@ -71,7 +71,7 @@ public class GetAllRelatedTermsByTermIdHandlerTests
     public async Task Handle_WhenMappingFails_ShouldReturnFailure()
     {
         var query = new GetAllRelatedTermsByTermIdQuery(5);
-        const string expectedError = "Cannot create DTOs for related words!";
+        var expectedError = TestMessages.CannotCreateDtosForRelatedWords;
         var relatedTerms = new List<RelatedTermEntity>
         {
             new()

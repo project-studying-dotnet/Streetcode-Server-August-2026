@@ -50,7 +50,7 @@ public class GetByIdTeamHandlerTests
 
         var handler = new GetByIdTeamHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetByIdTeamQuery(searchId);
-        var expectedError = $"Cannot find any team with corresponding id: {searchId}";
+        var expectedError = string.Format(TestMessages.CannotFindAnyTeamWithCorrespondingId, searchId);
 
         var result = await handler.Handle(query, CancellationToken.None);
 

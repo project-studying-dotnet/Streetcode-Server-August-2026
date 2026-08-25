@@ -44,7 +44,7 @@ public class GetPartnersByStreetcodeIdHandlerTests
     {
         int streetcodeId = 99;
         var query = new GetPartnersByStreetcodeIdQuery(streetcodeId);
-        var expectedError = $"Cannot find any partners with corresponding streetcode id: {streetcodeId}";
+        var expectedError = string.Format(TestMessages.CannotFindAnyPartnersWithCorrespondingStreetcodeId, streetcodeId);
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync((DAL.Entities.Streetcode.StreetcodeContent)null!);
@@ -65,7 +65,7 @@ public class GetPartnersByStreetcodeIdHandlerTests
         int streetcodeId = 1;
         var streetcode = new DAL.Entities.Streetcode.StreetcodeContent { Id = streetcodeId };
         var query = new GetPartnersByStreetcodeIdQuery(streetcodeId);
-        var expectedError = $"Cannot find a partners by a streetcode id: {streetcodeId}";
+        var expectedError = string.Format(TestMessages.CannotFindPartnersByStreetcodeId, streetcodeId);
 
         _repositoryMock.Setup(r => r.StreetcodeRepository.GetSingleOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.Streetcode.StreetcodeContent, bool>>>(), null))
             .ReturnsAsync(streetcode);

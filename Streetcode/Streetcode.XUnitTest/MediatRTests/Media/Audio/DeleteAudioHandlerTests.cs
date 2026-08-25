@@ -34,7 +34,7 @@ public class DeleteAudioHandlerTests
     public async Task Handle_WhenAudioDoesNotExist_ShouldReturnFailure()
     {
         var command = new DeleteAudioCommand(5);
-        var expectedError = $"Cannot find an audio with corresponding categoryId: {command.Id}";
+        var expectedError = string.Format(TestMessages.CannotFindAnAudioWithCorrespondingCategoryId, command.Id);
         _audioRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<AudioEntity, bool>>>(),
@@ -136,7 +136,7 @@ public class DeleteAudioHandlerTests
             BlobName = "audio.mp3",
             MimeType = "audio/mpeg",
         };
-        const string expectedError = "Failed to delete an audio";
+        var expectedError = TestMessages.FailedToDeleteAnAudio;
         _audioRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<AudioEntity, bool>>>(),
