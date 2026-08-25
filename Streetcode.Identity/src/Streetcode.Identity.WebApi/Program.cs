@@ -1,6 +1,7 @@
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.WebApi.ExceptionHandling;
+using Streetcode.Identity.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "Connection string 'DefaultConnection' is not configured");
 }
 
+builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddOpenApi();
