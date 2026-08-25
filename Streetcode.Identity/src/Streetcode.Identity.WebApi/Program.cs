@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Messaging.Kafka;
+using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.WebApi.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +36,12 @@ app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
+    await using var scope = app.Services.CreateAsyncScope();
+
+    var dbContext = scope.ServiceProvider.GetRequiredService<StreetcodeIdentityDbContext>();
+
+    await dbContext.Database.MigrateAsync();
+
     app.MapOpenApi();
 }
 
