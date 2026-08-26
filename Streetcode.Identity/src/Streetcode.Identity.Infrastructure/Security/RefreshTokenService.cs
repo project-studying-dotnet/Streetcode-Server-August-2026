@@ -181,7 +181,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
 
         if (familyId is null)
         {
-            return Result.Ok();
+            return InvalidTokenFailure();
         }
 
         await RevokeFamilyByIdAsync(
