@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.IntegrationTests.Fixtures;
 using Streetcode.Identity.WebApi.DTOs;
@@ -10,18 +9,26 @@ using Xunit;
 namespace Streetcode.Identity.IntegrationTests.Controllers;
 
 [Collection(MsSqlCollection.Name)]
-public sealed class AuthControllerIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class AuthControllerIntegrationTests
 {
-    private readonly HttpClient _client;
+    private readonly MsSqlContainerFixture _fixture;
 
-    public AuthControllerIntegrationTests(WebApplicationFactory<Program> factory)
+    public AuthControllerIntegrationTests(MsSqlContainerFixture fixture)
     {
-        _client = factory.CreateClient();
+        _fixture = fixture;
+    }
+
+    private IdentityWebApplicationFactory CreateFactory()
+    {
+        return new IdentityWebApplicationFactory(_fixture.ConnectionString);
     }
 
     [Fact]
     public async Task Register_WhenInputIsValid_ShouldReturnOk()
     {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
         var request = new RegisterRequestDto
         {
             Email = $"httpuser-{Guid.NewGuid():N}@example.com",
@@ -29,7 +36,7 @@ public sealed class AuthControllerIntegrationTests : IClassFixture<WebApplicatio
             PhoneNumber = "+380501112233"
         };
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
 
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<RegisterUserResponse>();
@@ -42,13 +49,16 @@ public sealed class AuthControllerIntegrationTests : IClassFixture<WebApplicatio
     [Fact]
     public async Task Register_WhenInputIsInvalid_ShouldReturnBadRequest()
     {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
         var request = new RegisterRequestDto
         {
             Email = "invalid-email",
             Password = "123"
         };
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -56,6 +66,9 @@ public sealed class AuthControllerIntegrationTests : IClassFixture<WebApplicatio
     [Fact]
     public async Task Register_WhenEmailAlreadyExists_ShouldReturnBadRequestAndProblemDetails()
     {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
         var request = new RegisterRequestDto
         {
             Email = $"duplicate-{Guid.NewGuid():N}@example.com",
@@ -63,9 +76,9 @@ public sealed class AuthControllerIntegrationTests : IClassFixture<WebApplicatio
             PhoneNumber = "+380509998877"
         };
 
-        await _client.PostAsJsonAsync("/api/auth/register", request);
+        await client.PostAsJsonAsync("/api/auth/register", request);
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 

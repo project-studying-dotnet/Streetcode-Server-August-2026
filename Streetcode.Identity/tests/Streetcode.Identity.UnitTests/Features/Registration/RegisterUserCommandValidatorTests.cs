@@ -1,3 +1,4 @@
+using FluentValidation.TestHelper;
 using Streetcode.Identity.Application.Features.Registration;
 
 namespace Streetcode.Identity.UnitTests.Features.Registration;
@@ -107,5 +108,22 @@ public sealed class RegisterUserCommandValidatorTests
             error.PropertyName);
 
         Assert.Equal("Password.Required", error.ErrorCode);
+    }
+
+    [Fact]
+    public void Validate_WhenPhoneNumberIsLongerThan20Characters_ShouldHaveTooLongError()
+    {
+        var validator = new RegisterUserCommandValidator();
+
+        var command = new RegisterUserCommand(
+            "valid@example.com",
+            "StrongPassword123!",
+            "123456789012345678901"
+        );
+
+        var result = validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(x => x.PhoneNumber)
+              .WithErrorCode("PhoneNumber.TooLong");
     }
 }

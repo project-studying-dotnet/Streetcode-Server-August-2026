@@ -19,6 +19,6 @@ public sealed class RegisterUserCommandValidator
 
         RuleFor(command => command.PhoneNumber)
             .MaximumLength(20)
-            .WithErrorCode("PhoneNumber.Required");
+            .WithErrorCode("PhoneNumber.TooLong");
     }
 }
