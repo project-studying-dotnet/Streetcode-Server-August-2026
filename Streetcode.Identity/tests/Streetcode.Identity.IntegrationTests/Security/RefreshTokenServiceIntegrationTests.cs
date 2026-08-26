@@ -205,6 +205,20 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
         Assert.All(familyTokens, token => Assert.NotNull(token.RevokedAt));
     }
 
+    [Fact]
+    public async Task RevokeFamilyAsync_WhenTokenDoesNotExist_ShouldReturnSuccess()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var refreshTokenService = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var result = await refreshTokenService.RevokeFamilyAsync(
+            "unknown-refresh-token",
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
     private static async Task<ApplicationUser> CreateUserAsync(
         IServiceProvider serviceProvider)
     {
