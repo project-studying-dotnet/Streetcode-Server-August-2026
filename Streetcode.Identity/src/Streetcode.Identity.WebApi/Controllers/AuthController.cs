@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Streetcode.Identity.Application.Features.Authentication.Logout;
+using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.WebApi.Contracts.Authentication;
+using Streetcode.Identity.WebApi.DTOs;
 
 namespace Streetcode.Identity.WebApi.Controllers;
 
@@ -9,10 +11,12 @@ namespace Streetcode.Identity.WebApi.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
+    private readonly IMediator _mediator;
     private readonly ISender _sender;
 
-    public AuthController(ISender sender)
+    public AuthController(IMediator mediator, ISender sender)
     {
+        _mediator = mediator;
         _sender = sender;
     }
 
@@ -36,5 +40,26 @@ public sealed class AuthController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    {
+        var command = new RegisterUserCommand(
+            request.Email,
+            request.Password,
+            request.BirthDate,
+            request.Phone,
+            request.Gender
+        );
+
+        var result = await _mediator.Send(command);
+
+        if (result.IsFailed)
+        {
+            return BadRequest(result.Errors);
+        }
+
+        return Ok(result);
     }
 }
