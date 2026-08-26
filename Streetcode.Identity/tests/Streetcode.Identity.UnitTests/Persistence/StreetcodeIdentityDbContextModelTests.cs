@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Streetcode.Identity.Domain.RefreshTokens;
 using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.Infrastructure.Persistence.Outbox;
@@ -144,5 +145,116 @@ public class StreetcodeIdentityDbContextModelTests
         Assert.Equal(
             "IX_OutboxMessages_ProcessedAt_OccurredAt",
             pendingMessagesIndex.GetDatabaseName());
+    }
+
+    [Fact]
+    public void Model_WhenBuilt_ShouldConfigureRefreshTokenPropertiesAndIndexes()
+    {
+        var options = new DbContextOptionsBuilder<StreetcodeIdentityDbContext>()
+            .UseSqlServer("Server=.;Database=Test;")
+            .Options;
+
+        using var context = new StreetcodeIdentityDbContext(options);
+        var entityType = Assert.IsAssignableFrom<IEntityType>(
+            context.Model.FindEntityType(typeof(RefreshToken)));
+
+        Assert.Equal("RefreshTokens", entityType.GetTableName());
+
+        var primaryKey = Assert.IsAssignableFrom<IKey>(
+            entityType.FindPrimaryKey());
+        Assert.Equal(
+            nameof(RefreshToken.Id),
+            Assert.Single(primaryKey.Properties).Name);
+
+        var idProperty = Assert.IsAssignableFrom<IProperty>(
+            entityType.FindProperty(nameof(RefreshToken.Id)));
+        Assert.Equal(ValueGenerated.Never, idProperty.ValueGenerated);
+
+        var tokenHashProperty = Assert.IsAssignableFrom<IProperty>(
+            entityType.FindProperty(nameof(RefreshToken.TokenHash)));
+        Assert.False(tokenHashProperty.IsNullable);
+        Assert.False(tokenHashProperty.IsUnicode());
+        Assert.Equal(64, tokenHashProperty.GetMaxLength());
+
+        var tokenHashIndex = entityType.GetIndexes()
+            .Single(index =>
+                index.GetDatabaseName() ==
+                "UX_RefreshTokens_TokenHash");
+
+        Assert.True(tokenHashIndex.IsUnique);
+        Assert.Equal(
+            nameof(RefreshToken.TokenHash),
+            Assert.Single(tokenHashIndex.Properties).Name);
+
+        var indexNames = entityType.GetIndexes()
+            .Select(index => index.GetDatabaseName())
+            .ToList();
+
+        Assert.Contains("IX_RefreshTokens_UserId", indexNames);
+        Assert.Contains("IX_RefreshTokens_FamilyId", indexNames);
+    }
+
+    [Fact]
+    public void Model_WhenBuilt_ShouldConfigureRefreshTokenConcurrencyVersion()
+    {
+        var options = new DbContextOptionsBuilder<StreetcodeIdentityDbContext>()
+            .UseSqlServer("Server=.;Database=Test;")
+            .Options;
+
+        using var context = new StreetcodeIdentityDbContext(options);
+        var entityType = Assert.IsAssignableFrom<IEntityType>(
+            context.Model.FindEntityType(typeof(RefreshToken)));
+
+        var concurrencyProperty = Assert.IsAssignableFrom<IProperty>(
+            entityType.FindProperty(
+                nameof(RefreshToken.ConcurrencyVersion)));
+
+        Assert.False(concurrencyProperty.IsNullable);
+        Assert.True(concurrencyProperty.IsConcurrencyToken);
+        Assert.Equal(
+            1L,
+            Assert.IsType<long>(
+                concurrencyProperty.GetDefaultValue()));
+    }
+
+    [Fact]
+    public void Model_WhenBuilt_ShouldConfigureRefreshTokenRelationships()
+    {
+        var options = new DbContextOptionsBuilder<StreetcodeIdentityDbContext>()
+            .UseSqlServer("Server=.;Database=Test;")
+            .Options;
+
+        using var context = new StreetcodeIdentityDbContext(options);
+
+        var entityType = Assert.IsAssignableFrom<IEntityType>(
+            context.Model.FindEntityType(typeof(RefreshToken)));
+
+        var userForeignKey = entityType.GetForeignKeys()
+            .Single(foreignKey =>
+                foreignKey.Properties.Count == 1 &&
+                foreignKey.Properties[0].Name ==
+                nameof(RefreshToken.UserId));
+
+        Assert.Equal(
+            typeof(ApplicationUser),
+            userForeignKey.PrincipalEntityType.ClrType);
+
+        Assert.Equal(
+            DeleteBehavior.Cascade,
+            userForeignKey.DeleteBehavior);
+
+        var replacementForeignKey = entityType.GetForeignKeys()
+            .Single(foreignKey =>
+                foreignKey.Properties.Count == 1 &&
+                foreignKey.Properties[0].Name ==
+                nameof(RefreshToken.ReplacedByTokenId));
+
+        Assert.Equal(
+            typeof(RefreshToken),
+            replacementForeignKey.PrincipalEntityType.ClrType);
+
+        Assert.Equal(
+            DeleteBehavior.NoAction,
+            replacementForeignKey.DeleteBehavior);
     }
 }
