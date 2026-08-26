@@ -25,7 +25,7 @@ public sealed class IdentityService : IIdentityService
         _timeProvider = timeProvider;
     }
 
-    public async Task<Result<Guid>> CreateUserAsync(string email, string password, DateTime? birthDate, string? phone, string? gender, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> CreateUserAsync(string email, string password, string? phoneNumber, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -37,9 +37,7 @@ public sealed class IdentityService : IIdentityService
             Id = Guid.NewGuid(),
             Email = email,
             UserName = email,
-            Phone = phone,
-            BirthDate = birthDate,
-            Gender = gender,
+            PhoneNumber = phoneNumber
         };
 
         var identityResult = await _userManager.CreateAsync(applicationUser, password);

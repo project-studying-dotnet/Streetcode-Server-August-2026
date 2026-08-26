@@ -16,5 +16,9 @@ public sealed class RegisterUserCommandValidator
         RuleFor(command => command.Password)
             .NotEmpty()
             .WithErrorCode("Password.Required");
+
+        RuleFor(command => command.PhoneNumber)
+            .MaximumLength(20)
+            .WithErrorCode("PhoneNumber.Required");
     }
 }

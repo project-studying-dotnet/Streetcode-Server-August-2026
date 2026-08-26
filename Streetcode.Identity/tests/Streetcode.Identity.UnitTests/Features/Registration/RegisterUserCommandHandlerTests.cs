@@ -12,6 +12,7 @@ public class RegisterUserCommandHandlerTests
 
         public string? ReceivedEmail { get; private set; }
         public string? ReceivedPassword { get; private set; }
+        public string? ReceivedPhoneNumber { get; private set; }
         public CancellationToken ReceivedCancellationToken { get; private set; }
 
         public FakeIdentityService(Result<Guid> resultToReturn)
@@ -22,10 +23,12 @@ public class RegisterUserCommandHandlerTests
         public Task<Result<Guid>> CreateUserAsync(
             string email,
             string password,
+            string? phoneNumber,
             CancellationToken cancellationToken)
         {
             ReceivedEmail = email;
             ReceivedPassword = password;
+            ReceivedPhoneNumber = phoneNumber;
             ReceivedCancellationToken = cancellationToken;
 
             return Task.FromResult(_resultToReturn);
@@ -38,6 +41,7 @@ public class RegisterUserCommandHandlerTests
         var expectedId = Guid.NewGuid();
         const string email = "email@gmail.com";
         const string password = "password";
+        const string phoneNumber = "1234567890";
 
         using var cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = cancellationTokenSource.Token;
@@ -45,7 +49,7 @@ public class RegisterUserCommandHandlerTests
         var identityService = new FakeIdentityService(Result.Ok(expectedId));
 
         var handler = new RegisterUserCommandHandler(identityService);
-        var command = new RegisterUserCommand(email, password);
+        var command = new RegisterUserCommand(email, password, phoneNumber);
 
         var result = await handler.Handle(command, cancellationToken);
 
@@ -55,6 +59,7 @@ public class RegisterUserCommandHandlerTests
 
         Assert.Equal(email, identityService.ReceivedEmail);
         Assert.Equal(password, identityService.ReceivedPassword);
+        Assert.Equal(phoneNumber, identityService.ReceivedPhoneNumber);
         Assert.Equal(cancellationToken, identityService.ReceivedCancellationToken);
     }
 
@@ -70,9 +75,10 @@ public class RegisterUserCommandHandlerTests
 
         const string email = "email@gmail.com";
         const string password = "password";
+        const string phoneNumber = "1234567890";
 
         var handler = new RegisterUserCommandHandler(identityService);
-        var command = new RegisterUserCommand(email, password);
+        var command = new RegisterUserCommand(email, password, phoneNumber);
 
         var result = await handler.Handle(
             command,

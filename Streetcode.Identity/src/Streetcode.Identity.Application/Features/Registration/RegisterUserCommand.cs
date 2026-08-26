@@ -6,7 +6,5 @@ namespace Streetcode.Identity.Application.Features.Registration;
 public sealed record RegisterUserCommand(
     string Email,
     string Password,
-    DateTime? BirthDate,
-    string? Phone,
-    string? Gender)
+    string? PhoneNumber)
     : IRequest<Result<RegisterUserResponse>>;

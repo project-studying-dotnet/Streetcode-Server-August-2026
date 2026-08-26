@@ -225,9 +225,6 @@ namespace Streetcode.Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasDefaultValue(1L);
 
-                    b.Property<DateTime?>("BirthDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -239,9 +236,6 @@ namespace Streetcode.Identity.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -264,9 +258,6 @@ namespace Streetcode.Identity.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PhoneNumber")
