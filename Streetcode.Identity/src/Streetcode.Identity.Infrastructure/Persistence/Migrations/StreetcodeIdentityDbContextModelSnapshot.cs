@@ -153,63 +153,6 @@ namespace Streetcode.Identity.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Streetcode.Identity.Domain.RefreshTokens.RefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("ConcurrencyVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasDefaultValue(1L);
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("FamilyId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ReplacedByTokenId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("RevokedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("TokenHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(64)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FamilyId")
-                        .HasDatabaseName("IX_RefreshTokens_FamilyId");
-
-                    b.HasIndex("ReplacedByTokenId");
-
-                    b.HasIndex("TokenHash")
-                        .IsUnique()
-                        .HasDatabaseName("UX_RefreshTokens_TokenHash");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_RefreshTokens_UserId");
-
-                    b.ToTable("RefreshTokens", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_RefreshTokens_ConcurrencyVersion_Positive", "[ConcurrencyVersion] >= 1");
-
-                            t.HasCheckConstraint("CK_RefreshTokens_ExpiresAt_After_CreatedAt", "[ExpiresAt] > [CreatedAt]");
-                        });
-                });
-
             modelBuilder.Entity("Streetcode.Identity.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -376,20 +319,6 @@ namespace Streetcode.Identity.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("Streetcode.Identity.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Streetcode.Identity.Domain.RefreshTokens.RefreshToken", b =>
-                {
-                    b.HasOne("Streetcode.Identity.Domain.RefreshTokens.RefreshToken", null)
-                        .WithMany()
-                        .HasForeignKey("ReplacedByTokenId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("Streetcode.Identity.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
