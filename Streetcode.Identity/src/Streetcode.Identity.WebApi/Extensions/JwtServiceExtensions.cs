@@ -11,17 +11,18 @@ namespace Streetcode.Identity.WebApi.Extensions
         public static IServiceCollection AddJwtServices(this IServiceCollection services, IConfiguration configuration)
         {
             var jwtSection = configuration.GetSection(JwtOptions.SectionName);
-            services.Configure<JwtOptions>(jwtSection);
+
+            services.AddOptions<JwtOptions>()
+                .Bind(jwtSection)
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer), "Jwt:Issuer is required.")
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Audience), "Jwt:Audience is required.")
+                .Validate(o => o.LifetimeInMinutes > 0, "Jwt:LifetimeInMinutes must be positive.")
+                .Validate(
+                    o => !string.IsNullOrWhiteSpace(o.SecretKey) && Encoding.UTF8.GetByteCount(o.SecretKey) >= 32,
+                    "Jwt:SecretKey must be set and at least 32 bytes (256 bits) for HS256.")
+                .ValidateOnStart();
+
             services.AddScoped<IJwtService, JwtService>();
-
-            var jwtOptions = jwtSection.Get<JwtOptions>();
-
-            if (jwtOptions is null || string.IsNullOrWhiteSpace(jwtOptions.SecretKey))
-            {
-                throw new InvalidOperationException(
-                    $"Configuration section '{JwtOptions.SectionName}' or its SecretKey is missing. " +
-                    "Set Jwt:SecretKey via an environment variable or secret store.");
-            }
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -29,18 +30,21 @@ namespace Streetcode.Identity.WebApi.Extensions
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = jwtOptions.Issuer,
+                        ValidIssuer = jwtSection["Issuer"],
 
                         ValidateAudience = true,
-                        ValidAudience = jwtOptions.Audience,
+                        ValidAudience = jwtSection["Audience"],
 
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.FromSeconds(30),
 
                         ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey!))
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(jwtSection["SecretKey"] ?? string.Empty)),
                     };
                 });
+
+            services.AddAuthorization();
 
             return services;
         }

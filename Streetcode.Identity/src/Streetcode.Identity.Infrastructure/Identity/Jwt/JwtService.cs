@@ -21,7 +21,7 @@ namespace Streetcode.Identity.Infrastructure.Identity.Jwt
             _tokenHandler = new JsonWebTokenHandler();
         }
 
-        public AuthTokenResult GenerateToken(int userId, string email, IEnumerable<string> roles)
+        public AuthTokenResult GenerateToken(Guid userId, string email, IEnumerable<string> roles, long accessVersion)
         {
             string secretKey = _jwtOptions.SecretKey;
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -36,6 +36,7 @@ namespace Streetcode.Identity.Infrastructure.Identity.Jwt
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim("access_version", accessVersion.ToString(), ClaimValueTypes.Integer64),
             };
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

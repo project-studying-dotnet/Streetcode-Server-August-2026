@@ -34,7 +34,7 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         public void GenerateToken_ValidInput_ReturnsTokenWithCorrectExpiration()
         {
             var before = DateTime.UtcNow;
-            var result = this.jwtService.GenerateToken(1, "admin@streetcode.ua", new[] { "MainAdministrator" });
+            var result = this.jwtService.GenerateToken(new Guid(), "admin@streetcode.ua", new[] { "MainAdministrator" });
             var after = DateTime.UtcNow;
 
             Assert.NotNull(result);
@@ -49,7 +49,7 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [Fact]
         public void GenerateToken_ValidInput_TokenContainsCorrectClaimsAndMetadata()
         {
-            int userId = 1;
+            Guid userId = new Guid();
             string email = "user@streetcode.ua";
             var roles = new[] { "Administrator" };
 
@@ -74,7 +74,7 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [InlineData("Moderator")]
         public void GenerateToken_SingleRole_SetsCorrectRoleClaim(string role)
         {
-            var result = this.jwtService.GenerateToken(10, "test@streetcode.ua", new[] { role });
+            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", new[] { role });
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims
@@ -91,7 +91,7 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         {
             var roles = new[] { "Administrator", "Moderator" };
 
-            var result = this.jwtService.GenerateToken(10, "test@streetcode.ua", roles);
+            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", roles);
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims
@@ -106,7 +106,7 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [Fact]
         public void GenerateToken_EmptyRoles_ProducesNoRoleClaims()
         {
-            var result = this.jwtService.GenerateToken(10, "test@streetcode.ua", Array.Empty<string>());
+            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", Array.Empty<string>());
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims.Where(c => c.Type == ClaimTypes.Role);

@@ -6,6 +6,6 @@ namespace Streetcode.Identity.Application.Abstractions
 {
     public interface IJwtService
     {
-        AuthTokenResult GenerateToken(int userId, string email, IEnumerable<string> roles);
+        AuthTokenResult GenerateToken(Guid userId, string email, IEnumerable<string> roles, long accessVersion);
     }
 }
