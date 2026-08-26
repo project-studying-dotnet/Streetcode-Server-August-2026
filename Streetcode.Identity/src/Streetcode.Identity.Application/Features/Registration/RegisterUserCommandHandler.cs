@@ -15,7 +15,7 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
 
     public async Task<Result<RegisterUserResponse>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
-        var creationResult = await _identityService.CreateUserAsync(request.Email, request.Password, request.BirthDate, request.Phone, request.Gender, cancellationToken);
+        var creationResult = await _identityService.CreateUserAsync(request.Email, request.Password, request.PhoneNumber, cancellationToken);
         if (creationResult.IsFailed)
         {
             return Result.Fail<RegisterUserResponse>(creationResult.Errors);

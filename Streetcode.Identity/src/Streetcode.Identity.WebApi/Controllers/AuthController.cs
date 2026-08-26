@@ -43,23 +43,29 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    public async Task<IActionResult> Register(
+        [FromBody] RegisterRequestDto request,
+        CancellationToken cancellationToken)
     {
         var command = new RegisterUserCommand(
             request.Email,
             request.Password,
-            request.BirthDate,
-            request.Phone,
-            request.Gender
+            request.PhoneNumber
         );
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(command, cancellationToken);
 
         if (result.IsFailed)
         {
-            return BadRequest(result.Errors);
+            return BadRequest(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+                Title = "Registration failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = result.Errors.FirstOrDefault()?.Message
+            });
         }
 
-        return Ok(result);
+        return Ok(result.Value);
     }
 }
