@@ -65,6 +65,7 @@ public sealed class IdentityServiceIntegrationTests
         Assert.Equal(creationResult.Value, user.Id);
         Assert.Equal(email, user.Email);
         Assert.Equal(email, user.UserName);
+        Assert.Equal(phoneNumber, user.PhoneNumber);
 
         Assert.Equal(userManager.NormalizeEmail(email), user.NormalizedEmail);
 

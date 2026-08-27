@@ -11,12 +11,10 @@ namespace Streetcode.Identity.WebApi.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly IMediator _mediator;
     private readonly ISender _sender;
 
-    public AuthController(IMediator mediator, ISender sender)
+    public AuthController(ISender sender)
     {
-        _mediator = mediator;
         _sender = sender;
     }
 
@@ -53,7 +51,7 @@ public sealed class AuthController : ControllerBase
             request.PhoneNumber
         );
 
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await _sender.Send(command, cancellationToken);
 
         if (result.IsFailed)
         {

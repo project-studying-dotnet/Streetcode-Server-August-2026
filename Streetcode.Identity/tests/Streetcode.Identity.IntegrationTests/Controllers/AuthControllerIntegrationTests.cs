@@ -76,7 +76,9 @@ public sealed class AuthControllerIntegrationTests
             PhoneNumber = "+380509998877"
         };
 
-        await client.PostAsJsonAsync("/api/auth/register", request);
+        var firstResponse = await client.PostAsJsonAsync("/api/auth/register", request);
+
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
         var response = await client.PostAsJsonAsync("/api/auth/register", request);
 
