@@ -34,7 +34,8 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         public void GenerateToken_ValidInput_ReturnsTokenWithCorrectExpiration()
         {
             var before = DateTime.UtcNow;
-            var result = this.jwtService.GenerateToken(new Guid(), "admin@streetcode.ua", new[] { "MainAdministrator" });
+            var result = this.jwtService.GenerateToken(
+                Guid.NewGuid(), "admin@streetcode.ua", new[] { "MainAdministrator" }, accessVersion: 1);
             var after = DateTime.UtcNow;
 
             Assert.NotNull(result);
@@ -49,15 +50,17 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [Fact]
         public void GenerateToken_ValidInput_TokenContainsCorrectClaimsAndMetadata()
         {
-            Guid userId = new Guid();
+            Guid userId = Guid.NewGuid();
             string email = "user@streetcode.ua";
             var roles = new[] { "Administrator" };
+            const long accessVersion = 1;
 
-            var result = this.jwtService.GenerateToken(userId, email, roles);
+            var result = this.jwtService.GenerateToken(userId, email, roles, accessVersion);
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             Assert.Equal(userId.ToString(), token.GetClaim(JwtRegisteredClaimNames.Sub).Value);
             Assert.Equal(email, token.GetClaim(JwtRegisteredClaimNames.Email).Value);
+            Assert.Equal(accessVersion.ToString(), token.GetClaim("access_version").Value);
 
             var roleClaims = token.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
@@ -74,7 +77,8 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [InlineData("Moderator")]
         public void GenerateToken_SingleRole_SetsCorrectRoleClaim(string role)
         {
-            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", new[] { role });
+            var result = this.jwtService.GenerateToken(
+                Guid.NewGuid(), "test@streetcode.ua", new[] { role }, accessVersion: 1);
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims
@@ -91,7 +95,8 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         {
             var roles = new[] { "Administrator", "Moderator" };
 
-            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", roles);
+            var result = this.jwtService.GenerateToken(
+                Guid.NewGuid(), "test@streetcode.ua", roles, accessVersion: 1);
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims
@@ -106,12 +111,25 @@ namespace Streetcode.Identity.UnitTests.Features.Jwt
         [Fact]
         public void GenerateToken_EmptyRoles_ProducesNoRoleClaims()
         {
-            var result = this.jwtService.GenerateToken(new Guid(), "test@streetcode.ua", Array.Empty<string>());
+            var result = this.jwtService.GenerateToken(
+                Guid.NewGuid(), "test@streetcode.ua", Array.Empty<string>(), accessVersion: 1);
             var token = this.jwtHandler.ReadJsonWebToken(result.Token);
 
             var roleClaims = token.Claims.Where(c => c.Type == ClaimTypes.Role);
 
             Assert.Empty(roleClaims);
+        }
+
+        [Fact]
+        public void GenerateToken_IncludesAccessVersionClaim()
+        {
+            const long accessVersion = 42;
+
+            var result = this.jwtService.GenerateToken(
+                Guid.NewGuid(), "test@streetcode.ua", new[] { "User" }, accessVersion);
+            var token = this.jwtHandler.ReadJsonWebToken(result.Token);
+
+            Assert.Equal(accessVersion.ToString(), token.GetClaim("access_version").Value);
         }
     }
 }
