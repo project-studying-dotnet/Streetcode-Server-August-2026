@@ -14,9 +14,11 @@ namespace Streetcode.Identity.Infrastructure.Identity.Jwt
     {
         private readonly JwtOptions _jwtOptions;
         private readonly JsonWebTokenHandler _tokenHandler;
+        private readonly TimeProvider _timeProvider;
 
-        public JwtService(IOptions<JwtOptions> jwtOptions)
+        public JwtService(IOptions<JwtOptions> jwtOptions, TimeProvider timeProvider)
         {
+            _timeProvider = timeProvider;
             _jwtOptions = jwtOptions.Value;
             _tokenHandler = new JsonWebTokenHandler();
         }
@@ -28,7 +30,7 @@ namespace Streetcode.Identity.Infrastructure.Identity.Jwt
 
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-            var now = DateTime.UtcNow;
+            var now = _timeProvider.GetUtcNow().UtcDateTime;
             var expires = now.AddMinutes(_jwtOptions.LifetimeInMinutes);
 
             var claims = new List<Claim>
@@ -48,7 +50,8 @@ namespace Streetcode.Identity.Infrastructure.Identity.Jwt
                 SigningCredentials = credentials,
                 Issuer = _jwtOptions.Issuer,
                 Audience = _jwtOptions.Audience,
-                IssuedAt = now
+                IssuedAt = now,
+                NotBefore = now
             };
 
             string token = _tokenHandler.CreateToken(tokenDescription);
