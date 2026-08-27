@@ -4,6 +4,7 @@ using FluentResults;
 using MediatR;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.MediatR.Streetcode.Streetcode.Filters;
 using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
@@ -72,14 +73,11 @@ public class GetAllStreetcodesHandler : IRequestHandler<GetAllStreetcodesQuery, 
         ref IQueryable<StreetcodeContent> streetcodes,
         string filter)
     {
-        var filterParams = filter.Split(':');
-        var filterColumn = filterParams[0];
-        var filterValue = filterParams[1];
-
-        streetcodes = streetcodes
-            .AsEnumerable()
-            .Where(s => filterValue.Contains(s.Status.ToString()))
-            .AsQueryable();
+        if (StreetcodeFilterParser.TryParse(filter, out var status))
+        {
+            streetcodes = streetcodes
+                .Where(streetcode => streetcode.Status == status);
+        }
     }
 
     private void FindSortedStreetcodes(
