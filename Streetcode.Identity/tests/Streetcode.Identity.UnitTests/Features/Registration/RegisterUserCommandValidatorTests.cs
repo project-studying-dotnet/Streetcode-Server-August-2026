@@ -1,3 +1,4 @@
+using FluentValidation.TestHelper;
 using Streetcode.Identity.Application.Features.Registration;
 
 namespace Streetcode.Identity.UnitTests.Features.Registration;
@@ -11,8 +12,9 @@ public sealed class RegisterUserCommandValidatorTests
     {
         const string email = "user@example.com";
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501112233";
 
-        var command = new RegisterUserCommand(email, password);
+        var command = new RegisterUserCommand(email, password, phoneNumber);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -24,8 +26,9 @@ public sealed class RegisterUserCommandValidatorTests
     public async Task Validate_WhenEmailIsEmpty_ShouldReturnEmailRequiredError()
     {
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501112233";
 
-        var command = new RegisterUserCommand(string.Empty, password);
+        var command = new RegisterUserCommand(string.Empty, password, phoneNumber);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -45,8 +48,9 @@ public sealed class RegisterUserCommandValidatorTests
     {
         const string email = "not-an-email";
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501112233";
 
-        var command = new RegisterUserCommand(email, password);
+        var command = new RegisterUserCommand(email, password, phoneNumber);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -66,10 +70,11 @@ public sealed class RegisterUserCommandValidatorTests
     {
         var email = $"{new string('a', 250)}@example.com";
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501112233";
 
         Assert.True(email.Length > 256);
 
-        var command = new RegisterUserCommand(email, password);
+        var command = new RegisterUserCommand(email, password, phoneNumber);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -88,8 +93,9 @@ public sealed class RegisterUserCommandValidatorTests
     public async Task Validate_WhenPasswordIsEmpty_ShouldReturnPasswordRequiredError()
     {
         const string email = "user@example.com";
+        const string phoneNumber = "+380501112233";
 
-        var command = new RegisterUserCommand(email, string.Empty);
+        var command = new RegisterUserCommand(email, string.Empty, phoneNumber);
 
         var result = await _validator.ValidateAsync(command);
 
@@ -102,5 +108,22 @@ public sealed class RegisterUserCommandValidatorTests
             error.PropertyName);
 
         Assert.Equal("Password.Required", error.ErrorCode);
+    }
+
+    [Fact]
+    public void Validate_WhenPhoneNumberIsLongerThan20Characters_ShouldHaveTooLongError()
+    {
+        var validator = new RegisterUserCommandValidator();
+
+        var command = new RegisterUserCommand(
+            "valid@example.com",
+            "StrongPassword123!",
+            "123456789012345678901"
+        );
+
+        var result = validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(x => x.PhoneNumber)
+              .WithErrorCode("PhoneNumber.TooLong");
     }
 }
