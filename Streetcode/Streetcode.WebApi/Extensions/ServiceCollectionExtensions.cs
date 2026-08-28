@@ -2,12 +2,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Hangfire;
 using MediatR;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
+using Streetcode.WebApi.ExceptionHandlers;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
@@ -25,9 +28,6 @@ using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
-using FluentValidation;
-using Streetcode.BLL.MediatR.Behaviors;
-using Streetcode.WebApi.ExceptionHandlers;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -44,8 +44,8 @@ public static class ServiceCollectionExtensions
         services.AddRepositoryServices();
         services.AddFeatureManagement();
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        services.AddAutoMapper(currentAssemblies);
         var bllAssembly = typeof(ValidationBehavior<,>).Assembly;
+        services.AddAutoMapper(currentAssemblies);
         services.AddValidatorsFromAssembly(bllAssembly);
         services.AddMediatR(cfg =>
         {
@@ -63,7 +63,7 @@ public static class ServiceCollectionExtensions
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetRequiredConnectionString();
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
 
