@@ -7,11 +7,14 @@ namespace Streetcode.DAL.Entities.Media;
 [Table("audios", Schema = "media")]
 public class Audio
 {
+    public const int TitleMaxLength = 100;
+    public const int MimeTypeMaxLength = 10;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
-    [MaxLength(100)]
+    [MaxLength(TitleMaxLength)]
     public string? Title { get; set; }
 
     [Required]
@@ -19,7 +22,7 @@ public class Audio
     public string? BlobName { get; set; }
 
     [Required]
-    [MaxLength(10)]
+    [MaxLength(MimeTypeMaxLength)]
     public string? MimeType { get; set; }
 
     [NotMapped]
