@@ -31,13 +31,6 @@ public class VideoController : BaseApiController
     [HttpPost]
     public async Task<IActionResult> Create(VideoDTO video)
     {
-        if (string.IsNullOrWhiteSpace(video.Url) ||
-            !Uri.TryCreate(video.Url, UriKind.Absolute, out var uri) ||
-            (uri.Host != "youtube.com" && uri.Host != "www.youtube.com"))
-        {
-            return BadRequest("Only YouTube links are allowed.");
-        }
-
         return HandleResult(
             await Mediator.Send(new CreateVideoCommand(video)));
     }

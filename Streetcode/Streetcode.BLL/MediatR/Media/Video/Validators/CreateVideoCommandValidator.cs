@@ -17,22 +17,8 @@ public sealed class CreateVideoCommandValidator
             RuleFor(command => command.Video.Url)
                 .NotEmpty()
                 .WithMessage("Video URL is required.")
-                .Must(BeYoutubeUrl)
+                .Must(YouTubeUrlHelper.IsValid)
                 .WithMessage("Only YouTube URLs are allowed.");
         });
-    }
-
-    private static bool BeYoutubeUrl(string? url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-        {
-            return false;
-        }
-
-        return uri.Scheme == Uri.UriSchemeHttps
-            && (uri.Host.Equals("youtube.com", StringComparison.OrdinalIgnoreCase)
-                || uri.Host.Equals("www.youtube.com", StringComparison.OrdinalIgnoreCase)
-                || uri.Host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase)
-                || uri.Host.Equals("m.youtube.com", StringComparison.OrdinalIgnoreCase));
     }
 }

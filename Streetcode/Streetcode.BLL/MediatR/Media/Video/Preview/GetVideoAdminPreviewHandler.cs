@@ -1,5 +1,6 @@
 using FluentResults;
 using MediatR;
+using Streetcode.BLL.MediatR.Media.Video.Validators;
 
 namespace Streetcode.BLL.MediatR.Media.Video.Preview;
 
@@ -10,17 +11,7 @@ public class GetVideoAdminPreviewHandler
         GetVideoForAdminPreviewCommand request,
         CancellationToken cancellationToken)
     {
-        if (!Uri.TryCreate(request.url, UriKind.Absolute, out var uri))
-        {
-            return Task.FromResult(
-                Result.Fail<string>("Invalid video URL."));
-        }
-
-        var videoId = uri.Host.Equals("youtu.be", StringComparison.OrdinalIgnoreCase)
-            ? uri.AbsolutePath.Trim('/')
-            : Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query)["v"].ToString();
-
-        if (string.IsNullOrWhiteSpace(videoId))
+        if (!YouTubeUrlHelper.TryGetVideoId(request.url, out var videoId))
         {
             return Task.FromResult(
                 Result.Fail<string>("Invalid YouTube URL."));
