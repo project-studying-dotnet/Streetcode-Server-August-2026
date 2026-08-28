@@ -3,11 +3,73 @@
 // </copyright>
 namespace Streetcode.XUnitTest.Utils
 {
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.FileProviders;
+    using Microsoft.Extensions.Hosting;
+    using Moq;
+    using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
+    using Streetcode.DAL.Entities.Toponyms;
+    using Streetcode.DAL.Persistence;
     using Streetcode.WebApi.Utils;
     using Xunit;
 
     public class WebParsingUtilsTests
     {
+        [Theory]
+        [InlineData("region;old;new;gromada;community;unused;street;50.5;30.5")]
+        [InlineData("region;old;new;gromada;community;unused;street;;30.5")]
+        [InlineData("region;old;new;gromada;community;unused;street;not-a-number;30.5")]
+        public async Task SaveToponymsToDbAsync_WithIncompleteOrInvalidDownload_DoesNotClearDatabase(
+            string invalidRow)
+        {
+            string runtimeDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(runtimeDirectory);
+            string csvPath = Path.Combine(runtimeDirectory, "data.csv");
+            await File.WriteAllLinesAsync(csvPath, new[]
+            {
+                "region;old;new;gromada;community;unused;street;latitude;longitude",
+                invalidRow
+            });
+
+            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+            try
+            {
+                await using var context = new StreetcodeDbContext(options);
+                context.Toponyms.Add(new Toponym
+                {
+                    Oblast = "Existing oblast",
+                    StreetName = "Existing toponym",
+                    Coordinate = new ToponymCoordinate()
+                });
+                context.Toponyms.Add(new Toponym
+                {
+                    Oblast = "Second existing oblast",
+                    StreetName = "Second existing toponym",
+                    Coordinate = new ToponymCoordinate()
+                });
+                await context.SaveChangesAsync();
+                var environment = new Mock<IHostEnvironment>();
+                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
+                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
+                var sut = new WebParsingUtils(context, environment.Object);
+
+                bool result = await sut.SaveToponymsToDbAsync(csvPath);
+
+                Assert.False(result);
+                Assert.Equal(2, await context.Toponyms.CountAsync());
+                Assert.Contains(
+                    await context.Toponyms.ToListAsync(),
+                    x => x.StreetName == "Existing toponym");
+            }
+            finally
+            {
+                Directory.Delete(runtimeDirectory, recursive: true);
+            }
+        }
+
         [Fact]
         public void GetZipPath_WhenCalled_ShouldReturnPathInsideTemporaryDirectory()
         {
