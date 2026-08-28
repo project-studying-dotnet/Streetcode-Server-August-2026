@@ -26,8 +26,8 @@ public class GetFactByIdHandler : IRequestHandler<GetFactByIdQuery, Result<FactD
         var fact = await _repositoryWrapper.FactRepository.GetFirstOrDefaultAsync(
             predicate: f => f.Id == request.Id,
             include: query => query
-                .Include(f => f.Image)
-                .ThenInclude(image => image.ImageDetails)!);
+                .Include(f => f.Image!)
+                .ThenInclude(image => image.ImageDetails!));
 
         if (fact is null)
         {

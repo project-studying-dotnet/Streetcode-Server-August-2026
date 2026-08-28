@@ -24,8 +24,8 @@ public class GetAllFactsHandler : IRequestHandler<GetAllFactsQuery, Result<IEnum
     {
         var facts = await _repositoryWrapper.FactRepository.GetAllAsync(
             include: query => query
-                .Include(f => f.Image)
-                .ThenInclude(image => image.ImageDetails));
+                .Include(f => f.Image!)
+                .ThenInclude(image => image.ImageDetails!));
 
         var orderedFacts = facts
             .OrderBy(f => f.StreetcodeId)

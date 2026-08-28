@@ -48,7 +48,7 @@ public class UpdateFactHandler : IRequestHandler<UpdateFactCommand, Result<FactD
             .GetFirstOrDefaultAsync(
                 predicate: f => f.Id == request.Fact.ImageId,
                 include: query => query
-                    .Include(f => f.ImageDetails));
+                    .Include(f => f.ImageDetails!));
 
         if (image is null)
         {

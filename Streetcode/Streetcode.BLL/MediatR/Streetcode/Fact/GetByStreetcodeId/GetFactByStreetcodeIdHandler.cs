@@ -27,8 +27,8 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
             .GetAllAsync(
                 predicate: f => f.StreetcodeId == request.StreetcodeId,
                 include: query => query
-                    .Include(f => f.Image)
-                    .ThenInclude(image => image.ImageDetails)!);
+                    .Include(f => f.Image!)
+                    .ThenInclude(image => image.ImageDetails!));
 
         var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
 

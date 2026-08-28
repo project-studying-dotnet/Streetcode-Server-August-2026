@@ -1,50 +1,53 @@
-using System.Linq.Expressions;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore.Query;
-using Moq;
-using Repositories.Interfaces;
-using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
-using Xunit;
-using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.Streetcode.Fact.Create;
-using Streetcode.DAL.Repositories.Interfaces.Base;
-using Streetcode.DAL.Repositories.Interfaces.Media.Images;
-using Streetcode.DAL.Repositories.Interfaces.Streetcode;
-using Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
-using FactEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Fact;
-using ImageDetailsEntity = Streetcode.DAL.Entities.Media.Images.ImageDetails;
-using StreetcodeEntity = Streetcode.DAL.Entities.Streetcode.StreetcodeContent;
-using ImageEntity = Streetcode.DAL.Entities.Media.Images.Image;
-
-namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact;
-
-public class CreateFactHandlerTests
+// <copyright file="CreateFactHandlerTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock = new();
-    private readonly Mock<IStreetcodeRepository> _streetcodeRepositoryMock = new();
-    private readonly Mock<IImageRepository> _imageRepositoryMock = new();
-    private readonly Mock<IFactRepository> _factRepositoryMock = new();
-    private readonly Mock<IImageDetailsRepository> _imageDetailsRepositoryMock = new();
-    private readonly Mock<IMapper> _mapperMock = new();
-    private readonly Mock<ILoggerService> _loggerServiceMock = new();
+    using System.Linq.Expressions;
+    using AutoMapper;
+    using global::Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
+    using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Streetcode.Fact.Create;
+    using global::Streetcode.DAL.Repositories.Interfaces.Base;
+    using global::Streetcode.DAL.Repositories.Interfaces.Media.Images;
+    using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
+    using global::Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
+    using Microsoft.EntityFrameworkCore.Query;
+    using Moq;
+    using Repositories.Interfaces;
+    using Xunit;
+    using FactEntity = global::Streetcode.DAL.Entities.Streetcode.TextContent.Fact;
+    using ImageDetailsEntity = global::Streetcode.DAL.Entities.Media.Images.ImageDetails;
+    using ImageEntity = global::Streetcode.DAL.Entities.Media.Images.Image;
+    using StreetcodeEntity = global::Streetcode.DAL.Entities.Streetcode.StreetcodeContent;
+
+    public class CreateFactHandlerTests
+    {
+    private readonly Mock<IRepositoryWrapper> repositoryWrapperMock = new ();
+    private readonly Mock<IStreetcodeRepository> streetcodeRepositoryMock = new ();
+    private readonly Mock<IImageRepository> imageRepositoryMock = new ();
+    private readonly Mock<IFactRepository> factRepositoryMock = new ();
+    private readonly Mock<IImageDetailsRepository> imageDetailsRepositoryMock = new ();
+    private readonly Mock<IMapper> mapperMock = new ();
+    private readonly Mock<ILoggerService> loggerServiceMock = new ();
 
     public CreateFactHandlerTests()
     {
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.StreetcodeRepository)
-            .Returns(_streetcodeRepositoryMock.Object);
+            .Returns(this.streetcodeRepositoryMock.Object);
 
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.ImageRepository)
-            .Returns(_imageRepositoryMock.Object);
+            .Returns(this.imageRepositoryMock.Object);
 
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.ImageDetailsRepository)
-            .Returns(_imageDetailsRepositoryMock.Object);
+            .Returns(this.imageDetailsRepositoryMock.Object);
 
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.FactRepository)
-            .Returns(_factRepositoryMock.Object);
+            .Returns(this.factRepositoryMock.Object);
     }
 
     [Fact]
@@ -60,35 +63,35 @@ public class CreateFactHandlerTests
         var command = new CreateFactCommand(factDto);
         var expectedMessage = "Cannot find streetcode with id: 10";
 
-        _streetcodeRepositoryMock
+        this.streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
                 null))
             .ReturnsAsync((StreetcodeEntity?)null);
 
         var handler = new CreateFactHandler(
-            _repositoryWrapperMock.Object,
-            _mapperMock.Object,
-            _loggerServiceMock.Object);
+            this.repositoryWrapperMock.Object,
+            this.mapperMock.Object,
+            this.loggerServiceMock.Object);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailed);
         Assert.Equal(expectedMessage, result.Errors.Single().Message);
 
-        _repositoryWrapperMock.Verify(
+        this.repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
             Times.Never());
 
-        _imageRepositoryMock.VerifyNoOtherCalls();
-        _factRepositoryMock.VerifyNoOtherCalls();
-        _mapperMock.VerifyNoOtherCalls();
+        this.imageRepositoryMock.VerifyNoOtherCalls();
+        this.factRepositoryMock.VerifyNoOtherCalls();
+        this.mapperMock.VerifyNoOtherCalls();
 
-        _loggerServiceMock.Verify(
+        this.loggerServiceMock.Verify(
             logger => logger.LogError(command, expectedMessage),
             Times.Once());
 
-        _imageDetailsRepositoryMock.VerifyNoOtherCalls();
+        this.imageDetailsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -107,13 +110,13 @@ public class CreateFactHandlerTests
 
         const string expectedMessage = "Cannot find image with id: 5";
 
-        _streetcodeRepositoryMock
+        this.streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
                 null))
             .ReturnsAsync(streetcode);
 
-        _imageRepositoryMock
+        this.imageRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ImageEntity, bool>>>(),
                 It.IsAny<Func<
@@ -122,24 +125,24 @@ public class CreateFactHandlerTests
             .ReturnsAsync((ImageEntity?)null);
 
         var handler = new CreateFactHandler(
-            _repositoryWrapperMock.Object,
-            _mapperMock.Object,
-            _loggerServiceMock.Object);
+            this.repositoryWrapperMock.Object,
+            this.mapperMock.Object,
+            this.loggerServiceMock.Object);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailed);
         Assert.Equal(expectedMessage, result.Errors.Single().Message);
 
-        _loggerServiceMock.Verify(
+        this.loggerServiceMock.Verify(
             logger => logger.LogError(command, expectedMessage),
             Times.Once());
 
-        _factRepositoryMock.VerifyNoOtherCalls();
-        _imageDetailsRepositoryMock.VerifyNoOtherCalls();
-        _mapperMock.VerifyNoOtherCalls();
+        this.factRepositoryMock.VerifyNoOtherCalls();
+        this.imageDetailsRepositoryMock.VerifyNoOtherCalls();
+        this.mapperMock.VerifyNoOtherCalls();
 
-        _repositoryWrapperMock.Verify(
+        this.repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
             Times.Never());
     }
@@ -147,19 +150,19 @@ public class CreateFactHandlerTests
     [Fact]
     public async Task Handle_WhenSavingFails_ShouldReturnFailure()
     {
-        var factDto = CreateFactDto(title: "  Test fact  ", factContent: "  Test content  ");
+        var factDto = this.CreateFactDto(title: "  Test fact  ", factContent: "  Test content  ");
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
         var fact = new FactEntity();
         const string expectedMessage = "Failed to create fact";
 
-        SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
-        _repositoryWrapperMock
+        this.SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(0);
 
-        var result = await CreateHandler().Handle(command, CancellationToken.None);
+        var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailed);
         Assert.Equal(expectedMessage, result.Errors.Single().Message);
@@ -167,9 +170,9 @@ public class CreateFactHandlerTests
         Assert.Equal("Test fact", fact.Title);
         Assert.Equal("Test content", fact.FactContent);
 
-        _factRepositoryMock.Verify(repository => repository.CreateAsync(fact), Times.Once());
-        _mapperMock.Verify(mapper => mapper.Map<FactDto>(It.IsAny<object>()), Times.Never());
-        _loggerServiceMock.Verify(
+        this.factRepositoryMock.Verify(repository => repository.CreateAsync(fact), Times.Once());
+        this.mapperMock.Verify(mapper => mapper.Map<FactDto>(It.IsAny<object>()), Times.Never());
+        this.loggerServiceMock.Verify(
             logger => logger.LogError(command, expectedMessage),
             Times.Once());
     }
@@ -177,7 +180,7 @@ public class CreateFactHandlerTests
     [Fact]
     public async Task Handle_WhenDataIsValid_ShouldCreateFactWithNextDisplayOrder()
     {
-        var factDto = CreateFactDto();
+        var factDto = this.CreateFactDto();
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -189,31 +192,31 @@ public class CreateFactHandlerTests
         var fact = new FactEntity();
         var createdFactDto = new FactDto { Id = 15 };
 
-        SetupValidDependencies(factDto, streetcode, image, fact, existingFacts);
-        _repositoryWrapperMock
+        this.SetupValidDependencies(factDto, streetcode, image, fact, existingFacts);
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(1);
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<FactDto>(fact))
             .Returns(createdFactDto);
 
-        var result = await CreateHandler().Handle(command, CancellationToken.None);
+        var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Same(createdFactDto, result.Value);
         Assert.Equal(4, fact.DisplayOrder);
         Assert.Null(result.Value.ImageAlt);
 
-        _factRepositoryMock.Verify(repository => repository.CreateAsync(fact), Times.Once());
-        _repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
-        _imageDetailsRepositoryMock.VerifyNoOtherCalls();
-        _loggerServiceMock.VerifyNoOtherCalls();
+        this.factRepositoryMock.Verify(repository => repository.CreateAsync(fact), Times.Once());
+        this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
+        this.imageDetailsRepositoryMock.VerifyNoOtherCalls();
+        this.loggerServiceMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task Handle_WhenImageAltProvidedAndDetailsDoNotExist_ShouldCreateImageDetails()
     {
-        var factDto = CreateFactDto(imageAlt: "  Accessible description  ");
+        var factDto = this.CreateFactDto(imageAlt: "  Accessible description  ");
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -221,19 +224,19 @@ public class CreateFactHandlerTests
         var createdFactDto = new FactDto();
         ImageDetailsEntity? createdImageDetails = null;
 
-        SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
-        _imageDetailsRepositoryMock
+        this.SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
+        this.imageDetailsRepositoryMock
             .Setup(repository => repository.CreateAsync(It.IsAny<ImageDetailsEntity>()))
             .Callback<ImageDetailsEntity>(details => createdImageDetails = details)
             .Returns((ImageDetailsEntity details) => Task.FromResult(details));
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(1);
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<FactDto>(fact))
             .Returns(createdFactDto);
 
-        var result = await CreateHandler().Handle(command, CancellationToken.None);
+        var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(createdImageDetails);
@@ -242,10 +245,10 @@ public class CreateFactHandlerTests
         Assert.Equal("Accessible description", createdImageDetails.Alt);
         Assert.Equal("Accessible description", result.Value.ImageAlt);
 
-        _imageDetailsRepositoryMock.Verify(
+        this.imageDetailsRepositoryMock.Verify(
             repository => repository.CreateAsync(createdImageDetails),
             Times.Once());
-        _imageDetailsRepositoryMock.Verify(
+        this.imageDetailsRepositoryMock.Verify(
             repository => repository.Update(It.IsAny<ImageDetailsEntity>()),
             Times.Never());
     }
@@ -253,7 +256,7 @@ public class CreateFactHandlerTests
     [Fact]
     public async Task Handle_WhenImageDetailsExist_ShouldUpdateDescription()
     {
-        var factDto = CreateFactDto(imageAlt: "  Updated description  ");
+        var factDto = this.CreateFactDto(imageAlt: "  Updated description  ");
         var command = new CreateFactCommand(factDto);
         var streetcode = new StreetcodeEntity { Id = factDto.StreetcodeId };
         var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Old description" };
@@ -261,31 +264,31 @@ public class CreateFactHandlerTests
         var fact = new FactEntity();
         var createdFactDto = new FactDto();
 
-        SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
-        _repositoryWrapperMock
+        this.SetupValidDependencies(factDto, streetcode, image, fact, Array.Empty<FactEntity>());
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(1);
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<FactDto>(fact))
             .Returns(createdFactDto);
 
-        var result = await CreateHandler().Handle(command, CancellationToken.None);
+        var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Updated description", imageDetails.Alt);
         Assert.Equal("Updated description", result.Value.ImageAlt);
 
-        _imageDetailsRepositoryMock.Verify(repository => repository.Update(imageDetails), Times.Once());
-        _imageDetailsRepositoryMock.Verify(
+        this.imageDetailsRepositoryMock.Verify(repository => repository.Update(imageDetails), Times.Once());
+        this.imageDetailsRepositoryMock.Verify(
             repository => repository.CreateAsync(It.IsAny<ImageDetailsEntity>()),
             Times.Never());
     }
 
     private CreateFactHandler CreateHandler() =>
-        new(
-            _repositoryWrapperMock.Object,
-            _mapperMock.Object,
-            _loggerServiceMock.Object);
+        new (
+            this.repositoryWrapperMock.Object,
+            this.mapperMock.Object,
+            this.loggerServiceMock.Object);
 
     private void SetupValidDependencies(
         FactUpdateCreateDto factDto,
@@ -294,34 +297,34 @@ public class CreateFactHandlerTests
         FactEntity fact,
         IEnumerable<FactEntity> existingFacts)
     {
-        _streetcodeRepositoryMock
+        this.streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
                 null))
             .ReturnsAsync(streetcode);
-        _imageRepositoryMock
+        this.imageRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<ImageEntity, bool>>>(),
                 It.IsAny<Func<IQueryable<ImageEntity>, IIncludableQueryable<ImageEntity, object>>?>()))
             .ReturnsAsync(image);
-        _factRepositoryMock
+        this.factRepositoryMock
             .Setup(repository => repository.GetAllAsync(
                 It.IsAny<Expression<Func<FactEntity, bool>>>(),
                 null))
             .ReturnsAsync(existingFacts);
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<FactEntity>(factDto))
             .Returns(fact);
-        _factRepositoryMock
+        this.factRepositoryMock
             .Setup(repository => repository.CreateAsync(fact))
             .ReturnsAsync(fact);
     }
 
-    private static FactUpdateCreateDto CreateFactDto(
+    private FactUpdateCreateDto CreateFactDto(
         string title = "Test fact",
         string factContent = "Test content",
         string? imageAlt = null) =>
-        new()
+        new ()
         {
             Title = title,
             FactContent = factContent,
@@ -329,4 +332,5 @@ public class CreateFactHandlerTests
             ImageId = 5,
             StreetcodeId = 10,
         };
+    }
 }

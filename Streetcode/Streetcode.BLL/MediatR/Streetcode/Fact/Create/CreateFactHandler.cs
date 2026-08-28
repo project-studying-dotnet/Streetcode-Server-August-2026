@@ -40,7 +40,7 @@ public class CreateFactHandler : IRequestHandler<CreateFactCommand, Result<FactD
         var image = await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(
             predicate: i => i.Id == request.Fact.ImageId,
             include: query => query
-                .Include(i => i.ImageDetails));
+                .Include(i => i.ImageDetails!));
 
         if (image is null)
         {

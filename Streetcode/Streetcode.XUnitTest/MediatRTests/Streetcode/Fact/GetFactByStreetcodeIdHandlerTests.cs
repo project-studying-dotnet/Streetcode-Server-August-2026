@@ -1,29 +1,32 @@
-using System.Linq.Expressions;
-using AutoMapper;
-using Microsoft.EntityFrameworkCore.Query;
-using Moq;
-using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
-using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.Streetcode.Fact.GetByStreetcodeId;
-using Streetcode.DAL.Repositories.Interfaces.Base;
-using Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
-using Xunit;
-using FactEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Fact;
-
-namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact;
-
-public class GetFactByStreetcodeIdHandlerTests
+// <copyright file="GetFactByStreetcodeIdHandlerTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
 {
-    private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock = new();
-    private readonly Mock<IFactRepository> _factRepositoryMock = new();
-    private readonly Mock<IMapper> _mapperMock = new();
-    private readonly Mock<ILoggerService> _loggerServiceMock = new();
+    using System.Linq.Expressions;
+    using AutoMapper;
+    using global::Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
+    using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Streetcode.Fact.GetByStreetcodeId;
+    using global::Streetcode.DAL.Repositories.Interfaces.Base;
+    using global::Streetcode.DAL.Repositories.Interfaces.Streetcode.TextContent;
+    using Microsoft.EntityFrameworkCore.Query;
+    using Moq;
+    using Xunit;
+    using FactEntity = global::Streetcode.DAL.Entities.Streetcode.TextContent.Fact;
+
+    public class GetFactByStreetcodeIdHandlerTests
+    {
+    private readonly Mock<IRepositoryWrapper> repositoryWrapperMock = new ();
+    private readonly Mock<IFactRepository> factRepositoryMock = new ();
+    private readonly Mock<IMapper> mapperMock = new ();
+    private readonly Mock<ILoggerService> loggerServiceMock = new ();
 
     public GetFactByStreetcodeIdHandlerTests()
     {
-        _repositoryWrapperMock
+        this.repositoryWrapperMock
             .Setup(wrapper => wrapper.FactRepository)
-            .Returns(_factRepositoryMock.Object);
+            .Returns(this.factRepositoryMock.Object);
     }
 
     [Fact]
@@ -31,27 +34,27 @@ public class GetFactByStreetcodeIdHandlerTests
     {
         var query = new GetFactByStreetcodeIdQuery(10);
 
-        _factRepositoryMock
+        this.factRepositoryMock
             .Setup(repository => repository.GetAllAsync(
                 It.IsAny<Expression<Func<FactEntity, bool>>>(),
                 It.IsAny<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>()))
             .ReturnsAsync(Array.Empty<FactEntity>());
 
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<IEnumerable<FactDto>>(It.IsAny<object>()))
             .Returns(Array.Empty<FactDto>());
 
         var handler = new GetFactByStreetcodeIdHandler(
-            _repositoryWrapperMock.Object,
-            _mapperMock.Object,
-            _loggerServiceMock.Object);
+            this.repositoryWrapperMock.Object,
+            this.mapperMock.Object,
+            this.loggerServiceMock.Object);
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Value);
 
-        _loggerServiceMock.VerifyNoOtherCalls();
-        _mapperMock.Verify(
+        this.loggerServiceMock.VerifyNoOtherCalls();
+        this.mapperMock.Verify(
             mapper => mapper.Map<IEnumerable<FactDto>>(It.IsAny<object>()),
             Times.Once());
     }
@@ -66,31 +69,34 @@ public class GetFactByStreetcodeIdHandlerTests
             new FactEntity { Id = 1, StreetcodeId = query.StreetcodeId, DisplayOrder = 1 },
         };
 
-        _factRepositoryMock
+        this.factRepositoryMock
             .Setup(repository => repository.GetAllAsync(
                 It.IsAny<Expression<Func<FactEntity, bool>>>(),
                 It.IsAny<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>()))
             .ReturnsAsync(facts);
-        _mapperMock
+        this.mapperMock
             .Setup(mapper => mapper.Map<IEnumerable<FactDto>>(It.IsAny<object>()))
             .Returns((object source) => ((IEnumerable<FactEntity>)source)
                 .Select(fact => new FactDto { Id = fact.Id })
                 .ToList());
 
         var handler = new GetFactByStreetcodeIdHandler(
-            _repositoryWrapperMock.Object,
-            _mapperMock.Object,
-            _loggerServiceMock.Object);
+            this.repositoryWrapperMock.Object,
+            this.mapperMock.Object,
+            this.loggerServiceMock.Object);
         var result = await handler.Handle(query, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(new[] { 1, 2 }, result.Value.Select(fact => fact.Id));
 
-        _factRepositoryMock.Verify(repository => repository.GetAllAsync(
-            It.Is<Expression<Func<FactEntity, bool>>>(predicate =>
-                predicate.Compile()(new FactEntity { StreetcodeId = query.StreetcodeId }) &&
-                !predicate.Compile()(new FactEntity { StreetcodeId = query.StreetcodeId + 1 })),
-            It.Is<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>(
-                include => include != null)), Times.Once());
+        this.factRepositoryMock.Verify(
+            repository => repository.GetAllAsync(
+                It.Is<Expression<Func<FactEntity, bool>>>(predicate =>
+                    predicate.Compile()(new FactEntity { StreetcodeId = query.StreetcodeId }) &&
+                    !predicate.Compile()(new FactEntity { StreetcodeId = query.StreetcodeId + 1 })),
+                It.Is<Func<IQueryable<FactEntity>, IIncludableQueryable<FactEntity, object>>?>(
+                    include => include != null)),
+            Times.Once());
+    }
     }
 }
