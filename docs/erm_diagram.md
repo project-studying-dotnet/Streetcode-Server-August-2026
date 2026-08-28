@@ -352,7 +352,7 @@ erDiagram
 ### Core Schemas:
 
 - **streetcode**: Main streetcode content and related entities
-- **users**: User authentication and authorization
+- **users**: User 
 - **media**: Images, videos, audio files
 - **news**: News articles
 - **partners**: Partner organizations
