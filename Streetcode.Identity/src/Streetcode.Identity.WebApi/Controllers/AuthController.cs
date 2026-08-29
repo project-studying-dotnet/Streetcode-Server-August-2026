@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Streetcode.Identity.Application.Features.Authentication.Login;
 using Streetcode.Identity.Application.Features.Authentication.Refresh;
 using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.WebApi.DTOs;
@@ -38,6 +39,29 @@ public sealed class AuthController : ControllerBase
                 Title = "Registration failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = result.Errors.FirstOrDefault()?.Message
+            });
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(
+        [FromBody] LoginRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var command = new LoginCommand(request.Email, request.Password);
+
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailed)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Login failed",
+                Detail = "Invalid email or password",
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
             });
         }
 
