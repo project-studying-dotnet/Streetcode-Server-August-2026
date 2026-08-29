@@ -37,6 +37,7 @@ public sealed class IdentityServiceIntegrationTests
     {
         var email = $"user-{Guid.NewGuid():N}@example.com";
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501234567";
 
         await using var scope = _serviceProvider.CreateAsyncScope();
 
@@ -53,6 +54,7 @@ public sealed class IdentityServiceIntegrationTests
         var creationResult = await identityService.CreateUserAsync(
             email,
             password,
+            phoneNumber,
             CancellationToken.None);
 
         var user = await userManager.FindByEmailAsync(email);
@@ -63,6 +65,7 @@ public sealed class IdentityServiceIntegrationTests
         Assert.Equal(creationResult.Value, user.Id);
         Assert.Equal(email, user.Email);
         Assert.Equal(email, user.UserName);
+        Assert.Equal(phoneNumber, user.PhoneNumber);
 
         Assert.Equal(userManager.NormalizeEmail(email), user.NormalizedEmail);
 
@@ -99,6 +102,7 @@ public sealed class IdentityServiceIntegrationTests
     {
         var email = $"user-{Guid.NewGuid():N}@example.com";
         const string password = "ValidPassword123!";
+        const string phoneNumber = "+380501234567";
 
         await using var scope = _serviceProvider.CreateAsyncScope();
 
@@ -115,11 +119,13 @@ public sealed class IdentityServiceIntegrationTests
         var firstResult = await identityService.CreateUserAsync(
             email,
             password,
+            phoneNumber,
             CancellationToken.None);
 
         var secondResult = await identityService.CreateUserAsync(
             email,
             password,
+            phoneNumber,
             CancellationToken.None);
 
         Assert.True(firstResult.IsSuccess);

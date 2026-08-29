@@ -12,6 +12,12 @@ public sealed class IdentityWebApplicationFactory
     private const string ConnectionStringEnvironmentVariable =
         "STREETCODE_IDENTITY_ConnectionStrings__DefaultConnection";
 
+    private const string JwtSecretEnvironmentVariable =
+        "STREETCODE_IDENTITY_Jwt__SecretKey";
+
+    private const string TestJwtSecret =
+        "Integration_Test_Jwt_Secret_Key_At_Least_32_Bytes!";
+
     private static readonly object EnvironmentVariableLock = new();
 
     private readonly string _connectionString;
@@ -28,11 +34,18 @@ public sealed class IdentityWebApplicationFactory
             var previousValue = Environment.GetEnvironmentVariable(
                 ConnectionStringEnvironmentVariable);
 
+            var previousJwtSecret = Environment.GetEnvironmentVariable(
+                JwtSecretEnvironmentVariable);
+
             try
             {
                 Environment.SetEnvironmentVariable(
                     ConnectionStringEnvironmentVariable,
                     _connectionString);
+
+                Environment.SetEnvironmentVariable(
+                    JwtSecretEnvironmentVariable,
+                    TestJwtSecret);
 
                 return base.CreateClient();
             }
@@ -41,6 +54,10 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     ConnectionStringEnvironmentVariable,
                     previousValue);
+
+                Environment.SetEnvironmentVariable(
+                    JwtSecretEnvironmentVariable,
+                    previousJwtSecret);
             }
         }
     }

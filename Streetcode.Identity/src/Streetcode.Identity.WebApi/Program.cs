@@ -4,6 +4,7 @@ using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Messaging.Kafka;
 using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.WebApi.ExceptionHandling;
+using Streetcode.Identity.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
         "Connection string 'DefaultConnection' is not configured");
 }
 
+builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddKafkaMessaging(builder.Configuration);
@@ -46,6 +48,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
