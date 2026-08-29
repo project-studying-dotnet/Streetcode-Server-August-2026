@@ -1,5 +1,6 @@
 using FluentResults;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Streetcode.Identity.Application.Abstractions;
 using Streetcode.Identity.Application.IntegrationEvents;
 using Streetcode.Identity.Infrastructure.Persistence;
@@ -67,5 +68,48 @@ public sealed class IdentityService : IIdentityService
         await transaction.CommitAsync(cancellationToken);
 
         return Result.Ok(applicationUser.Id);
+    }
+
+    public async Task<Result<UserTokenData>> GetUserTokenDataAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (userId == Guid.Empty)
+        {
+            return CreateUserTokenDataFailure();
+        }
+
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                candidate => candidate.Id == userId,
+                cancellationToken);
+
+        if (user is null || string.IsNullOrWhiteSpace(user.Email))
+        {
+            return CreateUserTokenDataFailure();
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var userTokenData = new UserTokenData(
+            user.Id,
+            user.Email,
+            roles.ToArray(),
+            user.AccessVersion,
+            user.IsActive);
+
+        return Result.Ok(userTokenData);
+    }
+
+    private static Result<UserTokenData> CreateUserTokenDataFailure()
+    {
+        return Result.Fail<UserTokenData>(
+            new Error("The user could not be loaded")
+                .WithMetadata("Code", "Identity.UserNotFound"));
     }
 }
