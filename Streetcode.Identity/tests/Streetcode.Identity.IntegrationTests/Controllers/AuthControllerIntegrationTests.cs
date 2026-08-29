@@ -1,6 +1,10 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Streetcode.Identity.Application.Abstractions.Security;
+using Streetcode.Identity.Application.Features.Authentication.Refresh;
 using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.IntegrationTests.Fixtures;
 using Streetcode.Identity.WebApi.DTOs;
@@ -87,5 +91,125 @@ public sealed class AuthControllerIntegrationTests
         var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problemDetails);
         Assert.Equal("Registration failed", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenIsEmpty_ShouldReturnBadRequest()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = string.Empty,
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "One or more validation errors occurred.",
+            problemDetails.Title);
+        Assert.Contains(
+            nameof(RefreshSessionRequestDto.RefreshToken),
+            problemDetails.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenDoesNotExist_ShouldReturnUnauthorized()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = $"unknown-{Guid.NewGuid():N}"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "Refresh session failed",
+            problemDetails.Title);
+        Assert.Equal(
+            "The refresh token is invalid or inactive",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status401Unauthorized,
+            problemDetails.Status);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenIsValid_ShouldReturnOkAndRotateToken()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var registerRequest = new RegisterRequestDto
+        {
+            Email = $"refresh-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            registerRequest);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var registeredUser =
+            await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
+
+        Assert.NotNull(registeredUser);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var refreshTokenService = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var issueResult = await refreshTokenService.IssueAsync(
+            registeredUser.UserId,
+            CancellationToken.None);
+
+        Assert.True(issueResult.IsSuccess);
+
+        var originalRefreshToken = issueResult.Value.Token;
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = originalRefreshToken
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result =
+            await response.Content.ReadFromJsonAsync<RefreshSessionResponse>();
+
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
+        Assert.NotEqual(originalRefreshToken, result.RefreshToken);
+        Assert.True(result.AccessTokenExpiresAt > DateTimeOffset.UtcNow);
+        Assert.True(result.RefreshTokenExpiresAt > DateTimeOffset.UtcNow);
     }
 }
