@@ -78,6 +78,18 @@ namespace Streetcode.XUnitTest.ValidatorTests
         }
 
         [Fact]
+        public void ValidateUpdateCreate_WhenImageAltIsNull_ShouldBeValid()
+        {
+            var validator = new FactUpdateCreateDtoValidator();
+            FactUpdateCreateDto dto = CreateValidDto();
+            dto.ImageAlt = null;
+
+            var result = validator.Validate(dto);
+
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
         public void ValidateReorder_WhenOrderIsEmpty_ShouldBeValid()
         {
             var validator = new FactReorderDtoValidator();

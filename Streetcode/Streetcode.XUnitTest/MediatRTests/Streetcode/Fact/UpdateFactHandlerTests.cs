@@ -44,7 +44,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenFactDoesNotExist_ShouldReturnFailure()
     {
-        var factDto = this.CreateFactDto();
+        var factDto = CreateFactDto();
         var command = new UpdateFactCommand(15, factDto);
         const string expectedMessage = "Cannot find fact with id: 15";
 
@@ -70,7 +70,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenStreetcodeIdChanges_ShouldReturnFailure()
     {
-        var factDto = this.CreateFactDto(streetcodeId: 20);
+        var factDto = CreateFactDto(streetcodeId: 20);
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = 10 };
         const string expectedMessage = "Cannot move fact with id 15 to another streetcode";
@@ -97,7 +97,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenImageDoesNotExist_ShouldReturnFailure()
     {
-        var factDto = this.CreateFactDto();
+        var factDto = CreateFactDto();
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         const string expectedMessage = "Cannot find image with id: 5";
@@ -128,7 +128,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenSavingFails_ShouldReturnFailure()
     {
-        var factDto = this.CreateFactDto(title: "  Updated fact  ", factContent: "  Updated content  ");
+        var factDto = CreateFactDto(title: "  Updated fact  ", factContent: "  Updated content  ");
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -156,7 +156,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenDescriptionProvidedAndDetailsDoNotExist_ShouldCreateImageDetails()
     {
-        var factDto = this.CreateFactDto(imageAlt: "  New description  ");
+        var factDto = CreateFactDto(imageAlt: "  New description  ");
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var image = new ImageEntity { Id = factDto.ImageId };
@@ -190,7 +190,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenImageAltIsWhitespaceAndDetailsExist_ShouldClearAlt()
     {
-        var factDto = this.CreateFactDto(imageAlt: "   ");
+        var factDto = CreateFactDto(imageAlt: "   ");
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Old description" };
@@ -216,7 +216,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenImageAltIsNull_ShouldNotTouchImageDetails()
     {
-        var factDto = this.CreateFactDto(imageAlt: null);
+        var factDto = CreateFactDto(imageAlt: null);
         var command = new UpdateFactCommand(15, factDto);
         var fact = new FactEntity { Id = command.Id, StreetcodeId = factDto.StreetcodeId };
         var imageDetails = new ImageDetailsEntity { ImageId = factDto.ImageId, Alt = "Existing alt" };
@@ -238,6 +238,20 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
             repository => repository.CreateAsync(It.IsAny<ImageDetailsEntity>()),
             Times.Never());
     }
+
+    private static FactUpdateCreateDto CreateFactDto(
+        string title = "Updated fact",
+        string factContent = "Updated content",
+        string? imageAlt = null,
+        int streetcodeId = 10) =>
+        new ()
+        {
+            Title = title,
+            FactContent = factContent,
+            ImageAlt = imageAlt,
+            ImageId = 5,
+            StreetcodeId = streetcodeId,
+        };
 
     private UpdateFactHandler CreateHandler() =>
         new (
@@ -274,19 +288,5 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
             .Setup(mapper => mapper.Map<FactDto>(fact))
             .Returns(resultDto);
     }
-
-    private FactUpdateCreateDto CreateFactDto(
-        string title = "Updated fact",
-        string factContent = "Updated content",
-        string? imageAlt = null,
-        int streetcodeId = 10) =>
-        new ()
-        {
-            Title = title,
-            FactContent = factContent,
-            ImageAlt = imageAlt,
-            ImageId = 5,
-            StreetcodeId = streetcodeId,
-        };
     }
 }

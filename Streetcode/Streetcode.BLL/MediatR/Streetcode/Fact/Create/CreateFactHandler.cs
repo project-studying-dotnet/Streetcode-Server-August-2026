@@ -4,9 +4,9 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.MediatR.Streetcode.Fact.Helpers;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using FactEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Fact;
-using ImageDetailsEntity = Streetcode.DAL.Entities.Media.Images.ImageDetails;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Fact.Create;
 
@@ -62,28 +62,12 @@ public class CreateFactHandler : IRequestHandler<CreateFactCommand, Result<FactD
         fact.Title = request.Fact.Title.Trim();
         fact.FactContent = request.Fact.FactContent.Trim();
 
-        string? imageAlt =
-            string.IsNullOrWhiteSpace(request.Fact.ImageAlt)
-                ? null
-                : request.Fact.ImageAlt.Trim();
-
-        if (imageAlt is not null)
+        if (!string.IsNullOrWhiteSpace(request.Fact.ImageAlt))
         {
-            if (image.ImageDetails is null)
-            {
-                var imageDetailsEntity = new ImageDetailsEntity
-                {
-                    ImageId = image.Id,
-                    Alt = imageAlt,
-                };
-                image.ImageDetails = imageDetailsEntity;
-                await _repositoryWrapper.ImageDetailsRepository.CreateAsync(imageDetailsEntity);
-            }
-            else
-            {
-                image.ImageDetails.Alt = imageAlt;
-                _repositoryWrapper.ImageDetailsRepository.Update(image.ImageDetails);
-            }
+            await FactImageAltHelper.SetAsync(
+                image,
+                request.Fact.ImageAlt,
+                _repositoryWrapper.ImageDetailsRepository);
         }
 
         await _repositoryWrapper.FactRepository.CreateAsync(fact);

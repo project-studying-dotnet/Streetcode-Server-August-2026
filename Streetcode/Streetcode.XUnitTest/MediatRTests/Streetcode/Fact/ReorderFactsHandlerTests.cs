@@ -30,7 +30,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenOrderContainsDuplicateIds_ShouldReturnFailure()
     {
-        var command = this.CreateCommand(10, 1, 2, 2);
+        var command = CreateCommand(10, 1, 2, 2);
         const string expectedMessage = "Fact order contains duplicate ids";
 
         var result = await this.CreateHandler().Handle(command, CancellationToken.None);
@@ -48,7 +48,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenProvidedIdsDoNotMatchStoredFacts_ShouldReturnFailure()
     {
-        var command = this.CreateCommand(10, 1, 3);
+        var command = CreateCommand(10, 1, 3);
         var facts = new[]
         {
             new FactEntity { Id = 1, StreetcodeId = 10 },
@@ -76,8 +76,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenSavingFails_ShouldReturnFailure()
     {
-        var command = this.CreateCommand(10, 3, 1, 2);
-        var facts = this.CreateStoredFacts();
+        var command = CreateCommand(10, 3, 1, 2);
+        var facts = CreateStoredFacts();
         const string expectedMessage =
             "Failed to reorder facts for streetcode with id: 10";
 
@@ -90,7 +90,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
 
         Assert.True(result.IsFailed);
         Assert.Equal(expectedMessage, result.Errors.Single().Message);
-        this.AssertDisplayOrders(facts);
+        AssertDisplayOrders(facts);
 
         this.factRepositoryMock.Verify(repository => repository.UpdateRange(facts), Times.Once());
         this.loggerServiceMock.Verify(
@@ -101,8 +101,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenOrderIsValid_ShouldUpdateDisplayOrders()
     {
-        var command = this.CreateCommand(10, 3, 1, 2);
-        var facts = this.CreateStoredFacts();
+        var command = CreateCommand(10, 3, 1, 2);
+        var facts = CreateStoredFacts();
 
         this.SetupStoredFacts(facts);
         this.repositoryWrapperMock
@@ -113,7 +113,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
 
         Assert.True(result.IsSuccess);
         Assert.Equal(Unit.Value, result.Value);
-        this.AssertDisplayOrders(facts);
+        AssertDisplayOrders(facts);
 
         this.factRepositoryMock.Verify(
             repository => repository.GetAllAsync(
@@ -130,7 +130,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
     [Fact]
     public async Task Handle_WhenNoFactsAndOrderIsEmpty_ShouldReturnSuccess()
     {
-        var command = this.CreateCommand(10);
+        var command = CreateCommand(10);
         this.SetupStoredFacts(Array.Empty<FactEntity>());
 
         var result = await this.CreateHandler().Handle(command, CancellationToken.None);
@@ -157,6 +157,31 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
         this.loggerServiceMock.VerifyNoOtherCalls();
     }
 
+    private static ReorderFactsCommand CreateCommand(int streetcodeId, params int[] factIds) =>
+        new (
+            new FactReorderDto
+            {
+                StreetcodeId = streetcodeId,
+                OrderedFactIds = factIds.ToList(),
+            });
+
+    private static List<FactEntity> CreateStoredFacts() =>
+        new ()
+        {
+            new FactEntity { Id = 1, StreetcodeId = 10, DisplayOrder = 1 },
+            new FactEntity { Id = 2, StreetcodeId = 10, DisplayOrder = 2 },
+            new FactEntity { Id = 3, StreetcodeId = 10, DisplayOrder = 3 },
+        };
+
+    private static void AssertDisplayOrders(IEnumerable<FactEntity> facts)
+    {
+        var displayOrdersById = facts.ToDictionary(fact => fact.Id, fact => fact.DisplayOrder);
+
+        Assert.Equal(2, displayOrdersById[1]);
+        Assert.Equal(3, displayOrdersById[2]);
+        Assert.Equal(1, displayOrdersById[3]);
+    }
+
     private ReorderFactsHandler CreateHandler() =>
         new (this.repositoryWrapperMock.Object, this.loggerServiceMock.Object);
 
@@ -167,31 +192,6 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Fact
                 It.IsAny<Expression<Func<FactEntity, bool>>>(),
                 null))
             .ReturnsAsync(facts);
-    }
-
-    private ReorderFactsCommand CreateCommand(int streetcodeId, params int[] factIds) =>
-        new (
-            new FactReorderDto
-            {
-                StreetcodeId = streetcodeId,
-                OrderedFactIds = factIds.ToList(),
-            });
-
-    private List<FactEntity> CreateStoredFacts() =>
-        new ()
-        {
-            new FactEntity { Id = 1, StreetcodeId = 10, DisplayOrder = 1 },
-            new FactEntity { Id = 2, StreetcodeId = 10, DisplayOrder = 2 },
-            new FactEntity { Id = 3, StreetcodeId = 10, DisplayOrder = 3 },
-        };
-
-    private void AssertDisplayOrders(IEnumerable<FactEntity> facts)
-    {
-        var displayOrdersById = facts.ToDictionary(fact => fact.Id, fact => fact.DisplayOrder);
-
-        Assert.Equal(2, displayOrdersById[1]);
-        Assert.Equal(3, displayOrdersById[2]);
-        Assert.Equal(1, displayOrdersById[3]);
     }
     }
 }

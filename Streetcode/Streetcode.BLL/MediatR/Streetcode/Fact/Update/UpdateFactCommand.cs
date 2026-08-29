@@ -6,4 +6,5 @@ namespace Streetcode.BLL.MediatR.Streetcode.Fact.Update;
 
 public record UpdateFactCommand(
     int Id,
-    FactUpdateCreateDto Fact) : IRequest<Result<FactDto>>;
+    FactUpdateCreateDto Fact)
+    : IRequest<Result<FactDto>>;
