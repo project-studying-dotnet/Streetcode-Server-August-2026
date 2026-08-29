@@ -12,7 +12,8 @@ public sealed class ValidationBehaviorTests
     {
         var request = new RegisterUserCommand(
             string.Empty,
-            "ValidPassword123!");
+            "ValidPassword123!",
+            null);
 
         IValidator<RegisterUserCommand>[] validators =
         [
@@ -55,7 +56,8 @@ public sealed class ValidationBehaviorTests
 
         var request = new RegisterUserCommand(
             email,
-            "ValidPassword123!");
+            "ValidPassword123!",
+            "+380501234567");
 
         IValidator<RegisterUserCommand>[] validators =
         [
@@ -108,7 +110,8 @@ public sealed class ValidationBehaviorTests
 
         var request = new RegisterUserCommand(
             email,
-            "ValidPassword123!");
+            "ValidPassword123!",
+            "+380501234567");
 
         IValidator<RegisterUserCommand>[] validators = [];
 
