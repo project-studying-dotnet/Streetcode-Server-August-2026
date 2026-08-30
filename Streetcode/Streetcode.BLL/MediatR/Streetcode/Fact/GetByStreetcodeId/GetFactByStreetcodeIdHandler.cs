@@ -1,9 +1,8 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FluentResults;
 using MediatR;
-using Streetcode.BLL.DTO.AdditionalContent.Subtitles;
+using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
-using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Fact.GetByStreetcodeId;
@@ -12,28 +11,24 @@ public class GetFactByStreetcodeIdHandler : IRequestHandler<GetFactByStreetcodeI
 {
     private readonly IMapper _mapper;
     private readonly IRepositoryWrapper _repositoryWrapper;
-    private readonly ILoggerService _logger;
 
-    public GetFactByStreetcodeIdHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper, ILoggerService logger)
+    public GetFactByStreetcodeIdHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper)
     {
         _repositoryWrapper = repositoryWrapper;
         _mapper = mapper;
-        _logger = logger;
     }
 
     public async Task<Result<IEnumerable<FactDto>>> Handle(GetFactByStreetcodeIdQuery request, CancellationToken cancellationToken)
     {
-        var fact = await _repositoryWrapper.FactRepository
-            .GetAllAsync(f => f.StreetcodeId == request.StreetcodeId);
+        var facts = await _repositoryWrapper.FactRepository
+            .GetAllAsync(
+                predicate: f => f.StreetcodeId == request.StreetcodeId,
+                include: query => query
+                    .Include(f => f.Image!)
+                    .ThenInclude(image => image.ImageDetails!));
 
-        if (fact is null)
-        {
-            string errorMsg = $"Cannot find any fact by the streetcode id: {request.StreetcodeId}";
-            _logger.LogError(request, errorMsg);
-            return Result.Fail(new Error(errorMsg));
-        }
+        var orderedFacts = facts.OrderBy(f => f.DisplayOrder);
 
-        return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(
-            fact.OrderBy(f => f.DisplayOrder)));
+        return Result.Ok(_mapper.Map<IEnumerable<FactDto>>(orderedFacts));
     }
 }
