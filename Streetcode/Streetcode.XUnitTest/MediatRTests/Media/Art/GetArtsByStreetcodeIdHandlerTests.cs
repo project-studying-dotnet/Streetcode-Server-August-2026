@@ -8,6 +8,7 @@ using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Media.Art.GetByStreetcodeId;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Entities.Streetcode;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Media.Art;
@@ -28,15 +29,44 @@ public class GetArtsByStreetcodeIdHandlerTests
 
         var arts = new List<DAL.Entities.Media.Images.Art>
         {
-            new DAL.Entities.Media.Images.Art { Id = 1, Image = new DAL.Entities.Media.Images.Image { BlobName = blobName } }
+            new DAL.Entities.Media.Images.Art
+            {
+                Id = 1,
+                Image = new DAL.Entities.Media.Images.Image
+                {
+                    BlobName = blobName
+                },
+                StreetcodeArts =
+                [
+                    new StreetcodeArt
+                    {
+                        StreetcodeId = streetcodeId
+                    },
+                ],
+            },
         };
         var artsDto = new List<ArtDTO>
         {
-            new ArtDTO { Id = 1, Image = new ImageDTO { BlobName = blobName } }
+            new ArtDTO { Id = 1, Image = new ImageDTO { BlobName = blobName }, },
+        };
+
+        var nonMatchingArt = new DAL.Entities.Media.Images.Art
+        {
+            Id = 2,
+            StreetcodeArts = new List<StreetcodeArt>
+            {
+                new StreetcodeArt
+                {
+                    StreetcodeId = 999,
+                },
+            },
         };
 
         _repositoryMock.Setup(r => r.ArtRepository.GetAllAsync(
-                It.IsAny<Expression<Func<DAL.Entities.Media.Images.Art, bool>>>(),
+                It.Is<Expression<Func<DAL.Entities.Media.Images.Art, bool>>>(
+                    predicate =>
+                        predicate.Compile()(arts[0]) &&
+                        !predicate.Compile()(nonMatchingArt)),
                 It.IsAny<Func<IQueryable<DAL.Entities.Media.Images.Art>, IIncludableQueryable<DAL.Entities.Media.Images.Art, object>>>()))
             .ReturnsAsync(arts);
 
