@@ -86,7 +86,7 @@ public class GetArtsByStreetcodeIdHandlerTests
         Assert.Equal(base64String, result.Value.First().Image?.Base64);
     }
 
-    [Fact]git status
+    [Fact]
     public async Task Handle_ReturnsOkResult_AndDoesNotCallBlobService_WhenBlobNameIsNull()
     {
         int streetcodeId = 1;
