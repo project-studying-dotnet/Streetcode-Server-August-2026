@@ -17,6 +17,8 @@ using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByIds;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByTransliterationUrl;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetCount;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetShortById;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Streetcode;
 
@@ -84,18 +86,21 @@ public class StreetcodeController : BaseApiController
         return HandleResult(await Mediator.Send(new GetStreetcodesByIdsQuery(ids), cancellationToken));
     }
 
+    [AuthorizeRoles(UserRole.Admin)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateStreetcodeDTO streetcode)
     {
         return HandleResult(await Mediator.Send(new CreateStreetcodeCommand(streetcode)));
     }
 
+    [AuthorizeRoles(UserRole.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteSoft([FromRoute] int id)
     {
         return HandleResult(await Mediator.Send(new DeleteSoftStreetcodeCommand(id)));
     }
 
+    [AuthorizeRoles(UserRole.Admin)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateStreetcodeDTO streetcode)
     {
