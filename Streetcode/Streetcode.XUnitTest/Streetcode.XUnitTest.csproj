@@ -35,9 +35,4 @@
     <ProjectReference Include="..\Streetcode.DAL\Streetcode.DAL.csproj" />
     <ProjectReference Include="..\Streetcode.WebApi\Streetcode.WebApi.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="MediatRTests\Transactions\TransactionLink\GetById\" />
-    <Folder Include="MediatRTests\Transactions\TransactionLink\GetByStreetcodeId\" />
-    <Folder Include="MediatRTests\Transactions\TransactionLink\Validators\" />
-  </ItemGroup>
 </Project>
