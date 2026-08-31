@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Streetcode.BLL.DTO.Team;
 using Streetcode.BLL.MediatR.Team.Create;
 using Streetcode.BLL.MediatR.Team.Position.GetAll;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Team
 {
@@ -14,6 +16,7 @@ namespace Streetcode.WebApi.Controllers.Team
             return HandleResult(await Mediator.Send(new GetAllPositionsQuery()));
         }
 
+        [AuthorizeRoles(UserRole.MainAdministrator)]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] PositionDTO position)
         {
