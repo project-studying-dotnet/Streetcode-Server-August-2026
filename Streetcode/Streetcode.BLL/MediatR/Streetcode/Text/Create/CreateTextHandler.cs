@@ -34,6 +34,16 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
                 return Result.Fail(new Error(errorMsg));
             }
 
+            var existingText = await _repository.TextRepository
+                .GetFirstOrDefaultAsync(t => t.StreetcodeId == request.TextCreateDto.StreetcodeId);
+
+            if (existingText is not null)
+            {
+                const string errorMsg = "Cannot create text: streetcode with the given id already has a text!";
+                _logger.LogError(request, errorMsg);
+                return Result.Fail(new Error(errorMsg));
+            }
+
             var text = _mapper.Map<Entity>(request.TextCreateDto);
 
             if (text is null)

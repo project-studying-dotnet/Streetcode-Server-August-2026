@@ -70,6 +70,38 @@ public class CreateTextHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenTextAlreadyExistsForStreetcode_ShouldReturnFailure()
+    {
+        var command = new CreateTextCommand(CreateTextCreateDto());
+        const string expectedError = "Cannot create text: streetcode with the given id already has a text!";
+
+        SetupStreetcodeExists(command);
+        _textRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<TextEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<TextEntity>, IIncludableQueryable<TextEntity, object>>?>()))
+            .ReturnsAsync(CreateTextEntity());
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Single(result.Errors);
+        Assert.Equal(expectedError, result.Errors.First().Message);
+        _mapperMock.Verify(
+            mapper => mapper.Map<TextEntity>(It.IsAny<TextCreateDTO>()),
+            Times.Never());
+        _textRepositoryMock.Verify(
+            repository => repository.Create(It.IsAny<TextEntity>()),
+            Times.Never());
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+        _loggerMock.Verify(
+            logger => logger.LogError(command, expectedError),
+            Times.Once());
+    }
+
+    [Fact]
     public async Task Handle_WhenInputMappingFails_ShouldReturnFailure()
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
@@ -200,6 +232,12 @@ public class CreateTextHandlerTests
                 It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
                 It.IsAny<Func<IQueryable<StreetcodeEntity>, IIncludableQueryable<StreetcodeEntity, object>>?>()))
             .ReturnsAsync(streetcode);
+
+        _textRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<TextEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<TextEntity>, IIncludableQueryable<TextEntity, object>>?>()))
+            .ReturnsAsync((TextEntity)null!);
     }
 
     private void SetupCreation(
