@@ -38,6 +38,10 @@ namespace Streetcode.BLL.Services.CacheService
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to read from cache for key: {Key}", key);
@@ -61,6 +65,10 @@ namespace Streetcode.BLL.Services.CacheService
 
                 await _cache.SetStringAsync(key, serialized, options, cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
             catch(Exception ex)
             {
                 _logger.LogError(ex, "Failed to write to cache for key: {Key}", key);
@@ -74,6 +82,10 @@ namespace Streetcode.BLL.Services.CacheService
             try
             {
                 await _cache.RemoveAsync(key, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
