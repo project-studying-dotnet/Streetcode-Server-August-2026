@@ -8,6 +8,9 @@ namespace Streetcode.DAL.Entities.Timeline;
 [Table("timeline_items", Schema = "timeline")]
 public class TimelineItem
 {
+    public const int TitleMaxLength = 100;
+    public const int DescriptionMaxLength = 600;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
@@ -20,11 +23,11 @@ public class TimelineItem
     public DateViewPattern DateViewPattern { get; set; }
 
     [Required]
-    [MaxLength(100)]
-    public string? Title { get; set; }
+    [MaxLength(TitleMaxLength)]
+    public string Title { get; set; } = string.Empty;
 
-    [MaxLength(600)]
-    public string? Description { get; set; }
+    [MaxLength(DescriptionMaxLength)]
+    public string? Description { get; set; } = string.Empty;
 
     public int StreetcodeId { get; set; }
 
