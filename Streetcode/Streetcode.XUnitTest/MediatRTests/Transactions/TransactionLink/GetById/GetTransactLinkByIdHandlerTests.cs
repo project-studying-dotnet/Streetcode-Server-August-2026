@@ -1,9 +1,9 @@
-﻿// <copyright file="GetTransactLinkByIdHandlerTests.cs" company="PLACEHOLDER">
-// Copyright (c) PLACEHOLDER. All rights reserved.
-// </copyright>
-
-namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.GetById
+﻿namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.GetById
 {
+    using System;
+    using System.Linq.Expressions;
+    using System.Threading;
+    using System.Threading.Tasks;
     using AutoMapper;
     using FluentAssertions;
     using global::Streetcode.BLL.DTO.Transactions;
@@ -12,10 +12,6 @@ namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.GetById
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using Microsoft.EntityFrameworkCore.Query;
     using Moq;
-    using System;
-    using System.Linq.Expressions;
-    using System.Threading;
-    using System.Threading.Tasks;
     using Xunit;
     using TransactionLinkEntity = global::Streetcode.DAL.Entities.Transactions.TransactionLink;
 

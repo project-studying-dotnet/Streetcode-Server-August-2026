@@ -1,11 +1,11 @@
 ﻿namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validators
 {
-    using FluentValidation.TestHelper;
-    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetByStreetcodeId;
-    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using FluentValidation.TestHelper;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetByStreetcodeId;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
     using Xunit;
 
     public class GetTransactLinkByStreetcodeIdQueryValidatorTests

@@ -1,19 +1,19 @@
 ﻿namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.GetAll
 {
-    using AutoMapper;
-    using FluentAssertions;
-    using Microsoft.EntityFrameworkCore.Query;
-    using Moq;
-    using global::Streetcode.BLL.DTO.Transactions;
-    using global::Streetcode.BLL.Interfaces.Logging;
-    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetAll;
-    using global::Streetcode.DAL.Entities.Transactions;
-    using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using System.Reflection.Metadata;
     using System.Text;
+    using AutoMapper;
+    using FluentAssertions;
+    using global::Streetcode.BLL.DTO.Transactions;
+    using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetAll;
+    using global::Streetcode.DAL.Entities.Transactions;
+    using global::Streetcode.DAL.Repositories.Interfaces.Base;
+    using Microsoft.EntityFrameworkCore.Query;
+    using Moq;
     using Xunit;
     using TransactionLinkEntity = global::Streetcode.DAL.Entities.Transactions.TransactionLink;
 
