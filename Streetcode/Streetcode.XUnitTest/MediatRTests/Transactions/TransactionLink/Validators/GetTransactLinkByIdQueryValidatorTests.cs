@@ -1,20 +1,20 @@
-﻿using FluentValidation.TestHelper;
-using Streetcode.BLL.MediatR.Transactions.TransactionLink.GetById;
-using Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Xunit;
-
-namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validators
+﻿namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validators
 {
+    using FluentValidation.TestHelper;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetById;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Xunit;
+
     public class GetTransactLinkByIdQueryValidatorTests
     {
-        private readonly GetTransactLinkByIdQueryValidator _validator;
+        private readonly GetTransactLinkByIdQueryValidator validator;
 
         public GetTransactLinkByIdQueryValidatorTests()
         {
-            _validator = new GetTransactLinkByIdQueryValidator();
+            this.validator = new GetTransactLinkByIdQueryValidator();
         }
 
         [Theory]
@@ -25,7 +25,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validat
         {
             var query = new GetTransactLinkByIdQuery(id);
 
-            var result = _validator.TestValidate(query);
+            var result = this.validator.TestValidate(query);
 
             result.ShouldNotHaveValidationErrorFor(q => q.Id);
         }
@@ -38,7 +38,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validat
         {
             var query = new GetTransactLinkByIdQuery(id);
 
-            var result = _validator.TestValidate(query);
+            var result = this.validator.TestValidate(query);
 
             result.ShouldHaveValidationErrorFor(q => q.Id);
         }

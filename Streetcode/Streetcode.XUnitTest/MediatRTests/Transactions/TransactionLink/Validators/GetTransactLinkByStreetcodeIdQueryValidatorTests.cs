@@ -1,20 +1,20 @@
-﻿using FluentValidation.TestHelper;
-using Streetcode.BLL.MediatR.Transactions.TransactionLink.GetByStreetcodeId;
-using Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Xunit;
-
-namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validators
+﻿namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validators
 {
+    using FluentValidation.TestHelper;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.GetByStreetcodeId;
+    using global::Streetcode.BLL.MediatR.Transactions.TransactionLink.Validators;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Xunit;
+
     public class GetTransactLinkByStreetcodeIdQueryValidatorTests
     {
-        private readonly GetTransactLinkByStreetcodeIdQueryValidator _validator;
+        private readonly GetTransactLinkByStreetcodeIdQueryValidator validator;
 
         public GetTransactLinkByStreetcodeIdQueryValidatorTests()
         {
-            _validator = new GetTransactLinkByStreetcodeIdQueryValidator();
+            this.validator = new GetTransactLinkByStreetcodeIdQueryValidator();
         }
 
         [Theory]
@@ -25,7 +25,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validat
         {
             var query = new GetTransactLinkByStreetcodeIdQuery(streetcodeId);
 
-            var result = _validator.TestValidate(query);
+            var result = this.validator.TestValidate(query);
 
             result.ShouldNotHaveValidationErrorFor(q => q.StreetcodeId);
         }
@@ -38,7 +38,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Transactions.TransactionLink.Validat
         {
             var query = new GetTransactLinkByStreetcodeIdQuery(streetcodeId);
 
-            var result = _validator.TestValidate(query);
+            var result = this.validator.TestValidate(query);
 
             result.ShouldHaveValidationErrorFor(q => q.StreetcodeId);
         }
