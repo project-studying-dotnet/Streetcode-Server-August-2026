@@ -45,6 +45,18 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             ProblemDetails = problemDetails,
             Exception = exception,
         };
-        return await _problemDetailsService.TryWriteAsync(problemDetailsContext);
+        bool wasWritten = await _problemDetailsService.TryWriteAsync(
+            problemDetailsContext);
+
+        if (!wasWritten)
+        {
+            await httpContext.Response.WriteAsJsonAsync(
+                problemDetails,
+                options: null,
+                contentType: "application/problem+json",
+                cancellationToken: cancellationToken);
+        }
+
+        return true;
     }
 }

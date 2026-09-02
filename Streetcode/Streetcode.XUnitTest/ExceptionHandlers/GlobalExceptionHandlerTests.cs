@@ -3,6 +3,7 @@
 // </copyright>
 namespace Streetcode.XUnitTest.ExceptionHandlers
 {
+    using System.Text.Json;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.Logging.Abstractions;
     using Moq;
@@ -61,25 +62,58 @@ namespace Streetcode.XUnitTest.ExceptionHandlers
         }
 
         [Fact]
-        public async Task TryHandleAsync_WhenProblemDetailsCannotBeWritten_ReturnsFalse()
+        public async Task TryHandleAsync_WhenProblemDetailsWriterReturnsFalse_ShouldWriteFallbackResponse()
         {
             var problemDetailsServiceMock = new Mock<IProblemDetailsService>();
+
             problemDetailsServiceMock
                 .Setup(service =>
                     service.TryWriteAsync(It.IsAny<ProblemDetailsContext>()))
                 .ReturnsAsync(false);
+
             var handler = new GlobalExceptionHandler(
                 NullLogger<GlobalExceptionHandler>.Instance,
                 problemDetailsServiceMock.Object);
-            var httpContext = new DefaultHttpContext();
-            var exception = new InvalidOperationException("Sensitive message");
 
-            var result = await handler.TryHandleAsync(
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Path = "/api/test";
+            httpContext.TraceIdentifier = "fallback-trace-id";
+            httpContext.Response.Body = new MemoryStream();
+
+            var exception =
+                new InvalidOperationException("Sensitive message");
+
+            bool handled = await handler.TryHandleAsync(
                 httpContext,
                 exception,
                 CancellationToken.None);
 
-            Assert.False(result);
+            httpContext.Response.Body.Position = 0;
+
+            using JsonDocument document = await JsonDocument.ParseAsync(
+                httpContext.Response.Body);
+
+            JsonElement response = document.RootElement;
+
+            Assert.True(handled);
+            Assert.Equal(
+                StatusCodes.Status500InternalServerError,
+                httpContext.Response.StatusCode);
+            Assert.Equal(
+                "application/problem+json",
+                httpContext.Response.ContentType);
+            Assert.Equal(
+                "fallback-trace-id",
+                response.GetProperty("traceId").GetString());
+            Assert.Equal(
+                "An unexpected error occurred.",
+                response.GetProperty("detail").GetString());
+            Assert.Equal(
+                "/api/test",
+                response.GetProperty("instance").GetString());
+            Assert.DoesNotContain(
+                "Sensitive message",
+                response.GetRawText());
         }
     }
 }
