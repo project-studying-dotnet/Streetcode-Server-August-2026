@@ -113,6 +113,7 @@ public class GetArtsByStreetcodeIdHandlerTests
         var result = await handler.Handle(new GetArtsByStreetcodeIdQuery(streetcodeId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
+        Assert.Equal(artsDto, result.Value);
 
         _blobServiceMock.Verify(b => b.FindFileInStorageAsBase64(It.IsAny<string>()), Times.Never);
     }
