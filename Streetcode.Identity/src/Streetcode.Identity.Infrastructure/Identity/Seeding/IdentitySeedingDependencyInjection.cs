@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -22,6 +23,12 @@ public static class IdentitySeedingDependencyInjection
             .Validate(
                 options =>
                     !options.Enabled ||
+                    string.IsNullOrWhiteSpace(options.AdminEmail) ||
+                    HasValidEmailFormat(options.AdminEmail),
+                "IdentitySeed:AdminEmail must be a valid email address")
+            .Validate(
+                options =>
+                    !options.Enabled ||
                     !string.IsNullOrWhiteSpace(options.AdminPassword),
                 "IdentitySeed:AdminPassword is required when identity seeding is enabled")
             .ValidateOnStart();
@@ -29,5 +36,14 @@ public static class IdentitySeedingDependencyInjection
         services.AddScoped<IdentityDataSeeder>();
 
         return services;
+    }
+
+    private static bool HasValidEmailFormat(string email)
+    {
+        return MailAddress.TryCreate(email, out var parsedEmail) &&
+               string.Equals(
+                   parsedEmail.Address,
+                   email,
+                   StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -6,6 +6,7 @@ using Streetcode.Identity.Application.Common.Authorization;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Identity.Seeding;
+using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.IntegrationTests.Fixtures;
 
 namespace Streetcode.Identity.IntegrationTests.Identity.Seeding;
@@ -114,6 +115,42 @@ public sealed class IdentityDataSeederIntegrationTests
 
         Assert.Equal(1, adminRolesCount);
         Assert.Equal(1, userRolesCount);
+    }
+
+    [Fact]
+    public async Task SeedAsync_WhenDisabled_ShouldNotChangeIdentityData()
+    {
+        var adminEmail = $"disabled-seed-{Guid.NewGuid():N}@example.com";
+        const string adminPassword = "ValidAdminPassword123!";
+
+        await using var serviceProvider = CreateServiceProvider(
+            adminEmail,
+            adminPassword,
+            enabled: false);
+
+        await using var scope = serviceProvider.CreateAsyncScope();
+
+        var seeder = scope.ServiceProvider
+            .GetRequiredService<IdentityDataSeeder>();
+
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
+
+        var userManager = scope.ServiceProvider
+            .GetRequiredService<UserManager<ApplicationUser>>();
+
+        var usersBefore = await dbContext.Users.CountAsync();
+        var rolesBefore = await dbContext.Roles.CountAsync();
+
+        await seeder.SeedAsync();
+
+        var usersAfter = await dbContext.Users.CountAsync();
+        var rolesAfter = await dbContext.Roles.CountAsync();
+        var admin = await userManager.FindByEmailAsync(adminEmail);
+
+        Assert.Equal(usersBefore, usersAfter);
+        Assert.Equal(rolesBefore, rolesAfter);
+        Assert.Null(admin);
     }
 
     private ServiceProvider CreateServiceProvider(

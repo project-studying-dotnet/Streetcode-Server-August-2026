@@ -51,7 +51,18 @@ await using (var scope = app.Services.CreateAsyncScope())
     var identityDataSeeder = scope.ServiceProvider
         .GetRequiredService<IdentityDataSeeder>();
 
-    await identityDataSeeder.SeedAsync();
+    try
+    {
+        await identityDataSeeder.SeedAsync();
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogCritical(
+            exception,
+            "Identity data seeding failed. Application startup is aborted");
+
+        throw;
+    }
 }
 
 if (app.Environment.IsDevelopment())
