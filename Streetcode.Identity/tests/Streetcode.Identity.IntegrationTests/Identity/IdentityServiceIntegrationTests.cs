@@ -18,6 +18,7 @@ public sealed class IdentityServiceIntegrationTests
     : IDisposable
 {
     private readonly ServiceProvider _serviceProvider;
+    private readonly TrackingPasswordHasher _passwordHasher = new();
 
     public IdentityServiceIntegrationTests(MsSqlContainerFixture fixture)
     {
@@ -25,6 +26,8 @@ public sealed class IdentityServiceIntegrationTests
 
         services.AddAuthentication();
         services.AddInfrastructure(fixture.ConnectionString);
+        services.AddSingleton<IPasswordHasher<ApplicationUser>>(
+            _passwordHasher);
 
         _serviceProvider =
             services.BuildServiceProvider(validateScopes: true);
@@ -340,10 +343,11 @@ public sealed class IdentityServiceIntegrationTests
 
         AssertInvalidCredentials(result);
         Assert.Equal(1, await userManager.GetAccessFailedCountAsync(user));
+        Assert.Equal(1, _passwordHasher.VerificationCount);
     }
 
     [Fact]
-    public async Task AuthenticateAsync_WhenEmailDoesNotExist_ShouldReturnGenericError()
+    public async Task AuthenticateAsync_WhenEmailDoesNotExist_ShouldRunDummyVerificationAndReturnGenericError()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
 
@@ -356,6 +360,7 @@ public sealed class IdentityServiceIntegrationTests
             CancellationToken.None);
 
         AssertInvalidCredentials(result);
+        Assert.Equal(1, _passwordHasher.VerificationCount);
     }
 
     [Fact]
@@ -476,5 +481,33 @@ public sealed class IdentityServiceIntegrationTests
         Assert.Equal("Invalid email or password", error.Message);
         Assert.True(error.Metadata.TryGetValue("Code", out var code));
         Assert.Equal("Identity.InvalidCredentials", code);
+    }
+
+    private sealed class TrackingPasswordHasher
+        : IPasswordHasher<ApplicationUser>
+    {
+        private readonly PasswordHasher<ApplicationUser> _inner = new();
+
+        public int VerificationCount { get; private set; }
+
+        public string HashPassword(
+            ApplicationUser user,
+            string password)
+        {
+            return _inner.HashPassword(user, password);
+        }
+
+        public PasswordVerificationResult VerifyHashedPassword(
+            ApplicationUser user,
+            string hashedPassword,
+            string providedPassword)
+        {
+            VerificationCount++;
+
+            return _inner.VerifyHashedPassword(
+                user,
+                hashedPassword,
+                providedPassword);
+        }
     }
 }

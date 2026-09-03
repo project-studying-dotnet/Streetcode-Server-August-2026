@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using FluentResults;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -25,9 +26,12 @@ public sealed class AuthControllerIntegrationTests
         _fixture = fixture;
     }
 
-    private IdentityWebApplicationFactory CreateFactory()
+    private IdentityWebApplicationFactory CreateFactory(
+        Action<IServiceCollection>? configureServices = null)
     {
-        return new IdentityWebApplicationFactory(_fixture.ConnectionString);
+        return new IdentityWebApplicationFactory(
+            _fixture.ConnectionString,
+            configureServices);
     }
 
     [Fact]
@@ -330,6 +334,54 @@ public sealed class AuthControllerIntegrationTests
     }
 
     [Fact]
+    public async Task Login_WhenRefreshTokenIssuingFails_ShouldReturnInternalServerError()
+    {
+        await using var factory = CreateFactory(services =>
+            services.AddScoped<
+                IRefreshTokenService,
+                FailingRefreshTokenService>());
+
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = $"login-refresh-failure-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            request);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequestDto
+            {
+                Email = request.Email,
+                Password = request.Password
+            });
+
+        Assert.Equal(
+            HttpStatusCode.InternalServerError,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Login failed", problemDetails.Title);
+        Assert.Equal(
+            "An unexpected error occurred while processing the login request",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status500InternalServerError,
+            problemDetails.Status);
+    }
+
+    [Fact]
     public async Task Login_WhenInputIsInvalid_ShouldReturnValidationProblem()
     {
         await using var factory = CreateFactory();
@@ -363,5 +415,32 @@ public sealed class AuthControllerIntegrationTests
         Assert.Contains(
             nameof(LoginRequestDto.Password),
             problemDetails.Errors.Keys);
+    }
+
+    private sealed class FailingRefreshTokenService
+        : IRefreshTokenService
+    {
+        public Task<Result<RefreshTokenResult>> IssueAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Result.Fail<RefreshTokenResult>(
+                new Error("Refresh token issuing failed")
+                    .WithMetadata("Code", "RefreshToken.InvalidUser")));
+        }
+
+        public Task<Result<RefreshTokenResult>> RotateAsync(
+            string refreshToken,
+            CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result> RevokeFamilyAsync(
+            string refreshToken,
+            CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

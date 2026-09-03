@@ -12,6 +12,9 @@ public sealed class IdentityService : IIdentityService
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly StreetcodeIdentityDbContext _dbContext;
+    private readonly IPasswordHasher<ApplicationUser> _passwordHasher;
+    private const string DummyPasswordHash =
+        "AQAAAAIAAYagAAAAEFk+nqUvhTZfSq7x8XOi7l6McrBhxDjPaKhSAPFrs5pGU5taEAJTWdCRjrcUpvVDcA==";
     private readonly IOutboxWriter _outboxWriter;
     private readonly TimeProvider _timeProvider;
 
@@ -20,13 +23,15 @@ public sealed class IdentityService : IIdentityService
         SignInManager<ApplicationUser> signInManager,
         StreetcodeIdentityDbContext dbContext,
         IOutboxWriter outboxWriter,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IPasswordHasher<ApplicationUser> passwordHasher)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _dbContext = dbContext;
         _outboxWriter = outboxWriter;
         _timeProvider = timeProvider;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<Guid>> CreateUserAsync(string email, string password, string? phoneNumber, CancellationToken cancellationToken)
@@ -90,8 +95,17 @@ public sealed class IdentityService : IIdentityService
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (user is null ||
-            !user.IsActive ||
+        if (user is null)
+        {
+            _ = _passwordHasher.VerifyHashedPassword(
+                new ApplicationUser(),
+                DummyPasswordHash,
+                password);
+
+            return CreateInvalidCredentialsFailure();
+        }
+
+        if (!user.IsActive ||
             string.IsNullOrWhiteSpace(user.Email))
         {
             return CreateInvalidCredentialsFailure();

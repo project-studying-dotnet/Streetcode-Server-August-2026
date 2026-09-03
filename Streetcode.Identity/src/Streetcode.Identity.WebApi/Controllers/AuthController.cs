@@ -11,6 +11,7 @@ namespace Streetcode.Identity.WebApi.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
+    private const string InvalidCredentialsErrorCode = "Identity.InvalidCredentials";
     private readonly ISender _sender;
 
     public AuthController(ISender sender)
@@ -56,13 +57,31 @@ public sealed class AuthController : ControllerBase
 
         if (result.IsFailed)
         {
-            return Unauthorized(new ProblemDetails
+            var hasInvalidCredentialsError = result.Errors.Any(error =>
+                error.Metadata.TryGetValue("Code", out var code) &&
+                code is string errorCode &&
+                errorCode == InvalidCredentialsErrorCode);
+
+            if (hasInvalidCredentialsError)
             {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Login failed",
-                Detail = "Invalid email or password",
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
-            });
+                return Unauthorized(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Login failed",
+                    Detail = "Invalid email or password",
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+                });
+            }
+
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "Login failed",
+                    Detail = "An unexpected error occurred while processing the login request",
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1"
+                });
         }
 
         return Ok(result.Value);

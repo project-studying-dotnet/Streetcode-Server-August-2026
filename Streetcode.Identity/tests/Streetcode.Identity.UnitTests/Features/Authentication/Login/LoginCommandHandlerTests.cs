@@ -62,16 +62,12 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenRefreshTokenIssuingFails_ShouldReturnFailure()
+    public async Task Handle_WhenRefreshTokenIssuingFails_ShouldReturnFailureAndNotGenerateJwt()
     {
         const string email = "user@example.com";
         const string password = "CorrectPassword123!";
-        const string accessTokenValue = "generated-access-token";
         var userId = Guid.NewGuid();
         var roles = new[] { "TestRole" };
-        var accessExpiresAt = DateTime.SpecifyKind(
-            DateTime.UtcNow.AddMinutes(60),
-            DateTimeKind.Utc);
         var userData = new UserTokenData(
             userId,
             email,
@@ -87,17 +83,6 @@ public sealed class LoginCommandHandlerTests
                 password,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Ok(userData));
-
-        _jwtService
-            .Setup(service => service.GenerateToken(
-                userId,
-                email,
-                It.Is<IEnumerable<string>>(
-                    actualRoles => actualRoles.SequenceEqual(roles)),
-                userData.AccessVersion))
-            .Returns(new AuthTokenResult(
-                accessTokenValue,
-                accessExpiresAt));
 
         _refreshTokenService
             .Setup(service => service.IssueAsync(
@@ -119,7 +104,7 @@ public sealed class LoginCommandHandlerTests
             "RefreshToken.InvalidUser",
             error.Metadata["Code"]);
 
-        _jwtService.VerifyAll();
+        VerifyJwtWasNotGenerated();
 
         _refreshTokenService.Verify(
             service => service.IssueAsync(

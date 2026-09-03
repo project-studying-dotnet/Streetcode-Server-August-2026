@@ -39,12 +39,6 @@ public sealed class LoginCommandHandler
 
         var userData = authenticationResult.Value;
 
-        var accessToken = _jwtService.GenerateToken(
-            userData.UserId,
-            userData.Email,
-            userData.Roles,
-            userData.AccessVersion);
-
         var refreshTokenResult = await _refreshTokenService.IssueAsync(
             userData.UserId,
             cancellationToken);
@@ -54,6 +48,12 @@ public sealed class LoginCommandHandler
             return Result.Fail<LoginResponse>(
                 refreshTokenResult.Errors);
         }
+
+        var accessToken = _jwtService.GenerateToken(
+            userData.UserId,
+            userData.Email,
+            userData.Roles,
+            userData.AccessVersion);
 
         var response = new LoginResponse(
             accessToken.Token,
