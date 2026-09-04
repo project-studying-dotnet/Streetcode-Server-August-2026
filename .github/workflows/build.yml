@@ -7,6 +7,7 @@ on:
       - dev
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
 
 jobs:
   sonarcloud_branch:
@@ -43,7 +44,7 @@ jobs:
       - name: SonarScanner Begin
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
+        run: dotnet sonarscanner begin /v:"august-2026" /k:"project-studying-dotnet_Streetcode-Server-August-2026" /o:"project-studying-dotnet" /d:sonar.token="$env:SONAR_TOKEN" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="./coverage/coverage.opencover.xml" /d:sonar.coverage.exclusions="**/Persistence/Migrations/**"
 
       - name: Build
         run: dotnet build ./Streetcode/Streetcode.sln --configuration Release
@@ -64,4 +65,4 @@ jobs:
           name: Code Coverage Report
           path: |
             ./coverage/coverage.opencover.xml
-      
+    
