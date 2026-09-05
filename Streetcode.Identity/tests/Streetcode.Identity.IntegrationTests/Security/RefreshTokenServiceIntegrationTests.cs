@@ -22,22 +22,26 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
 
     private readonly string _connectionString;
     private readonly ServiceProvider _serviceProvider;
+    private readonly FixedTimeProvider _timeProvider;
 
     public RefreshTokenServiceIntegrationTests(MsSqlContainerFixture fixture)
     {
         _connectionString = fixture.ConnectionString;
+        _timeProvider = new FixedTimeProvider(UtcNow);
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 [$"{RefreshTokenOptions.SectionName}:Lifetime"] =
                     "30.00:00:00",
+                [$"{RefreshTokenOptions.SectionName}:RotationGracePeriod"] =
+                    "00:00:30",
             })
             .Build();
 
         var services = new ServiceCollection();
 
-        services.AddSingleton<TimeProvider>(new FixedTimeProvider(UtcNow));
+        services.AddSingleton<TimeProvider>(_timeProvider);
         services.AddInfrastructure(fixture.ConnectionString);
         services.AddRefreshTokenServices(configuration);
 
@@ -135,7 +139,55 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task RotateAsync_WhenRotatedTokenIsReused_ShouldRevokeItsFamily()
+    public async Task RotateAsync_WhenRotatedTokenIsRetriedWithinGracePeriod_ShouldKeepReplacementActive()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var user = await CreateUserAsync(scope.ServiceProvider);
+        var service = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+        var hasher = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenHasher>();
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
+
+        var issued = await service.IssueAsync(
+            user.Id,
+            CancellationToken.None);
+        var rotated = await service.RotateAsync(
+            issued.Value.Token,
+            CancellationToken.None);
+        var reused = await service.RotateAsync(
+            issued.Value.Token,
+            CancellationToken.None);
+
+        Assert.True(rotated.IsSuccess);
+        Assert.True(reused.IsFailed);
+        Assert.Contains(reused.Errors, error =>
+            error.Metadata.TryGetValue("Code", out var code) &&
+            Equals(code, "RefreshToken.Invalid"));
+
+        dbContext.ChangeTracker.Clear();
+
+        var familyTokens = await dbContext.RefreshTokens
+            .AsNoTracking()
+            .Where(token => token.UserId == user.Id)
+            .ToListAsync();
+
+        Assert.Equal(2, familyTokens.Count);
+
+        var oldToken = familyTokens.Single(token =>
+            token.TokenHash == hasher.ComputeHash(issued.Value.Token));
+        var replacement = familyTokens.Single(token =>
+            token.TokenHash == hasher.ComputeHash(rotated.Value.Token));
+
+        Assert.NotNull(oldToken.RevokedAt);
+        Assert.Null(replacement.RevokedAt);
+        Assert.True(replacement.IsActiveAt(_timeProvider.GetUtcNow()));
+    }
+
+    [Fact]
+    public async Task RotateAsync_WhenRotatedTokenIsReusedAfterGracePeriod_ShouldRevokeItsFamily()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
 
@@ -151,6 +203,9 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
         var rotated = await service.RotateAsync(
             issued.Value.Token,
             CancellationToken.None);
+
+        _timeProvider.Advance(TimeSpan.FromSeconds(31));
+
         var reused = await service.RotateAsync(
             issued.Value.Token,
             CancellationToken.None);
@@ -384,7 +439,7 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
 
     private sealed class FixedTimeProvider : TimeProvider
     {
-        private readonly DateTimeOffset _utcNow;
+        private DateTimeOffset _utcNow;
 
         public FixedTimeProvider(DateTimeOffset utcNow)
         {
@@ -394,6 +449,11 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
         public override DateTimeOffset GetUtcNow()
         {
             return _utcNow;
+        }
+
+        public void Advance(TimeSpan duration)
+        {
+            _utcNow = _utcNow.Add(duration);
         }
     }
 

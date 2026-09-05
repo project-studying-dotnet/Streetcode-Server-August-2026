@@ -100,10 +100,15 @@ public sealed class RefreshTokenService : IRefreshTokenService
         {
             if (storedToken.ReplacedByTokenId is not null)
             {
-                await RevokeFamilyByIdAsync(
-                    storedToken.FamilyId,
-                    now,
-                    cancellationToken);
+                var elapsed = now - storedToken.RevokedAt.Value;
+
+                if (elapsed >= _options.RotationGracePeriod)
+                {
+                    await RevokeFamilyByIdAsync(
+                        storedToken.FamilyId,
+                        now,
+                        cancellationToken);
+                }
             }
 
             return InvalidTokenFailure();

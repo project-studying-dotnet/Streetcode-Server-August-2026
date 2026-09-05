@@ -16,6 +16,9 @@ public static class RefreshTokenDependencyInjection
             .Validate(
                 options => options.Lifetime > TimeSpan.Zero,
                 "Refresh token lifetime must be greater than zero")
+            .Validate(
+                options => options.RotationGracePeriod > TimeSpan.Zero,
+                "Refresh token rotation grace period must be greater than zero")
             .ValidateOnStart();
 
         services.AddOptions<RefreshTokenCleanupOptions>()
