@@ -62,7 +62,7 @@ public class CreateNewsHandlerTests
     {
         var command = new CreateNewsCommand(new NewsDTO());
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(It.IsAny<NewsDTO>())).Returns((DAL.Entities.News.News)null!);
-        var expectedError = "Cannot convert null to news";
+        var expectedError = TestMessages.CannotConvertNullToNews;
 
         var handler = new CreateNewsHandler(_mapperMock.Object, _repositoryMock.Object, _loggerMock.Object);
 
@@ -79,7 +79,7 @@ public class CreateNewsHandlerTests
         var newsDto = new NewsDTO();
         var newsEntity = new DAL.Entities.News.News();
         var command = new CreateNewsCommand(newsDto);
-        var expectedError = "Failed to create a news";
+        var expectedError = TestMessages.FailedToCreateNews;
 
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(newsDto)).Returns(newsEntity);
         _repositoryMock.Setup(r => r.NewsRepository.Create(newsEntity)).Returns(newsEntity);

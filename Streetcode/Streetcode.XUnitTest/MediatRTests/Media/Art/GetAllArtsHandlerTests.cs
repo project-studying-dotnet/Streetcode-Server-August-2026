@@ -63,7 +63,7 @@ public class GetAllArtsHandlerTests
 
         var handler = new GetAllArtsHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllArtsQuery();
-        var expectedErrorMsg = "Cannot find any arts";
+        var expectedErrorMsg = TestMessages.CannotFindAnyArts;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

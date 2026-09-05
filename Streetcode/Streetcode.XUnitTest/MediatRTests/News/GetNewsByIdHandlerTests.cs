@@ -64,7 +64,7 @@ public class GetNewsByIdHandlerTests
     {
         int newsId = 99;
         var query = new GetNewsByIdQuery(newsId);
-        var expectedError = $"No news by entered Id - {newsId}";
+        var expectedError = string.Format(TestMessages.NoNewsByEnteredId, newsId);
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync((DAL.Entities.News.News)null!);

@@ -56,7 +56,7 @@ public class GetAllPartnerShortHandlerTests
 
         var handler = new GetAllPartnerShortHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllPartnersShortQuery();
-        var expectedError = "Cannot find any partners";
+        var expectedError = TestMessages.CannotFindAnyPartners;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

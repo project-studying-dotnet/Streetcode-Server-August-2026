@@ -66,7 +66,7 @@ public class GetAllNewsHandlerTests
             .ReturnsAsync((IEnumerable<DAL.Entities.News.News>)null!);
 
         var query = new GetAllNewsQuery();
-        var expectedError = "There are no news in the database";
+        var expectedError = TestMessages.ThereAreNoNewsInDatabase;
 
         var handler = new GetAllNewsHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
 

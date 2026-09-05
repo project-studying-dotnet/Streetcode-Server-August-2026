@@ -100,7 +100,7 @@ public class GetArtsByStreetcodeIdHandlerTests
         var handler = new GetArtsByStreetcodeIdHandler(
             _repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
         var query = new GetArtsByStreetcodeIdQuery(streetcodeId);
-        string expectedErrorMsg = $"Cannot find any art with corresponding streetcode id: {streetcodeId}";
+        var expectedErrorMsg = string.Format(TestMessages.CannotFindAnyArtWithCorrespondingStreetcodeId, streetcodeId);
 
         var result = await handler.Handle(query, CancellationToken.None);
 

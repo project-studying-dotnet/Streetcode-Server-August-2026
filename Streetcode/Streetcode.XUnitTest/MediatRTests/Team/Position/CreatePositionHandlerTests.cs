@@ -41,7 +41,7 @@ public class CreatePositionHandlerTests
     public async Task Handle_ReturnsFailResult_WhenSaveChangesThrowsException()
     {
         var positionDto = new PositionDTO { Position = "Developer" };
-        var expectedError = "Database connection lost";
+        var expectedError = TestMessages.DatabaseConnectionLost;
 
         _repositoryMock.Setup(r => r.PositionRepository.CreateAsync(It.IsAny<Positions>()))
             .ReturnsAsync(new Positions());
