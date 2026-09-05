@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Streetcode.Identity.Infrastructure.Persistence.Outbox;
+using Streetcode.Identity.Infrastructure.Security;
 
 namespace Streetcode.Identity.IntegrationTests.Fixtures;
 
@@ -68,16 +69,23 @@ public sealed class IdentityWebApplicationFactory
 
         builder.ConfigureServices(services =>
         {
-            var outboxBackgroundService = services.SingleOrDefault(
-                descriptor =>
-                    descriptor.ServiceType == typeof(IHostedService) &&
-                    descriptor.ImplementationType ==
-                    typeof(OutboxPublisherBackgroundService));
+            RemoveHostedService<OutboxPublisherBackgroundService>(services);
 
-            if (outboxBackgroundService is not null)
-            {
-                services.Remove(outboxBackgroundService);
-            }
+            RemoveHostedService<RefreshTokenCleanupBackgroundService>(services);
         });
+    }
+
+    private static void RemoveHostedService<TService>(
+        IServiceCollection services)
+    {
+        var descriptor = services.SingleOrDefault(
+            service =>
+                service.ServiceType == typeof(IHostedService) &&
+                service.ImplementationType == typeof(TService));
+
+        if (descriptor is not null)
+        {
+            services.Remove(descriptor);
+        }
     }
 }

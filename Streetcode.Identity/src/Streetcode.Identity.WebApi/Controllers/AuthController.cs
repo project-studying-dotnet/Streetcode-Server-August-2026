@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Streetcode.Identity.Application.Features.Authentication.Refresh;
 using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.WebApi.DTOs;
 
@@ -37,6 +38,29 @@ public sealed class AuthController : ControllerBase
                 Title = "Registration failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = result.Errors.FirstOrDefault()?.Message
+            });
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshSessionRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshSessionCommand(request.RefreshToken);
+
+        var result = await _sender.Send(command, cancellationToken);
+
+        if (result.IsFailed)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+                Title = "Refresh session failed",
+                Status = StatusCodes.Status401Unauthorized,
+                Detail = "The refresh token is invalid or inactive"
             });
         }
 
