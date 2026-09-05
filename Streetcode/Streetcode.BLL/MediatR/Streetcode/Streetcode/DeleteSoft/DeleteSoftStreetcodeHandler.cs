@@ -1,5 +1,6 @@
 ﻿using FluentResults;
 using MediatR;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
@@ -9,11 +10,13 @@ public class DeleteSoftStreetcodeHandler : IRequestHandler<DeleteSoftStreetcodeC
 {
     private readonly IRepositoryWrapper _repositoryWrapper;
     private readonly ILoggerService _logger;
+    private readonly ICacheService _cacheService;
 
-    public DeleteSoftStreetcodeHandler(IRepositoryWrapper repositoryWrapper, ILoggerService logger)
+    public DeleteSoftStreetcodeHandler(IRepositoryWrapper repositoryWrapper, ILoggerService logger, ICacheService cacheService)
     {
         _repositoryWrapper = repositoryWrapper;
         _logger = logger;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<Unit>> Handle(DeleteSoftStreetcodeCommand request, CancellationToken cancellationToken)
@@ -35,8 +38,18 @@ public class DeleteSoftStreetcodeHandler : IRequestHandler<DeleteSoftStreetcodeC
 
         var resultIsDeleteSucces = await _repositoryWrapper.SaveChangesAsync() > 0;
 
-        if(resultIsDeleteSucces)
+        if (resultIsDeleteSucces)
         {
+            var cacheKeys = new List<string>
+            {
+                $"streetcode:id:{streetcode.Id}",
+                $"streetcode:short:{streetcode.Id}",
+                $"streetcode:index:{streetcode.Index}",
+                $"streetcode:url:{streetcode.TransliterationUrl}"
+            };
+
+            await _cacheService.RemoveAsync(cacheKeys, cancellationToken);
+
             return Result.Ok(Unit.Value);
         }
         else
