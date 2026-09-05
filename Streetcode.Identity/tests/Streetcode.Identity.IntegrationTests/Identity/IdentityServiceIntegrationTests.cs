@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Streetcode.Identity.Application.Abstractions;
+using Streetcode.Identity.Application.Common.Authorization;
 using Streetcode.Identity.Application.IntegrationEvents;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Identity;
@@ -41,6 +42,8 @@ public sealed class IdentityServiceIntegrationTests
 
         await using var scope = _serviceProvider.CreateAsyncScope();
 
+        await EnsureUserRoleExistsAsync(scope.ServiceProvider);
+
         var identityService =
             scope.ServiceProvider.GetRequiredService<IIdentityService>();
 
@@ -78,6 +81,8 @@ public sealed class IdentityServiceIntegrationTests
             await userManager.CheckPasswordAsync(user, password);
 
         Assert.True(passwordIsValid);
+        Assert.True(
+            await userManager.IsInRoleAsync(user, RoleNames.User));
 
         var outboxMessage = await dbContext.OutboxMessages
             .AsNoTracking()
@@ -105,6 +110,8 @@ public sealed class IdentityServiceIntegrationTests
         const string phoneNumber = "+380501234567";
 
         await using var scope = _serviceProvider.CreateAsyncScope();
+
+        await EnsureUserRoleExistsAsync(scope.ServiceProvider);
 
         var identityService =
             scope.ServiceProvider.GetRequiredService<IIdentityService>();
@@ -147,5 +154,26 @@ public sealed class IdentityServiceIntegrationTests
 
         Assert.Equal(1, usersCount);
         Assert.Equal(1, outboxMessagesCount);
+    }
+
+    private static async Task EnsureUserRoleExistsAsync(
+        IServiceProvider serviceProvider)
+    {
+        var roleManager = serviceProvider
+            .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        if (await roleManager.RoleExistsAsync(RoleNames.User))
+        {
+            return;
+        }
+
+        var result = await roleManager.CreateAsync(
+            new IdentityRole<Guid>
+            {
+                Id = Guid.NewGuid(),
+                Name = RoleNames.User,
+            });
+
+        Assert.True(result.Succeeded);
     }
 }

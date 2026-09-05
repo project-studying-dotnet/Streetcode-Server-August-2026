@@ -1,6 +1,7 @@
 using FluentResults;
 using Microsoft.AspNetCore.Identity;
 using Streetcode.Identity.Application.Abstractions;
+using Streetcode.Identity.Application.Common.Authorization;
 using Streetcode.Identity.Application.IntegrationEvents;
 using Streetcode.Identity.Infrastructure.Persistence;
 
@@ -44,11 +45,16 @@ public sealed class IdentityService : IIdentityService
 
         if (!identityResult.Succeeded)
         {
-            var errors = identityResult.Errors
-                .Select(error => new Error(error.Description)
-                    .WithMetadata("Code", error.Code));
+            return Result.Fail<Guid>(ToErrors(identityResult));
+        }
 
-            return Result.Fail<Guid>(errors);
+        var addToRoleResult = await _userManager.AddToRoleAsync(
+            applicationUser,
+            RoleNames.User);
+
+        if (!addToRoleResult.Succeeded)
+        {
+            return Result.Fail<Guid>(ToErrors(addToRoleResult));
         }
 
         var integrationEvent = new UserAccessChangedV1(
@@ -67,5 +73,12 @@ public sealed class IdentityService : IIdentityService
         await transaction.CommitAsync(cancellationToken);
 
         return Result.Ok(applicationUser.Id);
+    }
+
+    private static IEnumerable<Error> ToErrors(IdentityResult result)
+    {
+        return result.Errors.Select(error =>
+            new Error(error.Description)
+                .WithMetadata("Code", error.Code));
     }
 }

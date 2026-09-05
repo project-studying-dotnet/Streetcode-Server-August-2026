@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Streetcode.Identity.Application.Abstractions;
 using Streetcode.Identity.Application.Common.Authorization;
 
 namespace Streetcode.Identity.Infrastructure.Identity.Seeding;
@@ -9,17 +10,20 @@ public sealed class IdentityDataSeeder
 {
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IIdentityService _identityService;
     private readonly IOptions<IdentitySeedOptions> _options;
     private readonly ILogger<IdentityDataSeeder> _logger;
 
     public IdentityDataSeeder(
         RoleManager<IdentityRole<Guid>> roleManager,
         UserManager<ApplicationUser> userManager,
+        IIdentityService identityService,
         IOptions<IdentitySeedOptions> options,
         ILogger<IdentityDataSeeder> logger)
     {
         _roleManager = roleManager;
         _userManager = userManager;
+        _identityService = identityService;
         _options = options;
         _logger = logger;
     }
@@ -80,25 +84,29 @@ public sealed class IdentityDataSeeder
 
         if (adminUser is null)
         {
-            adminUser = new ApplicationUser
-            {
-                Id = Guid.NewGuid(),
-                Email = seedOptions.AdminEmail,
-                UserName = seedOptions.AdminEmail
-            };
+            var createAdminResult = await _identityService.CreateUserAsync(
+                seedOptions.AdminEmail,
+                seedOptions.AdminPassword,
+                phoneNumber: null,
+                cancellationToken);
 
-            var createAdminResult = await _userManager.CreateAsync(
-                adminUser,
-                seedOptions.AdminPassword);
-
-            if (!createAdminResult.Succeeded)
+            if (createAdminResult.IsFailed)
             {
                 var errors = string.Join("; ",
                     createAdminResult.Errors.Select(
-                        error => $"{error.Code}: {error.Description}"));
+                        error => error.Message));
 
                 throw new InvalidOperationException(
                     $"Failed to create the initial admin user: {errors}");
+            }
+
+            adminUser = await _userManager.FindByIdAsync(
+                createAdminResult.Value.ToString("D"));
+
+            if (adminUser is null)
+            {
+                throw new InvalidOperationException(
+                    "The initial admin user was created but could not be loaded");
             }
 
             _logger.LogInformation(

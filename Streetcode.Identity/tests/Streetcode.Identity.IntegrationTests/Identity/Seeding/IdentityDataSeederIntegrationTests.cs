@@ -1,8 +1,10 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Streetcode.Identity.Application.Common.Authorization;
+using Streetcode.Identity.Application.IntegrationEvents;
 using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Identity.Seeding;
@@ -43,6 +45,9 @@ public sealed class IdentityDataSeederIntegrationTests
         var userManager = scope.ServiceProvider
             .GetRequiredService<UserManager<ApplicationUser>>();
 
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
+
         await seeder.SeedAsync();
 
         Assert.True(
@@ -58,8 +63,28 @@ public sealed class IdentityDataSeederIntegrationTests
         Assert.True(
             await userManager.IsInRoleAsync(admin, RoleNames.Admin));
 
+        Assert.True(
+            await userManager.IsInRoleAsync(admin, RoleNames.User));
+
         Assert.NotNull(admin.PasswordHash);
         Assert.NotEqual(adminPassword, admin.PasswordHash);
+
+        var outboxMessage = await dbContext.OutboxMessages
+            .AsNoTracking()
+            .SingleAsync(message =>
+                message.Key == admin.Id.ToString("D"));
+
+        var integrationEvent = JsonSerializer.Deserialize<UserAccessChangedV1>(
+            outboxMessage.Payload,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(integrationEvent);
+        Assert.Equal(outboxMessage.Id, integrationEvent.EventId);
+        Assert.Equal(admin.Id, integrationEvent.UserId);
+        Assert.True(integrationEvent.IsActive);
+        Assert.Equal(admin.AccessVersion, integrationEvent.AccessVersion);
+        Assert.Equal("UserAccessChangedV1", outboxMessage.Type);
+        Assert.Null(outboxMessage.ProcessedAt);
     }
 
     [Fact]
@@ -82,6 +107,9 @@ public sealed class IdentityDataSeederIntegrationTests
 
         var userManager = scope.ServiceProvider
             .GetRequiredService<UserManager<ApplicationUser>>();
+
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
 
         await seeder.SeedAsync();
 
@@ -115,6 +143,12 @@ public sealed class IdentityDataSeederIntegrationTests
 
         Assert.Equal(1, adminRolesCount);
         Assert.Equal(1, userRolesCount);
+
+        var outboxMessagesCount = await dbContext.OutboxMessages.CountAsync(
+            message =>
+                message.Key == adminAfterFirstRun.Id.ToString("D"));
+
+        Assert.Equal(1, outboxMessagesCount);
     }
 
     [Fact]
