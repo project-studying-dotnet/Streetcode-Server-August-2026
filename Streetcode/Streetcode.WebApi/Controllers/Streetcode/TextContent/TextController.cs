@@ -5,6 +5,8 @@ using Streetcode.BLL.MediatR.Streetcode.Text.GetAll;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetById;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetByStreetcodeId;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetParsed;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Streetcode.TextContent;
 
@@ -28,6 +30,7 @@ public class TextController : BaseApiController
         return HandleResult(await Mediator.Send(new GetTextByStreetcodeIdQuery(streetcodeId)));
     }
 
+    [AuthorizeRoles(UserRole.MainAdministrator, UserRole.Administrator, UserRole.Moderator)]
     [HttpGet]
     public async Task<IActionResult> GetParsedText([FromQuery] string text)
     {
