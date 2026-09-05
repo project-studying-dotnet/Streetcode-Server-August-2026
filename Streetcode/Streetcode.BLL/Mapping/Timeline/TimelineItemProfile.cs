@@ -8,6 +8,13 @@ public class TimelineItemProfile : Profile
 {
     public TimelineItemProfile()
     {
+        CreateMap<TimelineItemCreateUpdateDto, TimelineItem>()
+            .ForMember(destination => destination.Id, option => option.Ignore())
+            .ForMember(destination => destination.Streetcode, option => option.Ignore())
+            .ForMember(
+                destination => destination.HistoricalContextTimelines,
+                option => option.Ignore());
+
         CreateMap<TimelineItem, TimelineItemDTO>().ReverseMap();
 
         CreateMap<TimelineItem, TimelineItemDTO>()

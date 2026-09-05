@@ -1,0 +1,17 @@
+using Streetcode.DAL.Enums;
+
+namespace Streetcode.BLL.DTO.Timeline;
+
+public class TimelineItemCreateUpdateDto
+{
+    public const int TitleMaxLength = 28;
+    public const int DescriptionMaxLength = 400;
+
+    public int StreetcodeId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime Date { get; set; }
+    public DateViewPattern DateViewPattern { get; set; }
+    public IEnumerable<HistoricalContextDTO> HistoricalContexts { get; set; }
+        = Array.Empty<HistoricalContextDTO>();
+}
