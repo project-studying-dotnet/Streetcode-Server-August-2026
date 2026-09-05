@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.GetById;
 
@@ -23,12 +24,10 @@ public class GetPartnerByIdHandler : IRequestHandler<GetPartnerByIdQuery, Result
 
     public async Task<Result<PartnerDTO>> Handle(GetPartnerByIdQuery request, CancellationToken cancellationToken)
     {
+        var specification = new GetPartnerByIdSpecification(request.Id);
         var partner = await _repositoryWrapper
             .PartnersRepository
-            .GetSingleOrDefaultAsync(
-                predicate: p => p.Id == request.Id,
-                include: p => p
-                    .Include(pl => pl.PartnerSourceLinks));
+            .GetBySpecAsync(specification, cancellationToken);
 
         if (partner is null)
         {
