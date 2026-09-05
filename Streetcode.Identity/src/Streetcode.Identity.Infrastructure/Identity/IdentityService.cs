@@ -12,10 +12,8 @@ public sealed class IdentityService : IIdentityService
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly StreetcodeIdentityDbContext _dbContext;
-    private readonly IPasswordHasher<ApplicationUser> _passwordHasher;
-    private const string DummyPasswordHash =
-        "AQAAAAIAAYagAAAAEFk+nqUvhTZfSq7x8XOi7l6McrBhxDjPaKhSAPFrs5pGU5taEAJTWdCRjrcUpvVDcA==";
     private readonly IOutboxWriter _outboxWriter;
+    private readonly DummyPasswordHash _dummyPasswordHash;
     private readonly TimeProvider _timeProvider;
 
     public IdentityService(
@@ -24,14 +22,14 @@ public sealed class IdentityService : IIdentityService
         StreetcodeIdentityDbContext dbContext,
         IOutboxWriter outboxWriter,
         TimeProvider timeProvider,
-        IPasswordHasher<ApplicationUser> passwordHasher)
+        DummyPasswordHash dummyPasswordHash)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _dbContext = dbContext;
         _outboxWriter = outboxWriter;
         _timeProvider = timeProvider;
-        _passwordHasher = passwordHasher;
+        _dummyPasswordHash = dummyPasswordHash;
     }
 
     public async Task<Result<Guid>> CreateUserAsync(string email, string password, string? phoneNumber, CancellationToken cancellationToken)
@@ -97,17 +95,11 @@ public sealed class IdentityService : IIdentityService
 
         if (user is null)
         {
-            _ = _passwordHasher.VerifyHashedPassword(
+            _ = _userManager.PasswordHasher.VerifyHashedPassword(
                 new ApplicationUser(),
-                DummyPasswordHash,
+                _dummyPasswordHash.Value,
                 password);
 
-            return CreateInvalidCredentialsFailure();
-        }
-
-        if (!user.IsActive ||
-            string.IsNullOrWhiteSpace(user.Email))
-        {
             return CreateInvalidCredentialsFailure();
         }
 
@@ -120,6 +112,12 @@ public sealed class IdentityService : IIdentityService
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!signInResult.Succeeded)
+        {
+            return CreateInvalidCredentialsFailure();
+        }
+
+        if (!user.IsActive ||
+            string.IsNullOrWhiteSpace(user.Email))
         {
             return CreateInvalidCredentialsFailure();
         }

@@ -361,6 +361,7 @@ public sealed class IdentityServiceIntegrationTests
 
         AssertInvalidCredentials(result);
         Assert.Equal(1, _passwordHasher.VerificationCount);
+        Assert.Equal(1, _passwordHasher.HashingCount);
     }
 
     [Fact]
@@ -398,6 +399,7 @@ public sealed class IdentityServiceIntegrationTests
             CancellationToken.None);
 
         AssertInvalidCredentials(result);
+        Assert.Equal(1, _passwordHasher.VerificationCount);
     }
 
     [Fact]
@@ -488,12 +490,16 @@ public sealed class IdentityServiceIntegrationTests
     {
         private readonly PasswordHasher<ApplicationUser> _inner = new();
 
+        public int HashingCount { get; private set; }
+
         public int VerificationCount { get; private set; }
 
         public string HashPassword(
             ApplicationUser user,
             string password)
         {
+            HashingCount++;
+
             return _inner.HashPassword(user, password);
         }
 
