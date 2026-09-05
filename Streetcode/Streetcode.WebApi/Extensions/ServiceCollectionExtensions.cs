@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
         {
             options.UseSqlServer(connectionString, opt =>
             {
+                opt.EnableRetryOnFailure();
                 opt.MigrationsAssembly(typeof(StreetcodeDbContext).Assembly.GetName().Name);
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schema: "entity_framework");
             });
