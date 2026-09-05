@@ -16,6 +16,9 @@ namespace Streetcode.XUnitTest.Utils
 
     public class WebParsingUtilsTests
     {
+        private const string CsvHeader =
+            "region;old;new;gromada;community;unused;street;latitude;longitude";
+
         [Theory]
         [InlineData("region;old;new;gromada;community;unused;street;50.5;30.5")]
         [InlineData("region;old;new;gromada;community;unused;street;;30.5")]
@@ -23,19 +26,16 @@ namespace Streetcode.XUnitTest.Utils
         public async Task SaveToponymsToDbAsync_WithIncompleteOrInvalidDownload_DoesNotClearDatabase(
             string invalidRow)
         {
-            string runtimeDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(runtimeDirectory);
+            string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
             var csvRows = new[]
             {
-                "region;old;new;gromada;community;unused;street;latitude;longitude",
+                CsvHeader,
                 invalidRow,
             };
             await File.WriteAllLinesAsync(csvPath, csvRows);
 
-            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
+            var options = CreateDbContextOptions();
 
             try
             {
@@ -53,10 +53,7 @@ namespace Streetcode.XUnitTest.Utils
                     Coordinate = new ToponymCoordinate(),
                 });
                 await context.SaveChangesAsync();
-                var environment = new Mock<IHostEnvironment>();
-                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
-                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
-                var sut = new WebParsingUtils(context, environment.Object);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
 
                 bool result = await sut.SaveToponymsToDbAsync(csvPath);
 
@@ -68,40 +65,30 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                Directory.Delete(runtimeDirectory, recursive: true);
+                DeleteDirectory(runtimeDirectory);
             }
         }
 
         [Fact]
         public async Task ProcessCsvFileAsync_WhenParsingIsComplete_ShouldSaveToponyms()
         {
-            string runtimeDirectory = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString());
-            Directory.CreateDirectory(runtimeDirectory);
+            string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
             string housesCsvPath = Path.Combine(runtimeDirectory, "houses.csv");
             string[] csvRows =
             {
-                "region;old;new;gromada;community;unused;street;latitude;longitude",
+                CsvHeader,
                 "region;old;new;gromada;community;unused;street;50.5;30.5",
             };
             await File.WriteAllLinesAsync(csvPath, csvRows);
             await File.WriteAllLinesAsync(housesCsvPath, csvRows);
 
-            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .ConfigureWarnings(configuration =>
-                    configuration.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                .Options;
+            var options = CreateDbContextOptions();
 
             try
             {
                 await using var context = new StreetcodeDbContext(options);
-                var environment = new Mock<IHostEnvironment>();
-                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
-                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
-                var sut = new WebParsingUtils(context, environment.Object);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
 
                 await sut.ProcessCsvFileAsync(runtimeDirectory);
 
@@ -112,30 +99,23 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                Directory.Delete(runtimeDirectory, recursive: true);
+                DeleteDirectory(runtimeDirectory);
             }
         }
 
         [Fact]
         public async Task SaveToponymsToDbAsync_WithValidData_ShouldReplaceExistingToponyms()
         {
-            string runtimeDirectory = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString());
-            Directory.CreateDirectory(runtimeDirectory);
+            string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
             string[] csvRows =
             {
-                "region;old;new;gromada;community;unused;street;latitude;longitude",
+                CsvHeader,
                 "New region;old;new;gromada;community;unused;street;49.8;24.0",
             };
             await File.WriteAllLinesAsync(csvPath, csvRows);
 
-            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .ConfigureWarnings(configuration =>
-                    configuration.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                .Options;
+            var options = CreateDbContextOptions();
 
             try
             {
@@ -147,10 +127,7 @@ namespace Streetcode.XUnitTest.Utils
                     Coordinate = new ToponymCoordinate(),
                 });
                 await context.SaveChangesAsync();
-                var environment = new Mock<IHostEnvironment>();
-                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
-                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
-                var sut = new WebParsingUtils(context, environment.Object);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
 
                 bool result = await sut.SaveToponymsToDbAsync(csvPath);
 
@@ -162,85 +139,103 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                Directory.Delete(runtimeDirectory, recursive: true);
+                DeleteDirectory(runtimeDirectory);
             }
         }
 
         [Fact]
         public async Task ProcessCsvFileAsync_WhenDataFileIsMissing_ShouldInitializeItWithHeader()
         {
-            string runtimeDirectory = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString());
-            Directory.CreateDirectory(runtimeDirectory);
+            string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
             string housesCsvPath = Path.Combine(runtimeDirectory, "houses.csv");
-            const string header =
-                "region;old;new;gromada;community;unused;street;latitude;longitude";
-            await File.WriteAllLinesAsync(housesCsvPath, new[] { header });
+            await File.WriteAllLinesAsync(housesCsvPath, new[] { CsvHeader });
 
-            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .ConfigureWarnings(configuration =>
-                    configuration.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                .Options;
+            var options = CreateDbContextOptions();
 
             try
             {
                 await using var context = new StreetcodeDbContext(options);
-                var environment = new Mock<IHostEnvironment>();
-                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
-                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
-                var sut = new WebParsingUtils(context, environment.Object);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
 
                 await sut.ProcessCsvFileAsync(runtimeDirectory);
 
                 string savedHeader = Assert.Single(await File.ReadAllLinesAsync(csvPath));
-                Assert.Equal(header, savedHeader);
+                Assert.Equal(CsvHeader, savedHeader);
                 Assert.Empty(await context.Toponyms.ToListAsync());
             }
             finally
             {
-                Directory.Delete(runtimeDirectory, recursive: true);
+                DeleteDirectory(runtimeDirectory);
+            }
+        }
+
+        [Fact]
+        public async Task ProcessCsvFileAsync_WhenParsingIsIncomplete_ShouldKeepExistingToponyms()
+        {
+            string runtimeDirectory = CreateTemporaryDirectory();
+            string csvPath = Path.Combine(runtimeDirectory, "data.csv");
+            string housesCsvPath = Path.Combine(runtimeDirectory, "houses.csv");
+            const string parsedHeader =
+                "parsed;old;new;gromada;community;unused;street;latitude;longitude";
+            const string sourceHeader =
+                "source;old;new;gromada;community;unused;street;latitude;longitude";
+            const string validRow =
+                "region;old;new;gromada;community;unused;street;50.5;30.5";
+            await File.WriteAllLinesAsync(csvPath, new[] { parsedHeader, validRow });
+            await File.WriteAllLinesAsync(housesCsvPath, new[] { sourceHeader, validRow });
+
+            var options = CreateDbContextOptions();
+
+            try
+            {
+                await using var context = new StreetcodeDbContext(options);
+                context.Toponyms.Add(new Toponym
+                {
+                    Oblast = "Existing region",
+                    StreetName = "Existing street",
+                    Coordinate = new ToponymCoordinate(),
+                });
+                await context.SaveChangesAsync();
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
+
+                await sut.ProcessCsvFileAsync(runtimeDirectory);
+
+                var existingToponym = Assert.Single(await context.Toponyms.ToListAsync());
+                Assert.Equal("Existing region", existingToponym.Oblast);
+            }
+            finally
+            {
+                DeleteDirectory(runtimeDirectory);
             }
         }
 
         [Fact]
         public async Task SaveToponymsToDbAsync_WhenSaveFails_ShouldRollbackAndRethrow()
         {
-            string runtimeDirectory = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString());
-            Directory.CreateDirectory(runtimeDirectory);
+            string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
             string[] csvRows =
             {
-                "region;old;new;gromada;community;unused;street;latitude;longitude",
+                CsvHeader,
                 "region;old;new;gromada;community;unused;street;50.5;30.5",
             };
             await File.WriteAllLinesAsync(csvPath, csvRows);
 
-            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .ConfigureWarnings(configuration =>
-                    configuration.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                .Options;
+            var options = CreateDbContextOptions();
 
             try
             {
                 await using var context = new FailingStreetcodeDbContext(options);
                 context.ShouldFailOnSave = true;
-                var environment = new Mock<IHostEnvironment>();
-                environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
-                environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
-                var sut = new WebParsingUtils(context, environment.Object);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
 
                 await Assert.ThrowsAsync<InvalidOperationException>(
                     () => sut.SaveToponymsToDbAsync(csvPath));
             }
             finally
             {
-                Directory.Delete(runtimeDirectory, recursive: true);
+                DeleteDirectory(runtimeDirectory);
             }
         }
 
@@ -283,13 +278,10 @@ namespace Streetcode.XUnitTest.Utils
         [Fact]
         public void FindHousesCsv_WhenFileExistsInRoot_ShouldReturnFilePath()
         {
-            var testDirectory = Path.Combine(
-                    Path.GetTempPath(),
-                    Guid.NewGuid().ToString());
+            string testDirectory = CreateTemporaryDirectory();
             try
             {
                 string testFilePath = Path.Combine(testDirectory, "houses.csv");
-                Directory.CreateDirectory(testDirectory);
                 File.WriteAllText(testFilePath, " ");
 
                 string result = WebParsingUtils.FindHousesCsv(testDirectory);
@@ -298,19 +290,14 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                if (Directory.Exists(testDirectory))
-                {
-                    Directory.Delete(testDirectory, recursive: true);
-                }
+                DeleteDirectory(testDirectory);
             }
         }
 
         [Fact]
         public void FindHousesCsv_WhenFileExistsInNestedDirectory_ShouldReturnFilePath()
         {
-            var testDirectory = Path.Combine(
-                    Path.GetTempPath(),
-                    Guid.NewGuid().ToString());
+            string testDirectory = CreateTemporaryDirectory();
             try
             {
                 var nestedDirectory = Path.Combine(testDirectory, "Nested");
@@ -324,23 +311,16 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                if (Directory.Exists(testDirectory))
-                {
-                    Directory.Delete(testDirectory, recursive: true);
-                }
+                DeleteDirectory(testDirectory);
             }
         }
 
         [Fact]
         public void FindHousesCsv_WhenFileDoesNotExist_ShouldThrowFileNotFoundException()
         {
-            var testDirectory = Path.Combine(
-                    Path.GetTempPath(),
-                    Guid.NewGuid().ToString());
+            string testDirectory = CreateTemporaryDirectory();
             try
             {
-                Directory.CreateDirectory(testDirectory);
-
                 var exception = Assert.Throws<FileNotFoundException>(
                     () => WebParsingUtils.FindHousesCsv(testDirectory));
 
@@ -348,22 +328,16 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                if (Directory.Exists(testDirectory))
-                {
-                    Directory.Delete(testDirectory, recursive: true);
-                }
+                DeleteDirectory(testDirectory);
             }
         }
 
         [Fact]
         public void FindHousesCsv_WhenFileNameHasDifferentCase_ShouldReturnFilePath()
         {
-            var testDirectory = Path.Combine(
-                Path.GetTempPath(),
-                Guid.NewGuid().ToString());
+            string testDirectory = CreateTemporaryDirectory();
             try
             {
-                Directory.CreateDirectory(testDirectory);
                 var testFilePath = Path.Combine(testDirectory, "HOUSES.CSV");
                 File.WriteAllText(testFilePath, "test");
 
@@ -373,10 +347,41 @@ namespace Streetcode.XUnitTest.Utils
             }
             finally
             {
-                if (Directory.Exists(testDirectory))
-                {
-                    Directory.Delete(testDirectory, recursive: true);
-                }
+                DeleteDirectory(testDirectory);
+            }
+        }
+
+        private static string CreateTemporaryDirectory()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+            Directory.CreateDirectory(directory);
+            return directory;
+        }
+
+        private static DbContextOptions<StreetcodeDbContext> CreateDbContextOptions()
+        {
+            return new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .ConfigureWarnings(configuration =>
+                    configuration.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+                .Options;
+        }
+
+        private static WebParsingUtils CreateWebParsingUtils(
+            StreetcodeDbContext context,
+            string runtimeDirectory)
+        {
+            var environment = new Mock<IHostEnvironment>();
+            environment.SetupGet(x => x.ContentRootPath).Returns(runtimeDirectory);
+            environment.SetupGet(x => x.ContentRootFileProvider).Returns(Mock.Of<IFileProvider>());
+            return new WebParsingUtils(context, environment.Object);
+        }
+
+        private static void DeleteDirectory(string directory)
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
             }
         }
 
