@@ -4,7 +4,7 @@ using Streetcode.BLL.MediatR.Validators;
 
 namespace Streetcode.BLL.MediatR.Timeline.TimelineItem.Validators;
 
-public sealed class TimelineItemCreateUpdateDtoValidator : AbstractValidator<TimelineItemCreateUpdateDTO>
+public sealed class TimelineItemCreateUpdateDtoValidator : AbstractValidator<TimelineItemCreateUpdateDto>
 {
     public TimelineItemCreateUpdateDtoValidator(IValidator<HistoricalContextDTO> historicalContextValidator)
     {
@@ -16,7 +16,7 @@ public sealed class TimelineItemCreateUpdateDtoValidator : AbstractValidator<Tim
             .NotEmpty()
             .WithMessage("Timeline item title is required.")
             .MustNotExceedLength(
-                TimelineItemCreateUpdateDTO.TitleMaxLength,
+                TimelineItemCreateUpdateDto.TitleMaxLength,
                 "Timeline item title");
 
         RuleFor(query => query.Description)
@@ -24,7 +24,7 @@ public sealed class TimelineItemCreateUpdateDtoValidator : AbstractValidator<Tim
             .NotEmpty()
             .WithMessage("Timeline item description is required.")
             .MustNotExceedLength(
-                TimelineItemCreateUpdateDTO.DescriptionMaxLength,
+                TimelineItemCreateUpdateDto.DescriptionMaxLength,
                 "Timeline item description");
 
         RuleFor(item => item.Date)

@@ -10,6 +10,21 @@ namespace Streetcode.DAL.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql(
+                """
+                IF EXISTS
+                (
+                    SELECT 1
+                    FROM [timeline].[historical_contexts]
+                    GROUP BY [Title]
+                    HAVING COUNT(*) > 1
+                )
+                BEGIN
+                    THROW 51000,
+                        'Cannot create unique index because historical context titles contain duplicates.',
+                        1;
+                END
+                """);
             migrationBuilder.CreateIndex(
                 name: "IX_historical_contexts_Title",
                 schema: "timeline",

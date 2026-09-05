@@ -9,7 +9,7 @@ public sealed class UpdateTimelineItemCommandValidator
     : AbstractValidator<UpdateTimelineItemCommand>
 {
     public UpdateTimelineItemCommandValidator(
-        IValidator<TimelineItemCreateUpdateDTO> timelineItemValidator)
+        IValidator<TimelineItemCreateUpdateDto> timelineItemValidator)
     {
         RuleFor(command => command.Id)
             .MustBeValidId("Timeline item");

@@ -2,7 +2,7 @@ using Streetcode.DAL.Enums;
 
 namespace Streetcode.BLL.DTO.Timeline;
 
-public class TimelineItemCreateUpdateDTO
+public class TimelineItemCreateUpdateDto
 {
     public const int TitleMaxLength = 28;
     public const int DescriptionMaxLength = 400;

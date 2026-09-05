@@ -17,13 +17,13 @@ namespace Streetcode.XUnitTest.ValidatorTests
 
     public class TimelineValidatorsTests
     {
-        private readonly HistoricalContextDtoValidator _contextValidator = new ();
-        private readonly TimelineItemCreateUpdateDtoValidator _timelineItemValidator;
+        private readonly HistoricalContextDtoValidator contextValidator = new ();
+        private readonly TimelineItemCreateUpdateDtoValidator timelineItemValidator;
 
         public TimelineValidatorsTests()
         {
-            _timelineItemValidator = new TimelineItemCreateUpdateDtoValidator(
-                _contextValidator);
+            this.timelineItemValidator = new TimelineItemCreateUpdateDtoValidator(
+                this.contextValidator);
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 Title = title,
             };
 
-            var result = _contextValidator.Validate(context);
+            var result = this.contextValidator.Validate(context);
 
             Assert.True(result.IsValid);
         }
@@ -53,7 +53,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 Title = "History",
             };
 
-            var result = _contextValidator.Validate(context);
+            var result = this.contextValidator.Validate(context);
 
             Assert.Contains(
                 result.Errors,
@@ -76,7 +76,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 Title = title,
             };
 
-            var result = _contextValidator.Validate(context);
+            var result = this.contextValidator.Validate(context);
 
             Assert.Contains(
                 result.Errors,
@@ -94,7 +94,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                     HistoricalContextEntity.TitleMaxLength + 1),
             };
 
-            var result = _contextValidator.Validate(context);
+            var result = this.contextValidator.Validate(context);
 
             Assert.Contains(
                 result.Errors,
@@ -113,7 +113,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 Title = string.Empty,
             };
 
-            var result = _contextValidator.Validate(context);
+            var result = this.contextValidator.Validate(context);
 
             Assert.True(result.IsValid);
         }
@@ -121,14 +121,14 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [Fact]
         public void ValidateTimelineItem_WhenDataIsValid_ShouldBeValid()
         {
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.HistoricalContexts = new[]
             {
                 new HistoricalContextDTO { Id = 1 },
                 new HistoricalContextDTO { Title = "Culture" },
             };
 
-            var result = _timelineItemValidator.Validate(timelineItem);
+            var result = this.timelineItemValidator.Validate(timelineItem);
 
             Assert.True(result.IsValid);
         }
@@ -136,72 +136,72 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [Fact]
         public void ValidateTimelineItem_WhenRequiredValuesAreInvalid_ShouldBeInvalid()
         {
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.StreetcodeId = 0;
             timelineItem.Title = string.Empty;
             timelineItem.Description = string.Empty;
             timelineItem.Date = default;
             timelineItem.DateViewPattern = (DateViewPattern)999;
 
-            var result = _timelineItemValidator.Validate(timelineItem);
+            var result = this.timelineItemValidator.Validate(timelineItem);
 
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.StreetcodeId));
+                    nameof(TimelineItemCreateUpdateDto.StreetcodeId));
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.Title));
+                    nameof(TimelineItemCreateUpdateDto.Title));
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.Description));
+                    nameof(TimelineItemCreateUpdateDto.Description));
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.Date));
+                    nameof(TimelineItemCreateUpdateDto.Date));
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.DateViewPattern));
+                    nameof(TimelineItemCreateUpdateDto.DateViewPattern));
         }
 
         [Fact]
         public void ValidateTimelineItem_WhenTextFieldsAreTooLong_ShouldBeInvalid()
         {
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.Title = new string(
                 'A',
-                TimelineItemCreateUpdateDTO.TitleMaxLength + 1);
+                TimelineItemCreateUpdateDto.TitleMaxLength + 1);
             timelineItem.Description = new string(
                 'A',
-                TimelineItemCreateUpdateDTO.DescriptionMaxLength + 1);
+                TimelineItemCreateUpdateDto.DescriptionMaxLength + 1);
 
-            var result = _timelineItemValidator.Validate(timelineItem);
+            var result = this.timelineItemValidator.Validate(timelineItem);
 
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.Title));
+                    nameof(TimelineItemCreateUpdateDto.Title));
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.Description));
+                    nameof(TimelineItemCreateUpdateDto.Description));
         }
 
         [Fact]
         public void ValidateTimelineItem_WhenContextCollectionIsNull_ShouldBeInvalid()
         {
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.HistoricalContexts = null!;
 
-            var result = _timelineItemValidator.Validate(timelineItem);
+            var result = this.timelineItemValidator.Validate(timelineItem);
 
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName ==
-                    nameof(TimelineItemCreateUpdateDTO.HistoricalContexts) &&
+                    nameof(TimelineItemCreateUpdateDto.HistoricalContexts) &&
                     error.ErrorMessage ==
                     "Historical contexts collection is required.");
         }
@@ -209,7 +209,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [Fact]
         public void ValidateTimelineItem_WhenNestedContextIsInvalid_ShouldIncludeNestedError()
         {
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.HistoricalContexts = new[]
             {
                 new HistoricalContextDTO
@@ -219,7 +219,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 },
             };
 
-            var result = _timelineItemValidator.Validate(timelineItem);
+            var result = this.timelineItemValidator.Validate(timelineItem);
 
             Assert.Contains(
                 result.Errors,
@@ -232,7 +232,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCreate_WhenTimelineItemIsNull_ShouldBeInvalid()
         {
             var validator = new CreateTimelineItemCommandValidator(
-                _timelineItemValidator);
+                this.timelineItemValidator);
 
             var result = validator.Validate(
                 new CreateTimelineItemCommand(null!));
@@ -248,8 +248,8 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCreate_WhenNestedTimelineItemIsInvalid_ShouldIncludeNestedError()
         {
             var validator = new CreateTimelineItemCommandValidator(
-                _timelineItemValidator);
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+                this.timelineItemValidator);
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.Title = string.Empty;
 
             var result = validator.Validate(
@@ -258,7 +258,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName.EndsWith(
-                    nameof(TimelineItemCreateUpdateDTO.Title),
+                    nameof(TimelineItemCreateUpdateDto.Title),
                     StringComparison.Ordinal));
         }
 
@@ -266,8 +266,8 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateUpdate_WhenIdAndNestedTimelineItemAreInvalid_ShouldBeInvalid()
         {
             var validator = new UpdateTimelineItemCommandValidator(
-                _timelineItemValidator);
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+                this.timelineItemValidator);
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
             timelineItem.Description = string.Empty;
 
             var result = validator.Validate(
@@ -280,7 +280,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
             Assert.Contains(
                 result.Errors,
                 error => error.PropertyName.EndsWith(
-                    nameof(TimelineItemCreateUpdateDTO.Description),
+                    nameof(TimelineItemCreateUpdateDto.Description),
                     StringComparison.Ordinal));
         }
 
@@ -306,11 +306,11 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCommands_WhenDataIsValid_ShouldBeValid()
         {
             var createValidator = new CreateTimelineItemCommandValidator(
-                _timelineItemValidator);
+                this.timelineItemValidator);
             var updateValidator = new UpdateTimelineItemCommandValidator(
-                _timelineItemValidator);
+                this.timelineItemValidator);
             var deleteValidator = new DeleteTimelineItemCommandValidator();
-            TimelineItemCreateUpdateDTO timelineItem = CreateValidTimelineItem();
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
 
             var createResult = createValidator.Validate(
                 new CreateTimelineItemCommand(timelineItem));
@@ -324,9 +324,9 @@ namespace Streetcode.XUnitTest.ValidatorTests
             Assert.True(deleteResult.IsValid);
         }
 
-        private static TimelineItemCreateUpdateDTO CreateValidTimelineItem()
+        private static TimelineItemCreateUpdateDto CreateValidTimelineItem()
         {
-            return new TimelineItemCreateUpdateDTO
+            return new TimelineItemCreateUpdateDto
             {
                 StreetcodeId = 1,
                 Title = "Historical event",

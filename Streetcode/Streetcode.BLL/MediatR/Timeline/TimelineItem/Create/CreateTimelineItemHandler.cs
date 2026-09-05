@@ -5,11 +5,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Timeline;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.Interfaces.Timeline;
 using Streetcode.DAL.Repositories.Interfaces.Base;
-using HistoricalContextEntity =
-    Streetcode.DAL.Entities.Timeline.HistoricalContext;
-using HistoricalContextTimelineEntity =
-    Streetcode.DAL.Entities.Timeline.HistoricalContextTimeline;
 using TimelineItemEntity =
     Streetcode.DAL.Entities.Timeline.TimelineItem;
 
@@ -20,12 +17,18 @@ public class CreateTimelineItemHandler : IRequestHandler<CreateTimelineItemComma
     private readonly IRepositoryWrapper _repositoryWrapper;
     private readonly IMapper _mapper;
     private readonly ILoggerService _logger;
+    private readonly IHistoricalContextResolver _historicalContextResolver;
 
-    public CreateTimelineItemHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper, ILoggerService logger)
+    public CreateTimelineItemHandler(
+        IRepositoryWrapper repositoryWrapper,
+        IMapper mapper,
+        ILoggerService logger,
+        IHistoricalContextResolver historicalContextResolver)
     {
         _repositoryWrapper = repositoryWrapper;
         _mapper = mapper;
         _logger = logger;
+        _historicalContextResolver = historicalContextResolver;
     }
 
     public async Task<Result<TimelineItemDTO>> Handle(
@@ -48,95 +51,21 @@ public class CreateTimelineItemHandler : IRequestHandler<CreateTimelineItemComma
         var timelineItem = _mapper.Map<TimelineItemEntity>(request.TimelineItem);
 
         timelineItem.Title = timelineItem.Title.Trim();
-        timelineItem.Description = timelineItem.Description.Trim();
+        timelineItem.Description = request.TimelineItem.Description.Trim();
 
-        var requestedContexts = request.TimelineItem.HistoricalContexts.ToList();
+        var contextResolution = await _historicalContextResolver
+            .ResolveAsync(request.TimelineItem.HistoricalContexts);
 
-        var existingContextIds = requestedContexts
-            .Where(context => context.Id > 0)
-            .Select(context => context.Id)
-            .Distinct()
-            .ToList();
-
-        var newContextTitles = requestedContexts
-            .Where(context => context.Id == 0)
-            .Select(context => context.Title.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var existingContexts = (await _repositoryWrapper
-            .HistoricalContextRepository
-            .GetAllAsync(
-                predicate: context =>
-                    existingContextIds.Contains(context.Id)))
-            .ToList();
-
-        var foundContextIds = existingContexts
-            .Select(context => context.Id)
-            .ToHashSet();
-
-        var missingContextIds = existingContextIds
-            .Where(contextId => !foundContextIds.Contains(contextId))
-            .ToList();
-
-        if (missingContextIds.Count > 0)
+        if (contextResolution.IsFailed)
         {
-            string errorMessage =
-                $"Cannot find historical contexts with IDs: " +
-                $"{string.Join(", ", missingContextIds)}.";
-
-            _logger.LogError(request, errorMessage);
-            return Result.Fail<TimelineItemDTO>(errorMessage);
+            string errorMsg = contextResolution.Errors[0].Message;
+            _logger.LogError(request, errorMsg);
+            return Result.Fail<TimelineItemDTO>(errorMsg);
         }
 
-        var conflictingContexts = (await _repositoryWrapper
-            .HistoricalContextRepository
-            .GetAllAsync(
-                predicate: context => newContextTitles.Contains(context.Title)))
-            .ToList();
+        timelineItem.HistoricalContextTimelines.AddRange(contextResolution.Value);
 
-        var conflictingContextTitles = conflictingContexts
-            .Select(context => context.Title)
-            .ToList();
-
-        if (conflictingContextTitles.Count > 0)
-        {
-            string errorMessage =
-                $"Historical contexts with titles already exist: " +
-                $"{string.Join(", ", conflictingContextTitles)}.";
-
-            _logger.LogError(request, errorMessage);
-            return Result.Fail<TimelineItemDTO>(errorMessage);
-        }
-
-        var newContexts = newContextTitles
-            .Select(title => new HistoricalContextEntity
-            {
-                Title = title
-            })
-            .ToList();
-
-        foreach (int contextId in existingContextIds)
-        {
-            var contextRelation = new HistoricalContextTimelineEntity
-            {
-                HistoricalContextId = contextId
-            };
-
-            timelineItem.HistoricalContextTimelines.Add(contextRelation);
-        }
-
-        foreach (HistoricalContextEntity newContext in newContexts)
-        {
-            var contextRelation = new HistoricalContextTimelineEntity
-            {
-                HistoricalContext = newContext
-            };
-
-            timelineItem.HistoricalContextTimelines.Add(contextRelation);
-        }
-
-        var createdTimelineItem = _repositoryWrapper.TimelineRepository.Create(timelineItem);
+        var createdTimelineItem = await _repositoryWrapper.TimelineRepository.CreateAsync(timelineItem);
 
         int changedRecords;
 

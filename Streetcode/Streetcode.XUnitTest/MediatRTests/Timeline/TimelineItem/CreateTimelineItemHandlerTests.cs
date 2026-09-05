@@ -1,52 +1,55 @@
 // <copyright file="CreateTimelineItemHandlerTests.cs" company="PlaceholderCompany">
 // Copyright (c) PlaceholderCompany. All rights reserved.
 // </copyright>
+
 namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 {
     using System.Linq.Expressions;
     using AutoMapper;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore.Query;
-    using Moq;
-    using Xunit;
+    using FluentResults;
     using global::Streetcode.BLL.DTO.Timeline;
     using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.Interfaces.Timeline;
     using global::Streetcode.BLL.MediatR.Timeline.TimelineItem.Create;
     using global::Streetcode.DAL.Entities.Streetcode;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
     using global::Streetcode.DAL.Repositories.Interfaces.Timeline;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Query;
+    using Moq;
+    using Xunit;
     using HistoricalContextEntity =
         global::Streetcode.DAL.Entities.Timeline.HistoricalContext;
+    using HistoricalContextTimelineEntity =
+        global::Streetcode.DAL.Entities.Timeline.HistoricalContextTimeline;
     using TimelineItemEntity =
         global::Streetcode.DAL.Entities.Timeline.TimelineItem;
 
     public class CreateTimelineItemHandlerTests
     {
-        private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock = new ();
-        private readonly Mock<IMapper> _mapperMock = new ();
-        private readonly Mock<ILoggerService> _loggerMock = new ();
-        private readonly Mock<IStreetcodeRepository> _streetcodeRepositoryMock = new ();
-        private readonly Mock<IHistoricalContextRepository> _historicalContextRepositoryMock = new ();
-        private readonly Mock<ITimelineRepository> _timelineRepositoryMock = new ();
-        private readonly CreateTimelineItemHandler _handler;
+        private readonly Mock<IRepositoryWrapper> repositoryWrapperMock = new ();
+        private readonly Mock<IMapper> mapperMock = new ();
+        private readonly Mock<ILoggerService> loggerMock = new ();
+        private readonly Mock<IStreetcodeRepository> streetcodeRepositoryMock = new ();
+        private readonly Mock<ITimelineRepository> timelineRepositoryMock = new ();
+        private readonly Mock<IHistoricalContextResolver> historicalContextResolverMock = new ();
+        private readonly CreateTimelineItemHandler handler;
 
         public CreateTimelineItemHandlerTests()
         {
-            _repositoryWrapperMock
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.StreetcodeRepository)
-                .Returns(_streetcodeRepositoryMock.Object);
-            _repositoryWrapperMock
-                .Setup(wrapper => wrapper.HistoricalContextRepository)
-                .Returns(_historicalContextRepositoryMock.Object);
-            _repositoryWrapperMock
+                .Returns(this.streetcodeRepositoryMock.Object);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.TimelineRepository)
-                .Returns(_timelineRepositoryMock.Object);
+                .Returns(this.timelineRepositoryMock.Object);
 
-            _handler = new CreateTimelineItemHandler(
-                _repositoryWrapperMock.Object,
-                _mapperMock.Object,
-                _loggerMock.Object);
+            this.handler = new CreateTimelineItemHandler(
+                this.repositoryWrapperMock.Object,
+                this.mapperMock.Object,
+                this.loggerMock.Object,
+                this.historicalContextResolverMock.Object);
         }
 
         [Fact]
@@ -58,26 +61,26 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Cannot find a streetcode with corresponding id: {streetcodeId}";
 
-            _streetcodeRepositoryMock
+            this.streetcodeRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
                     null))
                 .ReturnsAsync((StreetcodeContent?)null);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
             Assert.Equal(expectedError, result.Errors[0].Message);
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Never());
-            _mapperMock.Verify(
+            this.mapperMock.Verify(
                 mapper => mapper.Map<TimelineItemEntity>(
-                    It.IsAny<TimelineItemCreateUpdateDTO>()),
+                    It.IsAny<TimelineItemCreateUpdateDto>()),
                 Times.Never());
         }
 
@@ -95,28 +98,24 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Cannot find historical contexts with IDs: {missingContextId}.";
 
-            SetupExistingStreetcode(timelineItemDto.StreetcodeId);
-            _mapperMock
+            this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
+            this.mapperMock
                 .Setup(mapper => mapper.Map<TimelineItemEntity>(timelineItemDto))
                 .Returns(timelineItemEntity);
-            _historicalContextRepositoryMock
-                .Setup(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
-                    null))
-                .ReturnsAsync(Array.Empty<HistoricalContextEntity>());
+            this.SetupContextResolutionFailure(expectedError);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
             Assert.Equal(expectedError, result.Errors[0].Message);
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _timelineRepositoryMock.Verify(
-                repository => repository.Create(It.IsAny<TimelineItemEntity>()),
+            this.timelineRepositoryMock.Verify(
+                repository => repository.CreateAsync(It.IsAny<TimelineItemEntity>()),
                 Times.Never());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Never());
         }
@@ -135,32 +134,24 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Historical contexts with titles already exist: {contextTitle}.";
 
-            SetupExistingStreetcode(timelineItemDto.StreetcodeId);
-            _mapperMock
+            this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
+            this.mapperMock
                 .Setup(mapper => mapper.Map<TimelineItemEntity>(timelineItemDto))
                 .Returns(timelineItemEntity);
-            _historicalContextRepositoryMock
-                .SetupSequence(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
-                    null))
-                .ReturnsAsync(Array.Empty<HistoricalContextEntity>())
-                .ReturnsAsync(new[]
-                {
-                    new HistoricalContextEntity { Id = 1, Title = contextTitle },
-                });
+            this.SetupContextResolutionFailure(expectedError);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
             Assert.Equal(expectedError, result.Errors[0].Message);
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _timelineRepositoryMock.Verify(
-                repository => repository.Create(It.IsAny<TimelineItemEntity>()),
+            this.timelineRepositoryMock.Verify(
+                repository => repository.CreateAsync(It.IsAny<TimelineItemEntity>()),
                 Times.Never());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Never());
         }
@@ -173,26 +164,26 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var command = new CreateTimelineItemCommand(timelineItemDto);
             const string expectedError = "Failed to create timeline item.";
 
-            SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
-            _repositoryWrapperMock
+            this.SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(0);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
             Assert.Equal(expectedError, result.Errors[0].Message);
-            _timelineRepositoryMock.Verify(
-                repository => repository.Create(timelineItemEntity),
+            this.timelineRepositoryMock.Verify(
+                repository => repository.CreateAsync(timelineItemEntity),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _timelineRepositoryMock.Verify(
+            this.timelineRepositoryMock.Verify(
                 repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     It.IsAny<Func<
@@ -210,25 +201,25 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var exception = new DbUpdateException("Database failure");
             const string expectedError = "Failed to create timeline item.";
 
-            SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
-            _repositoryWrapperMock
+            this.SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ThrowsAsync(exception);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Equal(expectedError, Assert.Single(result.Errors).Message);
-            _timelineRepositoryMock.Verify(
-                repository => repository.Create(timelineItemEntity),
+            this.timelineRepositoryMock.Verify(
+                repository => repository.CreateAsync(timelineItemEntity),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, exception.ToString()),
                 Times.Once());
-            _timelineRepositoryMock.Verify(
+            this.timelineRepositoryMock.Verify(
                 repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     It.IsAny<Func<
@@ -246,11 +237,11 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             const string expectedError =
                 "Created timeline item could not be retrieved.";
 
-            SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
-            _repositoryWrapperMock
+            this.SetupCreationBeforeSave(timelineItemDto, timelineItemEntity);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(1);
-            _timelineRepositoryMock
+            this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     It.IsAny<Func<
@@ -258,15 +249,15 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                         IIncludableQueryable<TimelineItemEntity, object>>?>()))
                 .ReturnsAsync((TimelineItemEntity?)null);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
             Assert.Equal(expectedError, result.Errors[0].Message);
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _mapperMock.Verify(
+            this.mapperMock.Verify(
                 mapper => mapper.Map<TimelineItemDTO>(
                     It.IsAny<TimelineItemEntity>()),
                 Times.Never());
@@ -315,37 +306,43 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             };
             var command = new CreateTimelineItemCommand(timelineItemDto);
 
-            SetupExistingStreetcode(timelineItemDto.StreetcodeId);
-            _mapperMock
+            this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
+            this.mapperMock
                 .Setup(mapper => mapper.Map<TimelineItemEntity>(timelineItemDto))
                 .Returns(timelineItemEntity);
-            _historicalContextRepositoryMock
-                .SetupSequence(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
-                    null))
-                .ReturnsAsync(new[]
+            this.SetupContextResolutionSuccess(
+                new[]
                 {
-                    new HistoricalContextEntity { Id = existingContextId },
-                })
-                .ReturnsAsync(Array.Empty<HistoricalContextEntity>());
-            _timelineRepositoryMock
-                .Setup(repository => repository.Create(timelineItemEntity))
-                .Returns(timelineItemEntity);
-            _repositoryWrapperMock
+                    new HistoricalContextTimelineEntity
+                    {
+                        HistoricalContextId = existingContextId,
+                    },
+                    new HistoricalContextTimelineEntity
+                    {
+                        HistoricalContext = new HistoricalContextEntity
+                        {
+                            Title = "Culture",
+                        },
+                    },
+                });
+            this.timelineRepositoryMock
+                .Setup(repository => repository.CreateAsync(timelineItemEntity))
+                .ReturnsAsync(timelineItemEntity);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(1);
-            _timelineRepositoryMock
+            this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     It.IsAny<Func<
                         IQueryable<TimelineItemEntity>,
                         IIncludableQueryable<TimelineItemEntity, object>>?>()))
                 .ReturnsAsync(savedTimelineItem);
-            _mapperMock
+            this.mapperMock
                 .Setup(mapper => mapper.Map<TimelineItemDTO>(savedTimelineItem))
                 .Returns(expectedDto);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsSuccess);
             Assert.Equal(expectedDto, result.Value);
@@ -358,27 +355,27 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             Assert.Contains(
                 timelineItemEntity.HistoricalContextTimelines,
                 relation => relation.HistoricalContext?.Title == "Culture");
-            _timelineRepositoryMock.Verify(
-                repository => repository.Create(timelineItemEntity),
+            this.timelineRepositoryMock.Verify(
+                repository => repository.CreateAsync(timelineItemEntity),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
-            _mapperMock.Verify(
+            this.mapperMock.Verify(
                 mapper => mapper.Map<TimelineItemDTO>(savedTimelineItem),
                 Times.Once());
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(
                     It.IsAny<object>(),
                     It.IsAny<string>()),
                 Times.Never());
         }
 
-        private static TimelineItemCreateUpdateDTO CreateTimelineItemDto(
+        private static TimelineItemCreateUpdateDto CreateTimelineItemDto(
             int streetcodeId = 1,
             IEnumerable<HistoricalContextDTO>? historicalContexts = null)
         {
-            return new TimelineItemCreateUpdateDTO
+            return new TimelineItemCreateUpdateDto
             {
                 StreetcodeId = streetcodeId,
                 Title = "Test event",
@@ -391,7 +388,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
         private void SetupExistingStreetcode(int streetcodeId)
         {
-            _streetcodeRepositoryMock
+            this.streetcodeRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
                     null))
@@ -399,21 +396,38 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
         }
 
         private void SetupCreationBeforeSave(
-            TimelineItemCreateUpdateDTO timelineItemDto,
+            TimelineItemCreateUpdateDto timelineItemDto,
             TimelineItemEntity timelineItemEntity)
         {
-            SetupExistingStreetcode(timelineItemDto.StreetcodeId);
-            _mapperMock
+            this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
+            this.mapperMock
                 .Setup(mapper => mapper.Map<TimelineItemEntity>(timelineItemDto))
                 .Returns(timelineItemEntity);
-            _historicalContextRepositoryMock
-                .Setup(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
-                    null))
-                .ReturnsAsync(Array.Empty<HistoricalContextEntity>());
-            _timelineRepositoryMock
-                .Setup(repository => repository.Create(timelineItemEntity))
-                .Returns(timelineItemEntity);
+            this.SetupContextResolutionSuccess();
+            this.timelineRepositoryMock
+                .Setup(repository => repository.CreateAsync(timelineItemEntity))
+                .ReturnsAsync(timelineItemEntity);
+        }
+
+        private void SetupContextResolutionFailure(string errorMessage)
+        {
+            this.historicalContextResolverMock
+                .Setup(resolver => resolver.ResolveAsync(
+                    It.IsAny<IEnumerable<HistoricalContextDTO>>()))
+                .ReturnsAsync(
+                    Result.Fail<IReadOnlyCollection<HistoricalContextTimelineEntity>>(
+                        errorMessage));
+        }
+
+        private void SetupContextResolutionSuccess(
+            IReadOnlyCollection<HistoricalContextTimelineEntity>? contextRelations = null)
+        {
+            this.historicalContextResolverMock
+                .Setup(resolver => resolver.ResolveAsync(
+                    It.IsAny<IEnumerable<HistoricalContextDTO>>()))
+                .ReturnsAsync(
+                    Result.Ok<IReadOnlyCollection<HistoricalContextTimelineEntity>>(
+                        contextRelations ?? Array.Empty<HistoricalContextTimelineEntity>()));
         }
     }
 }

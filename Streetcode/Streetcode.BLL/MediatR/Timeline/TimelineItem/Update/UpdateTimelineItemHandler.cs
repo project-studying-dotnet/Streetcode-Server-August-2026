@@ -5,9 +5,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Timeline;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.Interfaces.Timeline;
 using Streetcode.DAL.Repositories.Interfaces.Base;
-using HistoricalContextEntity =
-    Streetcode.DAL.Entities.Timeline.HistoricalContext;
 using HistoricalContextTimelineEntity =
     Streetcode.DAL.Entities.Timeline.HistoricalContextTimeline;
 using TimelineItemEntity =
@@ -20,12 +19,18 @@ public class UpdateTimelineItemHandler : IRequestHandler<UpdateTimelineItemComma
     private readonly IRepositoryWrapper _repositoryWrapper;
     private readonly IMapper _mapper;
     private readonly ILoggerService _logger;
+    private readonly IHistoricalContextResolver _historicalContextResolver;
 
-    public UpdateTimelineItemHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper, ILoggerService logger)
+    public UpdateTimelineItemHandler(
+        IRepositoryWrapper repositoryWrapper,
+        IMapper mapper,
+        ILoggerService logger,
+        IHistoricalContextResolver historicalContextResolver)
     {
         _repositoryWrapper = repositoryWrapper;
         _mapper = mapper;
         _logger = logger;
+        _historicalContextResolver = historicalContextResolver;
     }
 
     public async Task<Result<TimelineItemDTO>> Handle(
@@ -46,6 +51,13 @@ public class UpdateTimelineItemHandler : IRequestHandler<UpdateTimelineItemComma
             return Result.Fail<TimelineItemDTO>(errorMsg);
         }
 
+        if (timelineItem.StreetcodeId != request.TimelineItem.StreetcodeId)
+        {
+            string errorMsg = $"Cannot move timeline item with id {request.Id} to another streetcode";
+            _logger.LogError(request, errorMsg);
+            return Result.Fail<TimelineItemDTO>(errorMsg);
+        }
+
         int streetcodeId = request.TimelineItem.StreetcodeId;
 
         var streetcode = await _repositoryWrapper.StreetcodeRepository
@@ -59,79 +71,27 @@ public class UpdateTimelineItemHandler : IRequestHandler<UpdateTimelineItemComma
             return Result.Fail<TimelineItemDTO>(errorMsg);
         }
 
-        var requestedContexts = request.TimelineItem.HistoricalContexts.ToList();
-        var existingContextIds = requestedContexts
-            .Where(context => context.Id > 0)
-            .Select(context => context.Id)
-            .Distinct()
-            .ToList();
-        var newContextTitles = requestedContexts
-            .Where(context => context.Id == 0)
-            .Select(context => context.Title.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var contextResolution = await _historicalContextResolver
+            .ResolveAsync(request.TimelineItem.HistoricalContexts);
 
-        var existingContexts = (await _repositoryWrapper
-            .HistoricalContextRepository
-            .GetAllAsync(
-                predicate: context =>
-                    existingContextIds.Contains(context.Id)))
-            .ToList();
-
-        var foundContextIds = existingContexts
-            .Select(context => context.Id)
-            .ToHashSet();
-
-        var missingContextIds = existingContextIds
-            .Where(contextId => !foundContextIds.Contains(contextId))
-            .ToList();
-
-        if (missingContextIds.Count > 0)
+        if (contextResolution.IsFailed)
         {
-            string errorMessage =
-                $"Cannot find historical contexts with IDs: " +
-                $"{string.Join(", ", missingContextIds)}.";
-
+            string errorMessage = contextResolution.Errors[0].Message;
             _logger.LogError(request, errorMessage);
             return Result.Fail<TimelineItemDTO>(errorMessage);
         }
 
-        var conflictingContexts = (await _repositoryWrapper
-            .HistoricalContextRepository
-            .GetAllAsync(
-                predicate: context =>
-                    newContextTitles.Contains(context.Title)))
-            .ToList();
-
-        var conflictingContextTitles = conflictingContexts
-            .Select(context => context.Title)
-            .ToList();
-
-        if (conflictingContextTitles.Count > 0)
-        {
-            string errorMessage =
-                $"Historical contexts with titles already exist: " +
-                $"{string.Join(", ", conflictingContextTitles)}.";
-
-            _logger.LogError(request, errorMessage);
-            return Result.Fail<TimelineItemDTO>(errorMessage);
-        }
-
-        var newContexts = newContextTitles
-            .Select(title => new HistoricalContextEntity
-            {
-                Title = title
-            })
-            .ToList();
-
-        _mapper.Map<TimelineItemCreateUpdateDTO, TimelineItemEntity>(
+        _mapper.Map<TimelineItemCreateUpdateDto, TimelineItemEntity>(
             request.TimelineItem,
             timelineItem);
 
         timelineItem.Title = timelineItem.Title.Trim();
-        timelineItem.Description = timelineItem.Description.Trim();
+        timelineItem.Description = request.TimelineItem.Description.Trim();
 
-        var requestedContextIdSet = existingContextIds.ToHashSet();
+        var requestedContextIdSet = contextResolution.Value
+            .Where(relation => relation.HistoricalContextId > 0)
+            .Select(relation => relation.HistoricalContextId)
+            .ToHashSet();
         var relationsToRemove = timelineItem.HistoricalContextTimelines
             .Where(relation =>
                 !requestedContextIdSet.Contains(relation.HistoricalContextId))
@@ -148,29 +108,16 @@ public class UpdateTimelineItemHandler : IRequestHandler<UpdateTimelineItemComma
             .Select(relation => relation.HistoricalContextId)
             .ToHashSet();
 
-        foreach (int contextId in existingContextIds)
+        foreach (HistoricalContextTimelineEntity contextRelation in contextResolution.Value)
         {
-            if (currentContextIds.Contains(contextId))
+            if (contextRelation.HistoricalContextId > 0 &&
+                currentContextIds.Contains(contextRelation.HistoricalContextId))
             {
                 continue;
             }
 
-            timelineItem.HistoricalContextTimelines.Add(
-                new HistoricalContextTimelineEntity
-                {
-                    TimelineId = timelineItem.Id,
-                    HistoricalContextId = contextId
-                });
-        }
-
-        foreach (HistoricalContextEntity newContext in newContexts)
-        {
-            timelineItem.HistoricalContextTimelines.Add(
-                new HistoricalContextTimelineEntity
-                {
-                    TimelineId = timelineItem.Id,
-                    HistoricalContext = newContext
-                });
+            contextRelation.TimelineId = timelineItem.Id;
+            timelineItem.HistoricalContextTimelines.Add(contextRelation);
         }
 
         _repositoryWrapper.TimelineRepository.Update(timelineItem);

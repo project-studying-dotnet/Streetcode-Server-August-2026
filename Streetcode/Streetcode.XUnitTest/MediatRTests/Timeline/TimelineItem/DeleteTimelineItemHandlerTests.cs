@@ -5,31 +5,31 @@
 namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 {
     using System.Linq.Expressions;
-    using Moq;
-    using Xunit;
     using global::Streetcode.BLL.Interfaces.Logging;
     using global::Streetcode.BLL.MediatR.Timeline.TimelineItem.Delete;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Timeline;
+    using Moq;
+    using Xunit;
     using TimelineItemEntity =
         global::Streetcode.DAL.Entities.Timeline.TimelineItem;
 
     public class DeleteTimelineItemHandlerTests
     {
-        private readonly Mock<IRepositoryWrapper> _repositoryWrapperMock = new ();
-        private readonly Mock<ITimelineRepository> _timelineRepositoryMock = new ();
-        private readonly Mock<ILoggerService> _loggerMock = new ();
-        private readonly DeleteTimelineItemHandler _handler;
+        private readonly Mock<IRepositoryWrapper> repositoryWrapperMock = new ();
+        private readonly Mock<ITimelineRepository> timelineRepositoryMock = new ();
+        private readonly Mock<ILoggerService> loggerMock = new ();
+        private readonly DeleteTimelineItemHandler handler;
 
         public DeleteTimelineItemHandlerTests()
         {
-            _repositoryWrapperMock
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.TimelineRepository)
-                .Returns(_timelineRepositoryMock.Object);
+                .Returns(this.timelineRepositoryMock.Object);
 
-            _handler = new DeleteTimelineItemHandler(
-                _repositoryWrapperMock.Object,
-                _loggerMock.Object);
+            this.handler = new DeleteTimelineItemHandler(
+                this.repositoryWrapperMock.Object,
+                this.loggerMock.Object);
         }
 
         [Fact]
@@ -40,24 +40,24 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Cannot find a timeline item with corresponding id: {timelineItemId}";
 
-            _timelineRepositoryMock
+            this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     null))
                 .ReturnsAsync((TimelineItemEntity?)null);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Equal(expectedError, Assert.Single(result.Errors).Message);
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
-            _timelineRepositoryMock.Verify(
+            this.timelineRepositoryMock.Verify(
                 repository => repository.Delete(
                     It.IsAny<TimelineItemEntity>()),
                 Times.Never());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Never());
         }
@@ -69,22 +69,22 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var command = new DeleteTimelineItemCommand(timelineItem.Id);
             const string expectedError = "Failed to delete timeline item.";
 
-            SetupExistingTimelineItem(timelineItem);
-            _repositoryWrapperMock
+            this.SetupExistingTimelineItem(timelineItem);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(0);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Equal(expectedError, Assert.Single(result.Errors).Message);
-            _timelineRepositoryMock.Verify(
+            this.timelineRepositoryMock.Verify(
                 repository => repository.Delete(timelineItem),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedError),
                 Times.Once());
         }
@@ -95,21 +95,21 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var timelineItem = new TimelineItemEntity { Id = 42 };
             var command = new DeleteTimelineItemCommand(timelineItem.Id);
 
-            SetupExistingTimelineItem(timelineItem);
-            _repositoryWrapperMock
+            this.SetupExistingTimelineItem(timelineItem);
+            this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(1);
 
-            var result = await _handler.Handle(command, CancellationToken.None);
+            var result = await this.handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsSuccess);
-            _timelineRepositoryMock.Verify(
+            this.timelineRepositoryMock.Verify(
                 repository => repository.Delete(timelineItem),
                 Times.Once());
-            _repositoryWrapperMock.Verify(
+            this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
-            _loggerMock.Verify(
+            this.loggerMock.Verify(
                 logger => logger.LogError(
                     It.IsAny<object>(),
                     It.IsAny<string>()),
@@ -118,7 +118,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
         private void SetupExistingTimelineItem(TimelineItemEntity timelineItem)
         {
-            _timelineRepositoryMock
+            this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                     null))

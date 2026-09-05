@@ -6,7 +6,7 @@ namespace Streetcode.BLL.MediatR.Timeline.TimelineItem.Validators;
 
 public sealed class CreateTimelineItemCommandValidator : AbstractValidator<CreateTimelineItemCommand>
 {
-    public CreateTimelineItemCommandValidator(IValidator<TimelineItemCreateUpdateDTO> timelineItemValidator)
+    public CreateTimelineItemCommandValidator(IValidator<TimelineItemCreateUpdateDto> timelineItemValidator)
     {
         RuleFor(command => command.TimelineItem)
             .NotNull()

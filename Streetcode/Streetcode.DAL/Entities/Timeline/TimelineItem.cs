@@ -27,7 +27,7 @@ public class TimelineItem
     public string Title { get; set; } = string.Empty;
 
     [MaxLength(DescriptionMaxLength)]
-    public string? Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     public int StreetcodeId { get; set; }
 
