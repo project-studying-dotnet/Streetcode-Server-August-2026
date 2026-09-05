@@ -104,6 +104,7 @@ public static class ServiceCollectionExtensions
         services.AddLogging();
         services.AddProblemDetails();
         services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddControllers();
     }
 
