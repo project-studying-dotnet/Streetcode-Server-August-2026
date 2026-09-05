@@ -1,0 +1,121 @@
+﻿using AutoMapper;
+using FluentResults;
+using MediatR;
+using Streetcode.BLL.DTO.Streetcode;
+using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.DAL.Entities.Media.Images;
+using Streetcode.DAL.Entities.Streetcode;
+using Streetcode.DAL.Entities.Streetcode.Types;
+using Streetcode.DAL.Enums;
+using Streetcode.DAL.Repositories.Interfaces.Base;
+
+namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
+{
+    public class CreateStreetcodeHandler : IRequestHandler<CreateStreetcodeCommand, Result<StreetcodeDTO>>
+    {
+        private readonly IMapper _mapper;
+        private readonly IRepositoryWrapper _repositoryWrapper;
+        private readonly ILoggerService _logger;
+
+        public CreateStreetcodeHandler(IRepositoryWrapper repositoryWrapper, IMapper mapper, ILoggerService logger)
+        {
+            _repositoryWrapper = repositoryWrapper;
+            _mapper = mapper;
+            _logger = logger;
+        }
+
+        public async Task<Result<StreetcodeDTO>> Handle(CreateStreetcodeCommand request, CancellationToken cancellationToken)
+        {
+            var dto = request.newStreetcode;
+            StreetcodeContent entity = dto.StreetcodeType == StreetcodeType.Person
+                ? new PersonStreetcode()
+                : new EventStreetcode();
+
+            try
+            {
+                _mapper.Map(dto, entity);
+
+                var tagIds = dto.Tags?.Select(t => t.Id).ToList() ?? new List<int>();
+                var existingTags = await _repositoryWrapper.TagRepository.GetAllAsync(t => tagIds.Contains(t.Id));
+                entity.Tags.AddRange(existingTags);
+
+                var animationImage = dto.AnimationImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.AnimationImageId.Value)
+                    : null;
+                if (animationImage is not null && animationImage.MimeType != "image/gif")
+                {
+                    const string errorMsg = "Animation image must be a GIF file.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
+                if (animationImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(animationImage);
+                }
+
+                var blackAndWhiteImage = dto.BlackAndWhiteImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.BlackAndWhiteImageId.Value)
+                    : null;
+                if (blackAndWhiteImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(blackAndWhiteImage);
+                }
+
+                var relatedImage = dto.RelatedFigureImageId.HasValue
+                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.RelatedFigureImageId.Value)
+                    : null;
+                if (relatedImage is not null)
+                {
+                    _repositoryWrapper.ImageRepository.Attach(relatedImage);
+                }
+
+                var imagesToAdd = new List<StreetcodeImage>();
+                if (animationImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = entity, ImageAssigment = ImageAssigment.Animation });
+                }
+
+                if (blackAndWhiteImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = entity, ImageAssigment = ImageAssigment.Blackandwhite });
+                }
+
+                if (relatedImage is not null)
+                {
+                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = entity, ImageAssigment = ImageAssigment.Relatedfigure });
+                }
+
+                if (dto.AudioId.HasValue)
+                {
+                    var audio = await _repositoryWrapper.AudioRepository.GetFirstOrDefaultAsync(a => a.Id == dto.AudioId.Value);
+                    if (audio is not null && audio.MimeType != "audio/mpeg")
+                    {
+                        const string errorMsg = "Audio must be an MP3 file.";
+                        _logger.LogError(request, errorMsg);
+                        return Result.Fail(errorMsg);
+                    }
+                }
+
+                await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);
+                await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);
+                var success = await _repositoryWrapper.SaveChangesAsync() > 0;
+
+                if (!success)
+                {
+                    const string errorMsg = "Failed to create streetcode";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+
+                return Result.Ok(_mapper.Map<StreetcodeDTO>(entity));
+            }
+            catch (Exception ex)
+            {
+                var detailedMessage = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(request, detailedMessage);
+                return Result.Fail(detailedMessage);
+            }
+        }
+    }
+}
