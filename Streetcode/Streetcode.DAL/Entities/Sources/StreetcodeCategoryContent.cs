@@ -7,8 +7,10 @@ namespace Streetcode.DAL.Entities.Sources;
 [Table("streetcode_categoryContent", Schema = "sources")]
 public class StreetcodeCategoryContent
 {
+    public const int TextMaxLength = 4000;
+
     [Required]
-    [MaxLength(1000)]
+    [MaxLength(TextMaxLength)]
     public string? Text { get; set; }
 
     [Required]

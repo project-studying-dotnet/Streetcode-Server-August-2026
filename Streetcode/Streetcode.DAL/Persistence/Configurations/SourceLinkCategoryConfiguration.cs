@@ -13,5 +13,18 @@ public class SourceLinkCategoryConfiguration : IEntityTypeConfiguration<SourceLi
             .WithOne(p => p.SourceLinkCategory)
             .HasForeignKey(d => d.SourceLinkCategoryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder
+            .HasIndex(category => category.Title)
+            .IsUnique();
+
+        builder
+            .HasIndex(category => category.ImageId)
+            .IsUnique();
+
+        builder
+            .HasIndex(category => category.ImageHash)
+            .IsUnique()
+            .HasFilter("[ImageHash] IS NOT NULL");
     }
 }
