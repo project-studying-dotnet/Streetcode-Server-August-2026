@@ -100,10 +100,15 @@ public sealed class RefreshTokenService : IRefreshTokenService
         {
             if (storedToken.ReplacedByTokenId is not null)
             {
-                await RevokeFamilyByIdAsync(
-                    storedToken.FamilyId,
-                    now,
-                    cancellationToken);
+                var elapsed = now - storedToken.RevokedAt.Value;
+
+                if (elapsed >= _options.RotationGracePeriod)
+                {
+                    await RevokeFamilyByIdAsync(
+                        storedToken.FamilyId,
+                        now,
+                        cancellationToken);
+                }
             }
 
             return InvalidTokenFailure();
@@ -150,11 +155,6 @@ public sealed class RefreshTokenService : IRefreshTokenService
         {
             _dbContext.ChangeTracker.Clear();
 
-            await RevokeFamilyByIdAsync(
-                storedToken.FamilyId,
-                now,
-                cancellationToken);
-
             return InvalidTokenFailure();
         }
 
@@ -197,24 +197,30 @@ public sealed class RefreshTokenService : IRefreshTokenService
         DateTimeOffset revokedAt,
         CancellationToken cancellationToken)
     {
-        var familyTokens = await _dbContext.RefreshTokens
-            .Where(token => token.FamilyId == familyId)
-            .ToListAsync(cancellationToken);
-
-        var hasChanges = false;
-
-        foreach (var token in familyTokens)
+        for (var attempt = 0; ; attempt++)
         {
-            hasChanges |= token.Revoke(revokedAt);
-        }
+            var familyTokens = await _dbContext.RefreshTokens
+                .Where(token => token.FamilyId == familyId)
+                .ToListAsync(cancellationToken);
 
-        if (hasChanges)
-        {
+            var hasChanges = false;
+
+            foreach (var token in familyTokens)
+            {
+                hasChanges |= token.Revoke(revokedAt);
+            }
+
+            if (!hasChanges)
+            {
+                return;
+            }
+
             try
             {
                 await _dbContext.SaveChangesAsync(cancellationToken);
+                return;
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException) when (attempt == 0)
             {
                 _dbContext.ChangeTracker.Clear();
             }
