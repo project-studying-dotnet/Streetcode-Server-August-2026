@@ -25,11 +25,12 @@ namespace Streetcode.XUnitTest.Utils
             string runtimeDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(runtimeDirectory);
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");
-            await File.WriteAllLinesAsync(csvPath, new[]
+            var csvRows = new[]
             {
                 "region;old;new;gromada;community;unused;street;latitude;longitude",
-                invalidRow
-            });
+                invalidRow,
+            };
+            await File.WriteAllLinesAsync(csvPath, csvRows);
 
             var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -42,13 +43,13 @@ namespace Streetcode.XUnitTest.Utils
                 {
                     Oblast = "Existing oblast",
                     StreetName = "Existing toponym",
-                    Coordinate = new ToponymCoordinate()
+                    Coordinate = new ToponymCoordinate(),
                 });
                 context.Toponyms.Add(new Toponym
                 {
                     Oblast = "Second existing oblast",
                     StreetName = "Second existing toponym",
-                    Coordinate = new ToponymCoordinate()
+                    Coordinate = new ToponymCoordinate(),
                 });
                 await context.SaveChangesAsync();
                 var environment = new Mock<IHostEnvironment>();

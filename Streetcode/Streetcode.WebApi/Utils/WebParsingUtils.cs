@@ -232,7 +232,8 @@ public class WebParsingUtils
 
         var parsedRows = GetDistinctRows(
             await File.ReadAllLinesAsync(csvPath, Encoding.GetEncoding(1251)));
-        var isParsingComplete = forParsingRows.All(parsedRows.Contains);
+        var parsedRowsSet = parsedRows.ToHashSet();
+        var isParsingComplete = forParsingRows.All(parsedRowsSet.Contains);
 
         if (deleteFile)
         {
