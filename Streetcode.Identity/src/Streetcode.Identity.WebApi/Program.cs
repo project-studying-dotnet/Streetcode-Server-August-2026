@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
+using Streetcode.Identity.Infrastructure.Identity.Seeding;
 using Streetcode.Identity.Infrastructure.Messaging.Kafka;
 using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.WebApi.ExceptionHandling;
@@ -23,6 +24,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddIdentitySeeding(builder.Configuration);
 builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
@@ -36,14 +38,35 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    if (app.Environment.IsDevelopment())
+    {
+        var dbContext = scope.ServiceProvider
+            .GetRequiredService<StreetcodeIdentityDbContext>();
+
+        await dbContext.Database.MigrateAsync();
+    }
+
+    var identityDataSeeder = scope.ServiceProvider
+        .GetRequiredService<IdentityDataSeeder>();
+
+    try
+    {
+        await identityDataSeeder.SeedAsync();
+    }
+    catch (Exception exception)
+    {
+        app.Logger.LogCritical(
+            exception,
+            "Identity data seeding failed. Application startup is aborted");
+
+        throw;
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
-    await using var scope = app.Services.CreateAsyncScope();
-
-    var dbContext = scope.ServiceProvider.GetRequiredService<StreetcodeIdentityDbContext>();
-
-    await dbContext.Database.MigrateAsync();
-
     app.MapOpenApi();
 }
 

@@ -15,8 +15,23 @@ public sealed class IdentityWebApplicationFactory
     private const string JwtSecretEnvironmentVariable =
         "STREETCODE_IDENTITY_Jwt__SecretKey";
 
+    private const string IdentitySeedEnabledEnvironmentVariable =
+        "STREETCODE_IDENTITY_IdentitySeed__Enabled";
+
+    private const string IdentitySeedAdminEmailEnvironmentVariable =
+        "STREETCODE_IDENTITY_IdentitySeed__AdminEmail";
+
+    private const string IdentitySeedAdminPasswordEnvironmentVariable =
+        "STREETCODE_IDENTITY_IdentitySeed__AdminPassword";
+
     private const string TestJwtSecret =
         "Integration_Test_Jwt_Secret_Key_At_Least_32_Bytes!";
+
+    private const string TestAdminEmail =
+        "integration-admin@example.com";
+
+    private const string TestAdminPassword =
+        "IntegrationAdminPassword123!";
 
     private static readonly object EnvironmentVariableLock = new();
 
@@ -37,6 +52,15 @@ public sealed class IdentityWebApplicationFactory
             var previousJwtSecret = Environment.GetEnvironmentVariable(
                 JwtSecretEnvironmentVariable);
 
+            var previousSeedEnabled = Environment.GetEnvironmentVariable(
+                IdentitySeedEnabledEnvironmentVariable);
+
+            var previousAdminEmail = Environment.GetEnvironmentVariable(
+                IdentitySeedAdminEmailEnvironmentVariable);
+
+            var previousAdminPassword = Environment.GetEnvironmentVariable(
+                IdentitySeedAdminPasswordEnvironmentVariable);
+
             try
             {
                 Environment.SetEnvironmentVariable(
@@ -46,6 +70,18 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     JwtSecretEnvironmentVariable,
                     TestJwtSecret);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedEnabledEnvironmentVariable,
+                    bool.TrueString);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedAdminEmailEnvironmentVariable,
+                    TestAdminEmail);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedAdminPasswordEnvironmentVariable,
+                    TestAdminPassword);
 
                 return base.CreateClient();
             }
@@ -58,6 +94,18 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     JwtSecretEnvironmentVariable,
                     previousJwtSecret);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedEnabledEnvironmentVariable,
+                    previousSeedEnabled);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedAdminEmailEnvironmentVariable,
+                    previousAdminEmail);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedAdminPasswordEnvironmentVariable,
+                    previousAdminPassword);
             }
         }
     }
