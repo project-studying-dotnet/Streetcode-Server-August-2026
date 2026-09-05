@@ -2,18 +2,19 @@
 using System.IO.Compression;
 using System.Net;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Polly;
+using Hangfire;
 using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
 using Streetcode.DAL.Entities.Toponyms;
 using Streetcode.DAL.Persistence;
-using Streetcode.DAL.Repositories.Interfaces.Base;
-using Streetcode.DAL.Repositories.Realizations.Base;
 
 namespace Streetcode.WebApi.Utils;
 
 public class WebParsingUtils
 {
+    private const int ParsingBatchSize = 20;
     private const byte RegionColumn = 0;
     private const byte AdministrativeRegionOldColumn = 1;
     private const byte AdministrativeRegionNewColumn = 2;
@@ -25,13 +26,15 @@ public class WebParsingUtils
 
     private static readonly string _fileToParseUrl = "https://www.ukrposhta.ua/files/shares/out/houses.zip?_ga=2.213909844.272819342.1674050613-1387315609.1673613938&_gl=1*1obnqll*_ga*MTM4NzMxNTYwOS4xNjczNjEzOTM4*_ga_6400KY4HRY*MTY3NDA1MDYxMy4xMC4xLjE2NzQwNTE3ODUuNjAuMC4w";
 
-    private readonly IRepositoryWrapper _repository;
     private readonly StreetcodeDbContext _streetcodeContext;
+    private readonly IHostEnvironment _hostEnvironment;
 
-    public WebParsingUtils(StreetcodeDbContext streetcodeContext)
+    public WebParsingUtils(
+        StreetcodeDbContext streetcodeContext,
+        IHostEnvironment hostEnvironment)
     {
-        _repository = new RepositoryWrapper(streetcodeContext);
         _streetcodeContext = streetcodeContext;
+        _hostEnvironment = hostEnvironment;
     }
 
     public static async Task DownloadAndExtractAsync(
@@ -92,36 +95,35 @@ public class WebParsingUtils
             Console.WriteLine("The operation was cancelled.");
             throw;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            throw;
-        }
     }
 
+    [DisableConcurrentExecution(timeoutInSeconds: 3600)]
     public async Task ParseZipFileFromWebAsync()
     {
-        var projRootDirectory = Directory.GetParent(Environment.CurrentDirectory)?.FullName!;
-        var zipPath = $"houses.zip";
-        var extractTo = $"/root/build/StreetCode/Streetcode/Streetcode.DAL";
-
-        var cancellationToken = new CancellationTokenSource().Token;
-
+        var zipPath = GetZipPath(Path.GetTempPath(), Guid.NewGuid());
+        var dataDirectory = GetDataDirectory(_hostEnvironment.ContentRootPath);
         try
         {
-            await DownloadAndExtractAsync(_fileToParseUrl, zipPath, extractTo, cancellationToken);
+            Directory.CreateDirectory(dataDirectory);
+
+            await DownloadAndExtractAsync(
+                _fileToParseUrl,
+                zipPath,
+                dataDirectory,
+                CancellationToken.None);
+
             Console.WriteLine("Download and extraction completed successfully.");
 
+            await ProcessCsvFileAsync(
+                dataDirectory,
+                deleteFile: true);
+        }
+        finally
+        {
             if (File.Exists(zipPath))
             {
                 File.Delete(zipPath);
             }
-
-            await ProcessCsvFileAsync(extractTo);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
         }
     }
 
@@ -145,7 +147,7 @@ public class WebParsingUtils
         // Following line is required for proper csv encoding
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-        string csvPath = $"{extractTo}/data.csv";
+        string csvPath = Path.Combine(extractTo, "data.csv");
 
         var allLinesFromDataCsv = new List<string>();
 
@@ -155,9 +157,14 @@ public class WebParsingUtils
             Console.OutputEncoding = Encoding.GetEncoding(1251);
         }
 
-        string excelPath = Directory.GetFiles(extractTo).First(fName => fName.EndsWith("houses.csv"));
+        string excelPath = FindHousesCsv(extractTo);
 
         var rows = new List<string>(await File.ReadAllLinesAsync(excelPath, Encoding.GetEncoding(1251)));
+
+        if (allLinesFromDataCsv.Count == 0 && rows.Count > 0)
+        {
+            allLinesFromDataCsv.Add(rows[0]);
+        }
 
         // Grouping all rows from initial csv in order to get rid of duplicated streets
 
@@ -167,9 +174,9 @@ public class WebParsingUtils
 
         var alreadyParsedRowsToWrite = allLinesFromDataCsv.Distinct().ToList();
 
-        var remainsToParse = forParsingRows.Except(alreadyParsedRows)
+        var remainsToParse = forParsingRows.Skip(1).Except(alreadyParsedRows)
             .Select(x => x.Split(';').ToList()).ToList()
-            .Take(20) // TODO take it of if you want to start global parse
+            .Take(ParsingBatchSize) // TODO remove batching when global parsing is enabled
             .ToList();
 
         var toBeDeleted = alreadyParsedRows.Except(forParsingRows).ToList();
@@ -202,6 +209,12 @@ public class WebParsingUtils
                 (latitude, longitude) = await FetchCoordsByAddressAsync(addressRow);
             }
 
+            if (latitude is null || longitude is null)
+            {
+                Console.WriteLine($"Coordinates were not found for {addressRow}. The row will be retried later.");
+                continue;
+            }
+
             Console.WriteLine("\n" + addressRow);
             Console.WriteLine($"Coordinates[{latitude}-{longitude}]");
 
@@ -217,55 +230,82 @@ public class WebParsingUtils
             await File.AppendAllTextAsync(csvPath, newRow + "\n", Encoding.GetEncoding(1251));
         }
 
+        var parsedRows = GetDistinctRows(
+            await File.ReadAllLinesAsync(csvPath, Encoding.GetEncoding(1251)));
+        var parsedRowsSet = parsedRows.ToHashSet();
+        var isParsingComplete = forParsingRows.All(parsedRowsSet.Contains);
+
         if (deleteFile)
         {
             File.Delete(excelPath);
         }
 
+        if (!isParsingComplete)
+        {
+            Console.WriteLine("Toponyms were not replaced because parsing is incomplete.");
+            return;
+        }
+
         await SaveToponymsToDbAsync(csvPath);
     }
 
-    public async Task SaveToponymsToDbAsync(string csvPath)
+    public async Task<bool> SaveToponymsToDbAsync(string csvPath)
     {
-        var rows = new List<string>(
-                await File.ReadAllLinesAsync(csvPath, Encoding.GetEncoding(1251)))
-            .Skip(1)
-            .Select(x => x.Split(';'));
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var lines = await File.ReadAllLinesAsync(csvPath, Encoding.GetEncoding(1251));
+        var toponyms = new List<Toponym>();
 
-        // this part of code truncates Toponyms table
-        _streetcodeContext.Set<Toponym>().RemoveRange(_streetcodeContext.Set<Toponym>());
-        _streetcodeContext.SaveChanges();
-
-        foreach (var row in rows)
+        foreach (var line in lines.Skip(1))
         {
-            try
+            var row = line.Split(';');
+            if (row.Length <= LongitudeColumn
+                || !decimal.TryParse(row[LatitudeColumn], NumberStyles.Number, CultureInfo.InvariantCulture, out var latitude)
+                || !decimal.TryParse(row[LongitudeColumn], NumberStyles.Number, CultureInfo.InvariantCulture, out var longitude))
             {
-                var (streetName, streetType) = OptimizeStreetname(row[AddressColumn]);
+                Console.WriteLine("Toponyms were not replaced because the parsed data is invalid.");
+                return false;
+            }
 
-                await _repository.ToponymRepository.CreateAsync(new Toponym
-                {
-                    Oblast = row[RegionColumn],
-                    AdminRegionOld = row[AdministrativeRegionOldColumn],
-                    AdminRegionNew = row[AdministrativeRegionNewColumn],
-                    Gromada = row[CommonalityColumn],
-                    Community = row[CommunityColumn],
-                    StreetName = streetName,
-                    StreetType = streetType,
-                    Coordinate = new ToponymCoordinate
-                    {
-                        Latitude = decimal.Parse(row[LatitudeColumn], CultureInfo.InvariantCulture),
-                        Longtitude = decimal.Parse(row[LongitudeColumn], CultureInfo.InvariantCulture)
-                    }
-                });
-            }
-            catch (Exception ex)
+            var (streetName, streetType) = OptimizeStreetname(row[AddressColumn]);
+            toponyms.Add(new Toponym
             {
-                Console.WriteLine(ex.Message);
-            }
+                Oblast = row[RegionColumn],
+                AdminRegionOld = row[AdministrativeRegionOldColumn],
+                AdminRegionNew = row[AdministrativeRegionNewColumn],
+                Gromada = row[CommonalityColumn],
+                Community = row[CommunityColumn],
+                StreetName = streetName,
+                StreetType = streetType,
+                Coordinate = new ToponymCoordinate
+                {
+                    Latitude = latitude,
+                    Longtitude = longitude
+                }
+            });
         }
 
-        var isChangeSuccessful = await _repository.SaveChangesAsync() > 0;
-        Console.WriteLine($"Success: {isChangeSuccessful}");
+        var existingCount = await _streetcodeContext.Set<Toponym>().CountAsync();
+        if (toponyms.Count == 0 || toponyms.Count < existingCount)
+        {
+            Console.WriteLine("Toponyms were not replaced because the downloaded data set is incomplete.");
+            return false;
+        }
+
+        await using var transaction = await _streetcodeContext.Database.BeginTransactionAsync();
+        try
+        {
+            _streetcodeContext.Set<Toponym>().RemoveRange(_streetcodeContext.Set<Toponym>());
+            await _streetcodeContext.Set<Toponym>().AddRangeAsync(toponyms);
+            await _streetcodeContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+            Console.WriteLine("Success: True");
+            return true;
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     /// <summary>
@@ -302,6 +342,40 @@ public class WebParsingUtils
         }
 
         return (null, null);
+    }
+
+    internal static string GetZipPath(string temporaryDirectory, Guid operationId)
+    {
+        return Path.Combine(
+            temporaryDirectory,
+            $"houses-{operationId}.zip");
+    }
+
+    internal static string GetDataDirectory(string contentRootPath)
+    {
+        return Path.Combine(
+            contentRootPath,
+            "Data",
+            "WebParsing");
+    }
+
+    internal static string FindHousesCsv(string extractDirectory)
+    {
+        var housesCsvPath = Directory
+            .EnumerateFiles(extractDirectory, "*", SearchOption.AllDirectories)
+            .FirstOrDefault(path =>
+                string.Equals(
+                    Path.GetFileName(path),
+                    "houses.csv",
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (housesCsvPath is null)
+        {
+            throw new FileNotFoundException(
+                "houses.csv file not found in the extracted directory.");
+        }
+
+        return housesCsvPath;
     }
 
     /// <summary>
