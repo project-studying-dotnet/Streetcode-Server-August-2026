@@ -118,6 +118,45 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Field_Required" xml:space="preserve">
-    <value>'{PropertyName}' field is required.</value>
+    <value>{PropertyName} is required.</value>
+  </data>
+  <data name="Invalid_Property" xml:space="preserve">
+    <value>{PropertyName} is invalid.</value>
+  </data>
+  <data name="AudioMimeTypeAndExtensionNotSupported" xml:space="preserve">
+    <value>Audio MIME type and extension combination is not supported.</value>
+  </data>
+  <data name="MustBeValidBase64" xml:space="preserve">
+    <value>{PropertyName} must be valid Base64.</value>
+  </data>
+  <data name="MustBeValidHttpUrl" xml:space="preserve">
+    <value>{0} must be a valid HTTP or HTTPS URL.</value>
+  </data>
+  <data name="MustBeValidId" xml:space="preserve">
+    <value>{0} ID must be greater than 0.</value>
+  </data>
+  <data name="MustNotExceedLength" xml:space="preserve">
+    <value>{0} must not exceed {1} characters.</value>
+  </data>
+  <data name="MustNotExceedPaginationLimits" xml:space="preserve">
+    <value>{PropertyName} must not exceed {0}.</value>
+  </data>
+  <data name="PaymentGreaterThan_Zero" xml:space="preserve">
+    <value>Payment amount must be greater than 0.</value>
+  </data>
+  <data name="PropertyGreaterThan_Zero" xml:space="preserve">
+    <value>{PropertyName} must be greater than 0.</value>
+  </data>
+  <data name="ImageMimeTypeAndExtensionNotSupported" xml:space="preserve">
+    <value>Image MIME type and extension combination is not supported.</value>
+  </data>
+  <data name="SenderMustBeValidEmail" xml:space="preserve">
+    <value>Sender email must be a valid email address.</value>
+  </data>
+  <data name="LatitudeMustBeBetween" xml:space="preserve">
+    <value>Latitude must be between -90 and 90.</value>
+  </data>
+  <data name="LongitudeMustBeBetween" xml:space="preserve">
+    <value>Longitude must be between -180 and 180.</value>
   </data>
 </root>

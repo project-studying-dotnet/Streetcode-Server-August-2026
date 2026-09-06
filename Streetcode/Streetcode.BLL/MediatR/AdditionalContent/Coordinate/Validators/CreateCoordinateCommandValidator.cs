@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.AdditionalContent.Coordinates.Types;
 using Streetcode.BLL.MediatR.AdditionalContent.Coordinate.Create;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.AdditionalContent.Coordinate.Validators;
 
@@ -12,7 +13,7 @@ public sealed class CreateCoordinateCommandValidator
     {
         RuleFor(command => command.StreetcodeCoordinate)
             .NotNull()
-            .WithMessage("Coordinate is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(coordinateValidator);
     }
 }

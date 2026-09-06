@@ -61,11 +61,128 @@ namespace Streetcode.BLL.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &apos;{PropertyName}&apos; field is required..
+        ///   Looks up a localized string similar to Audio MIME type and extension combination is not supported..
+        /// </summary>
+        public static string AudioMimeTypeAndExtensionNotSupported {
+            get {
+                return ResourceManager.GetString("AudioMimeTypeAndExtensionNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} is required..
         /// </summary>
         public static string Field_Required {
             get {
                 return ResourceManager.GetString("Field_Required", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Image MIME type and extension combination is not supported..
+        /// </summary>
+        public static string ImageMimeTypeAndExtensionNotSupported {
+            get {
+                return ResourceManager.GetString("ImageMimeTypeAndExtensionNotSupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} is invalid..
+        /// </summary>
+        public static string Invalid_Property {
+            get {
+                return ResourceManager.GetString("Invalid_Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Latitude must be between -90 and 90..
+        /// </summary>
+        public static string LatitudeMustBeBetween {
+            get {
+                return ResourceManager.GetString("LatitudeMustBeBetween", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Longitude must be between -180 and 180..
+        /// </summary>
+        public static string LongitudeMustBeBetween {
+            get {
+                return ResourceManager.GetString("LongitudeMustBeBetween", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} must be valid Base64..
+        /// </summary>
+        public static string MustBeValidBase64 {
+            get {
+                return ResourceManager.GetString("MustBeValidBase64", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} must be a valid HTTP or HTTPS URL..
+        /// </summary>
+        public static string MustBeValidHttpUrl {
+            get {
+                return ResourceManager.GetString("MustBeValidHttpUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} ID must be greater than 0..
+        /// </summary>
+        public static string MustBeValidId {
+            get {
+                return ResourceManager.GetString("MustBeValidId", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} must not exceed {1} characters..
+        /// </summary>
+        public static string MustNotExceedLength {
+            get {
+                return ResourceManager.GetString("MustNotExceedLength", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} must not exceed {0}..
+        /// </summary>
+        public static string MustNotExceedPaginationLimits {
+            get {
+                return ResourceManager.GetString("MustNotExceedPaginationLimits", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Payment amount must be greater than 0..
+        /// </summary>
+        public static string PaymentGreaterThan_Zero {
+            get {
+                return ResourceManager.GetString("PaymentGreaterThan_Zero", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} must be greater than 0..
+        /// </summary>
+        public static string PropertyGreaterThan_Zero {
+            get {
+                return ResourceManager.GetString("PropertyGreaterThan_Zero", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sender email must be a valid email address..
+        /// </summary>
+        public static string SenderMustBeValidEmail {
+            get {
+                return ResourceManager.GetString("SenderMustBeValidEmail", resourceCulture);
             }
         }
     }

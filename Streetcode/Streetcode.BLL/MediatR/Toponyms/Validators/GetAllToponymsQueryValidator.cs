@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Toponyms;
 using Streetcode.BLL.MediatR.Toponyms.GetAll;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Toponyms.Validators;
 
@@ -12,7 +13,7 @@ public sealed class GetAllToponymsQueryValidator
     {
         RuleFor(query => query.request)
             .NotNull()
-            .WithMessage("Request is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(requestValidator);
     }
 }
