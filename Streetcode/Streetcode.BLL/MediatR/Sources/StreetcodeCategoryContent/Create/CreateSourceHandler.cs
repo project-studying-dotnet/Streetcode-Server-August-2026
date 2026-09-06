@@ -65,88 +65,17 @@ public sealed class CreateSourceHandler
 
         if (!source.SourceLinkCategoryId.HasValue)
         {
-            string newCategoryTitle = source.NewCategoryTitle!.Trim();
+            var newCategoryResult =
+                await CreateSourceWithNewCategoryAsync(request, source);
 
-            var categoryWithSameTitle = await _repositoryWrapper
-                .SourceCategoryRepository
-                .GetFirstOrDefaultAsync(
-                    predicate: category =>
-                        category.Title == newCategoryTitle);
-
-            if (categoryWithSameTitle is not null)
+            if (newCategoryResult.IsFailed)
             {
-                const string duplicateTitleErrorMessage =
-                    "Source category with this title already exists.";
-
-                _logger.LogError(request, duplicateTitleErrorMessage);
-
                 return Result.Fail<StreetcodeCategoryContentDTO>(
-                    new Error(duplicateTitleErrorMessage));
+                    newCategoryResult.Errors);
             }
 
-            ImageFileBaseCreateDTO grayscaleImage;
-
-            try
-            {
-                grayscaleImage = _imageProcessor.ConvertToGrayscale(
-                    source.NewCategoryImage!);
-            }
-            catch (InvalidOperationException exception)
-            {
-                _logger.LogError(request, exception.Message);
-
-                return Result.Fail<StreetcodeCategoryContentDTO>(
-                    new Error(exception.Message));
-            }
-
-            byte[] grayscaleImageBytes =
-                Convert.FromBase64String(grayscaleImage.BaseFormat!);
-
-            string imageHash =
-                Convert.ToHexString(SHA256.HashData(grayscaleImageBytes));
-
-            var categoryWithSameImage = await _repositoryWrapper
-                .SourceCategoryRepository
-                .GetFirstOrDefaultAsync(
-                    predicate: category =>
-                        category.ImageHash == imageHash);
-
-            if (categoryWithSameImage is not null)
-            {
-                const string duplicateImageErrorMessage =
-                    "Source category with this image already exists.";
-
-                _logger.LogError(request, duplicateImageErrorMessage);
-
-                return Result.Fail<StreetcodeCategoryContentDTO>(
-                    new Error(duplicateImageErrorMessage));
-            }
-
-            string blobStorageName = _blobService.SaveFileInStorage(
-                grayscaleImage.BaseFormat!,
-                newCategoryTitle,
-                grayscaleImage.Extension!);
-
-            var imageEntity = _mapper.Map<ImageEntity>(grayscaleImage);
-
-            imageEntity.BlobName =
-                $"{blobStorageName}.{grayscaleImage.Extension}";
-
-            createdBlobName = imageEntity.BlobName;
-
-            var newCategory = new SourceLinkCategoryEntity
-            {
-                Title = newCategoryTitle,
-                ImageHash = imageHash,
-                Image = imageEntity,
-            };
-
-            sourceEntity = new StreetcodeCategoryContentEntity
-            {
-                Text = source.Text,
-                StreetcodeId = source.StreetcodeId,
-                SourceLinkCategory = newCategory,
-            };
+            sourceEntity = newCategoryResult.Value.SourceEntity;
+            createdBlobName = newCategoryResult.Value.CreatedBlobName;
         }
         else
         {
@@ -240,4 +169,102 @@ public sealed class CreateSourceHandler
 
         return Result.Ok(createdSource);
     }
+
+    private async Task<Result<NewCategorySourceResult>>
+        CreateSourceWithNewCategoryAsync(
+            CreateSourceCommand request,
+            SourceCreateDTO source)
+    {
+        string newCategoryTitle = source.NewCategoryTitle!.Trim();
+
+        var categoryWithSameTitle = await _repositoryWrapper
+            .SourceCategoryRepository
+            .GetFirstOrDefaultAsync(
+                predicate: category =>
+                    category.Title == newCategoryTitle);
+
+        if (categoryWithSameTitle is not null)
+        {
+            const string duplicateTitleErrorMessage =
+                "Source category with this title already exists.";
+
+            _logger.LogError(request, duplicateTitleErrorMessage);
+
+            return Result.Fail<NewCategorySourceResult>(
+                new Error(duplicateTitleErrorMessage));
+        }
+
+        ImageFileBaseCreateDTO grayscaleImage;
+
+        try
+        {
+            grayscaleImage = _imageProcessor.ConvertToGrayscale(
+                source.NewCategoryImage!);
+        }
+        catch (InvalidOperationException exception)
+        {
+            _logger.LogError(request, exception.Message);
+
+            return Result.Fail<NewCategorySourceResult>(
+                new Error(exception.Message));
+        }
+
+        byte[] grayscaleImageBytes =
+            Convert.FromBase64String(grayscaleImage.BaseFormat!);
+
+        string imageHash =
+            Convert.ToHexString(SHA256.HashData(grayscaleImageBytes));
+
+        var categoryWithSameImage = await _repositoryWrapper
+            .SourceCategoryRepository
+            .GetFirstOrDefaultAsync(
+                predicate: category =>
+                    category.ImageHash == imageHash);
+
+        if (categoryWithSameImage is not null)
+        {
+            const string duplicateImageErrorMessage =
+                "Source category with this image already exists.";
+
+            _logger.LogError(request, duplicateImageErrorMessage);
+
+            return Result.Fail<NewCategorySourceResult>(
+                new Error(duplicateImageErrorMessage));
+        }
+
+        string blobStorageName = _blobService.SaveFileInStorage(
+            grayscaleImage.BaseFormat!,
+            newCategoryTitle,
+            grayscaleImage.Extension!);
+
+        var imageEntity = _mapper.Map<ImageEntity>(grayscaleImage);
+
+        string createdBlobName =
+            $"{blobStorageName}.{grayscaleImage.Extension}";
+
+        imageEntity.BlobName = createdBlobName;
+
+        var newCategory = new SourceLinkCategoryEntity
+        {
+            Title = newCategoryTitle,
+            ImageHash = imageHash,
+            Image = imageEntity,
+        };
+
+        var sourceEntity = new StreetcodeCategoryContentEntity
+        {
+            Text = source.Text,
+            StreetcodeId = source.StreetcodeId,
+            SourceLinkCategory = newCategory,
+        };
+
+        return Result.Ok(
+            new NewCategorySourceResult(
+                sourceEntity,
+                createdBlobName));
+    }
+
+    private sealed record NewCategorySourceResult(
+        StreetcodeCategoryContentEntity SourceEntity,
+        string CreatedBlobName);
 }
