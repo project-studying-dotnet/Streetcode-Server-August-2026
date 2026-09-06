@@ -148,4 +148,108 @@ public sealed class IdentityServiceIntegrationTests
         Assert.Equal(1, usersCount);
         Assert.Equal(1, outboxMessagesCount);
     }
+
+    [Fact]
+    public async Task GetUserTokenDataAsync_WhenUserExists_ShouldReturnTokenData()
+    {
+        var userId = Guid.NewGuid();
+        var email = $"token-user-{Guid.NewGuid():N}@example.com";
+        var roleName = $"TokenRole-{Guid.NewGuid():N}";
+        const string password = "ValidPassword123!";
+
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var identityService =
+            scope.ServiceProvider.GetRequiredService<IIdentityService>();
+
+        var userManager = scope.ServiceProvider
+            .GetRequiredService<UserManager<ApplicationUser>>();
+
+        var roleManager = scope.ServiceProvider
+            .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        var user = new ApplicationUser
+        {
+            Id = userId,
+            Email = email,
+            UserName = email
+        };
+
+        var userCreationResult = await userManager.CreateAsync(user, password);
+        var roleCreationResult = await roleManager.CreateAsync(
+            new IdentityRole<Guid>(roleName));
+        var addToRoleResult = await userManager.AddToRoleAsync(user, roleName);
+
+        Assert.True(userCreationResult.Succeeded);
+        Assert.True(roleCreationResult.Succeeded);
+        Assert.True(addToRoleResult.Succeeded);
+
+        var result = await identityService.GetUserTokenDataAsync(
+            userId,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(userId, result.Value.UserId);
+        Assert.Equal(email, result.Value.Email);
+        Assert.Contains(roleName, result.Value.Roles);
+        Assert.Equal(1, result.Value.AccessVersion);
+        Assert.True(result.Value.IsActive);
+    }
+
+    [Fact]
+    public async Task GetUserTokenDataAsync_WhenUserDoesNotExist_ShouldReturnNotFoundError()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var identityService =
+            scope.ServiceProvider.GetRequiredService<IIdentityService>();
+
+        var result = await identityService.GetUserTokenDataAsync(
+            Guid.NewGuid(),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+
+        var error = Assert.Single(result.Errors);
+
+        Assert.True(error.Metadata.TryGetValue("Code", out var code));
+        Assert.Equal("Identity.UserNotFound", code);
+    }
+
+    [Fact]
+    public async Task GetUserTokenDataAsync_WhenUserIdIsEmpty_ShouldReturnNotFoundError()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var identityService =
+            scope.ServiceProvider.GetRequiredService<IIdentityService>();
+
+        var result = await identityService.GetUserTokenDataAsync(
+            Guid.Empty,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+
+        var error = Assert.Single(result.Errors);
+
+        Assert.True(error.Metadata.TryGetValue("Code", out var code));
+        Assert.Equal("Identity.UserNotFound", code);
+    }
+
+    [Fact]
+    public async Task GetUserTokenDataAsync_WhenCancellationIsRequested_ShouldThrow()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var identityService =
+            scope.ServiceProvider.GetRequiredService<IIdentityService>();
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            identityService.GetUserTokenDataAsync(
+                Guid.NewGuid(),
+                cancellationTokenSource.Token));
+    }
 }

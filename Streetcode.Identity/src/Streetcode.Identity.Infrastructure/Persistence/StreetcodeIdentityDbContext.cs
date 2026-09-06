@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Streetcode.Identity.Domain.RefreshTokens;
 using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Persistence.Configurations;
 using Streetcode.Identity.Infrastructure.Persistence.Outbox;
@@ -16,6 +17,8 @@ public sealed class StreetcodeIdentityDbContext
     }
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,5 +44,7 @@ public sealed class StreetcodeIdentityDbContext
             .IsConcurrencyToken();
 
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+
+        modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
     }
 }

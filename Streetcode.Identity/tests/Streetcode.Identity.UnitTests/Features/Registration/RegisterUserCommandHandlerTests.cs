@@ -33,6 +33,14 @@ public class RegisterUserCommandHandlerTests
 
             return Task.FromResult(_resultToReturn);
         }
+
+        public Task<Result<UserTokenData>> GetUserTokenDataAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException(
+                "Registration tests do not load user token data.");
+        }
     }
 
     [Fact]
