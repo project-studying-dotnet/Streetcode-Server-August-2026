@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using AutoMapper;
 using FluentResults;
 using MediatR;
+using Streetcode.BLL.DTO.Media.Images;
 using Streetcode.BLL.DTO.Sources;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Logging;
@@ -83,8 +84,20 @@ public sealed class CreateSourceHandler
                     new Error(duplicateTitleErrorMessage));
             }
 
-            var grayscaleImage = _imageProcessor.ConvertToGrayscale(
-                source.NewCategoryImage!);
+            ImageFileBaseCreateDTO grayscaleImage;
+
+            try
+            {
+                grayscaleImage = _imageProcessor.ConvertToGrayscale(
+                    source.NewCategoryImage!);
+            }
+            catch (InvalidOperationException exception)
+            {
+                _logger.LogError(request, exception.Message);
+
+                return Result.Fail<StreetcodeCategoryContentDTO>(
+                    new Error(exception.Message));
+            }
 
             byte[] grayscaleImageBytes =
                 Convert.FromBase64String(grayscaleImage.BaseFormat!);
@@ -180,11 +193,31 @@ public sealed class CreateSourceHandler
             };
         }
 
-        await _repositoryWrapper.StreetcodeCategoryContentRepository
-            .CreateAsync(sourceEntity);
+        bool isSaved;
 
-        bool isSaved =
-            await _repositoryWrapper.SaveChangesAsync() > 0;
+        try
+        {
+            await _repositoryWrapper.StreetcodeCategoryContentRepository
+                .CreateAsync(sourceEntity);
+
+            isSaved =
+                await _repositoryWrapper.SaveChangesAsync() > 0;
+        }
+        catch (Exception exception)
+        {
+            if (createdBlobName is not null)
+            {
+                _blobService.DeleteFileInStorage(createdBlobName);
+            }
+
+            const string errorMessage =
+                "Failed to create source block.";
+
+            _logger.LogError(request, exception.ToString());
+
+            return Result.Fail<StreetcodeCategoryContentDTO>(
+                new Error(errorMessage));
+        }
 
         if (!isSaved)
         {

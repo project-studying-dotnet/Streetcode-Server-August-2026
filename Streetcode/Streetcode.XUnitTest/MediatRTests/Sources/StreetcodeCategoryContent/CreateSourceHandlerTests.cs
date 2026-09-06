@@ -50,6 +50,171 @@ public class CreateSourceHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenStreetcodeDoesNotExist_ShouldReturnFailure()
+    {
+        const int streetcodeId = 1;
+        const string expectedErrorMessage =
+            "Cannot find streetcode with id: 1";
+        var sourceDto = new SourceCreateDTO(
+            StreetcodeId: streetcodeId,
+            Text: "Source text",
+            SourceLinkCategoryId: 10,
+            NewCategoryTitle: null,
+            NewCategoryImage: null);
+        var command = new CreateSourceCommand(sourceDto);
+
+        _streetcodeRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                null))
+            .ReturnsAsync((StreetcodeEntity?)null);
+
+        var handler = new CreateSourceHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _imageProcessorMock.Object,
+            _blobServiceMock.Object);
+
+        var result = await handler.Handle(
+            command,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedErrorMessage, result.Errors.Single().Message);
+        _loggerMock.Verify(
+            logger => logger.LogError(command, expectedErrorMessage),
+            Times.Once());
+        _sourceCategoryRepositoryMock.VerifyNoOtherCalls();
+        _streetcodeCategoryContentRepositoryMock.VerifyNoOtherCalls();
+        _blobServiceMock.VerifyNoOtherCalls();
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+    }
+
+    [Fact]
+    public async Task Handle_WhenExistingCategoryDoesNotExist_ShouldReturnFailure()
+    {
+        const int categoryId = 10;
+        const string expectedErrorMessage =
+            "Cannot find source category with id: 10";
+        var sourceDto = new SourceCreateDTO(
+            StreetcodeId: 1,
+            Text: "Source text",
+            SourceLinkCategoryId: categoryId,
+            NewCategoryTitle: null,
+            NewCategoryImage: null);
+        var command = new CreateSourceCommand(sourceDto);
+
+        _streetcodeRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new StreetcodeEntity
+            {
+                Id = sourceDto.StreetcodeId,
+            });
+
+        _sourceCategoryRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<SourceLinkCategoryEntity, bool>>>(),
+                null))
+            .ReturnsAsync((SourceLinkCategoryEntity?)null);
+
+        var handler = new CreateSourceHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _imageProcessorMock.Object,
+            _blobServiceMock.Object);
+
+        var result = await handler.Handle(
+            command,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedErrorMessage, result.Errors.Single().Message);
+        _loggerMock.Verify(
+            logger => logger.LogError(command, expectedErrorMessage),
+            Times.Once());
+        _streetcodeCategoryContentRepositoryMock.VerifyNoOtherCalls();
+        _blobServiceMock.VerifyNoOtherCalls();
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+    }
+
+    [Fact]
+    public async Task Handle_WhenCategoryIsAlreadyAdded_ShouldReturnFailure()
+    {
+        const int categoryId = 10;
+        const string expectedErrorMessage =
+            "This source category is already added to the streetcode.";
+        var sourceDto = new SourceCreateDTO(
+            StreetcodeId: 1,
+            Text: "Source text",
+            SourceLinkCategoryId: categoryId,
+            NewCategoryTitle: null,
+            NewCategoryImage: null);
+        var command = new CreateSourceCommand(sourceDto);
+
+        _streetcodeRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new StreetcodeEntity
+            {
+                Id = sourceDto.StreetcodeId,
+            });
+
+        _sourceCategoryRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<SourceLinkCategoryEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new SourceLinkCategoryEntity
+            {
+                Id = categoryId,
+            });
+
+        _streetcodeCategoryContentRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<
+                    Func<StreetcodeCategoryContentEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new StreetcodeCategoryContentEntity
+            {
+                StreetcodeId = sourceDto.StreetcodeId,
+                SourceLinkCategoryId = categoryId,
+            });
+
+        var handler = new CreateSourceHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _imageProcessorMock.Object,
+            _blobServiceMock.Object);
+
+        var result = await handler.Handle(
+            command,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedErrorMessage, result.Errors.Single().Message);
+        _loggerMock.Verify(
+            logger => logger.LogError(command, expectedErrorMessage),
+            Times.Once());
+        _streetcodeCategoryContentRepositoryMock.Verify(
+            repository => repository.CreateAsync(
+                It.IsAny<StreetcodeCategoryContentEntity>()),
+            Times.Never());
+        _blobServiceMock.VerifyNoOtherCalls();
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+    }
+
+    [Fact]
     public async Task Handle_WhenExistingCategoryIsValid_ShouldCreateSource()
     {
         const int categoryId = 10;
@@ -192,6 +357,70 @@ public class CreateSourceHandlerTests
             Times.Once());
         _imageProcessorMock.VerifyNoOtherCalls();
         _blobServiceMock.VerifyNoOtherCalls();
+        _repositoryWrapperMock.Verify(
+            wrapper => wrapper.SaveChangesAsync(),
+            Times.Never());
+    }
+
+    [Fact]
+    public async Task Handle_WhenImageProcessingFails_ShouldReturnFailure()
+    {
+        const string expectedErrorMessage =
+            "Failed to decode source category image.";
+        var inputImage = new ImageFileBaseCreateDTO
+        {
+            BaseFormat = "invalid-image",
+            MimeType = "image/png",
+            Extension = "png",
+        };
+        var sourceDto = new SourceCreateDTO(
+            StreetcodeId: 1,
+            Text: "Source text",
+            SourceLinkCategoryId: null,
+            NewCategoryTitle: "Documents",
+            NewCategoryImage: inputImage);
+        var command = new CreateSourceCommand(sourceDto);
+
+        _streetcodeRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new StreetcodeEntity
+            {
+                Id = sourceDto.StreetcodeId,
+            });
+
+        _sourceCategoryRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<SourceLinkCategoryEntity, bool>>>(),
+                null))
+            .ReturnsAsync((SourceLinkCategoryEntity?)null);
+
+        _imageProcessorMock
+            .Setup(processor => processor.ConvertToGrayscale(inputImage))
+            .Throws(new InvalidOperationException(expectedErrorMessage));
+
+        var handler = new CreateSourceHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _imageProcessorMock.Object,
+            _blobServiceMock.Object);
+
+        var result = await handler.Handle(
+            command,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedErrorMessage, result.Errors.Single().Message);
+        _loggerMock.Verify(
+            logger => logger.LogError(command, expectedErrorMessage),
+            Times.Once());
+        _blobServiceMock.VerifyNoOtherCalls();
+        _streetcodeCategoryContentRepositoryMock.Verify(
+            repository => repository.CreateAsync(
+                It.IsAny<StreetcodeCategoryContentEntity>()),
+            Times.Never());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
             Times.Never());
@@ -488,6 +717,97 @@ public class CreateSourceHandlerTests
             Times.Once());
         _loggerMock.Verify(
             logger => logger.LogError(command, expectedErrorMessage),
+            Times.Once());
+    }
+
+    [Fact]
+    public async Task Handle_WhenNewCategorySaveThrows_ShouldDeleteCreatedBlob()
+    {
+        const string categoryTitle = "Documents";
+        const string blobName = "grayscale-image.png";
+        const string expectedErrorMessage = "Failed to create source block.";
+        var databaseException =
+            new InvalidOperationException("Database save failed.");
+        var inputImage = new ImageFileBaseCreateDTO
+        {
+            BaseFormat = "original-base64",
+            MimeType = "image/png",
+            Extension = "png",
+        };
+        var grayscaleImage = new ImageFileBaseCreateDTO
+        {
+            BaseFormat = "AQID",
+            MimeType = inputImage.MimeType,
+            Extension = inputImage.Extension,
+        };
+        var sourceDto = new SourceCreateDTO(
+            StreetcodeId: 1,
+            Text: "Source text",
+            SourceLinkCategoryId: null,
+            NewCategoryTitle: categoryTitle,
+            NewCategoryImage: inputImage);
+        var command = new CreateSourceCommand(sourceDto);
+
+        _streetcodeRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                null))
+            .ReturnsAsync(new StreetcodeEntity
+            {
+                Id = sourceDto.StreetcodeId,
+            });
+
+        _sourceCategoryRepositoryMock
+            .Setup(repository => repository.GetFirstOrDefaultAsync(
+                It.IsAny<Expression<Func<SourceLinkCategoryEntity, bool>>>(),
+                null))
+            .ReturnsAsync((SourceLinkCategoryEntity?)null);
+
+        _imageProcessorMock
+            .Setup(processor => processor.ConvertToGrayscale(inputImage))
+            .Returns(grayscaleImage);
+
+        _blobServiceMock
+            .Setup(service => service.SaveFileInStorage(
+                grayscaleImage.BaseFormat!,
+                categoryTitle,
+                grayscaleImage.Extension!))
+            .Returns("grayscale-image");
+
+        _mapperMock
+            .Setup(mapper => mapper.Map<ImageEntity>(grayscaleImage))
+            .Returns(new ImageEntity
+            {
+                MimeType = grayscaleImage.MimeType,
+            });
+
+        _streetcodeCategoryContentRepositoryMock
+            .Setup(repository => repository.CreateAsync(
+                It.IsAny<StreetcodeCategoryContentEntity>()))
+            .ReturnsAsync((StreetcodeCategoryContentEntity entity) => entity);
+
+        _repositoryWrapperMock
+            .Setup(wrapper => wrapper.SaveChangesAsync())
+            .ThrowsAsync(databaseException);
+
+        var handler = new CreateSourceHandler(
+            _repositoryWrapperMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _imageProcessorMock.Object,
+            _blobServiceMock.Object);
+
+        var result = await handler.Handle(
+            command,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Equal(expectedErrorMessage, result.Errors.Single().Message);
+        _blobServiceMock.Verify(
+            service => service.DeleteFileInStorage(blobName),
+            Times.Once());
+        _loggerMock.Verify(
+            logger => logger.LogError(command, databaseException.ToString()),
             Times.Once());
     }
 }

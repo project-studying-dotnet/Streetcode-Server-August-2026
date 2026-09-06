@@ -18,6 +18,8 @@ public sealed class SourceUpdateDtoValidator
             .MustBeValidId("Source category");
 
         RuleFor(source => source.Text)
+            .NotEmpty()
+            .WithMessage("Source text is required.")
             .MustNotExceedLength(
                 SourceEntity.TextMaxLength,
                 "Source text");

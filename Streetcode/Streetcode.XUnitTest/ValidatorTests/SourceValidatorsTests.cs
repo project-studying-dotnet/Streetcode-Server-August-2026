@@ -101,6 +101,27 @@ public class SourceValidatorsTests
             error => error.PropertyName == nameof(SourceCreateDTO.Text));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Validate_WhenTextIsEmptyOrWhitespace_ShouldBeInvalid(string text)
+    {
+        var dto = new SourceCreateDTO(
+            StreetcodeId: 1,
+            Text: text,
+            SourceLinkCategoryId: 10,
+            NewCategoryTitle: null,
+            NewCategoryImage: null);
+
+        var result = _sourceValidator.Validate(dto);
+
+        Assert.Contains(
+            result.Errors,
+            error =>
+                error.PropertyName == nameof(SourceCreateDTO.Text) &&
+                error.ErrorMessage == "Source text is required.");
+    }
+
     [Fact]
     public void Validate_WhenExistingCategoryIdIsInvalid_ShouldBeInvalid()
     {
@@ -344,6 +365,26 @@ public class SourceValidatorsTests
         Assert.Contains(
             result.Errors,
             error => error.PropertyName == nameof(SourceUpdateDTO.Text));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ValidateUpdate_WhenTextIsEmptyOrWhitespace_ShouldBeInvalid(
+        string text)
+    {
+        var dto = new SourceUpdateDTO(
+            StreetcodeId: 1,
+            SourceLinkCategoryId: 2,
+            Text: text);
+
+        var result = _updateSourceValidator.Validate(dto);
+
+        Assert.Contains(
+            result.Errors,
+            error =>
+                error.PropertyName == nameof(SourceUpdateDTO.Text) &&
+                error.ErrorMessage == "Source text is required.");
     }
 
     [Fact]

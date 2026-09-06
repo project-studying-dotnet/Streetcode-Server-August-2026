@@ -21,6 +21,8 @@ public sealed class SourceCreateDtoValidator
             .MustBeValidId("Streetcode");
 
         RuleFor(source => source.Text)
+            .NotEmpty()
+            .WithMessage("Source text is required.")
             .MustNotExceedLength(
                 SourceContentEntity.TextMaxLength,
                 "Source text");

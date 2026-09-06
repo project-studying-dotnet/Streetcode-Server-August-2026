@@ -40,6 +40,7 @@ public sealed class SourceCategoryImageProcessor
             sourceBitmap,
             0,
             0,
+            SKSamplingOptions.Default,
             paint);
 
         canvas.Flush();
