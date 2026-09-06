@@ -31,7 +31,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
 
                 if (streetcodeExists is null)
                 {
-                    const string errorMsg = "Cannot create text: streetcode with the given id does not exist!";
+                    const string errorMsg = "Cannot create text: streetcode with the given id does not exist.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
                 }
@@ -41,7 +41,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
 
                 if (existingText is not null)
                 {
-                    const string errorMsg = "Cannot create text: streetcode with the given id already has a text!";
+                    const string errorMsg = "Cannot create text: streetcode with the given id already has a text.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
                 }
@@ -50,7 +50,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
 
                 if (text is null)
                 {
-                    const string errorMsg = "Cannot create new text!";
+                    const string errorMsg = "Cannot create new text.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
                 }
@@ -61,7 +61,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
 
                 if (!isSuccessResult)
                 {
-                    const string errorMsg = "Cannot save changes in the database after text creation!";
+                    const string errorMsg = "Cannot save changes in the database after text creation.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
                 }
@@ -74,7 +74,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
                 }
                 else
                 {
-                    const string errorMsg = "Cannot map entity!";
+                    const string errorMsg = "Cannot map entity.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
                 }

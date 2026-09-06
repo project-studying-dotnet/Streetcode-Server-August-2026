@@ -42,7 +42,7 @@ public class CreateTextHandlerTests
     public async Task Handle_WhenStreetcodeDoesNotExist_ShouldReturnFailure()
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
-        const string expectedError = "Cannot create text: streetcode with the given id does not exist!";
+        const string expectedError = "Cannot create text: streetcode with the given id does not exist.";
 
         _streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
@@ -73,7 +73,7 @@ public class CreateTextHandlerTests
     public async Task Handle_WhenTextAlreadyExistsForStreetcode_ShouldReturnFailure()
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
-        const string expectedError = "Cannot create text: streetcode with the given id already has a text!";
+        const string expectedError = "Cannot create text: streetcode with the given id already has a text.";
 
         SetupStreetcodeExists(command);
         _textRepositoryMock
@@ -105,7 +105,7 @@ public class CreateTextHandlerTests
     public async Task Handle_WhenInputMappingFails_ShouldReturnFailure()
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
-        const string expectedError = "Cannot create new text!";
+        const string expectedError = "Cannot create new text.";
 
         SetupStreetcodeExists(command);
         _mapperMock
@@ -133,7 +133,7 @@ public class CreateTextHandlerTests
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
         var textEntity = CreateTextEntity();
-        const string expectedError = "Cannot save changes in the database after text creation!";
+        const string expectedError = "Cannot save changes in the database after text creation.";
 
         SetupCreation(command, textEntity, saveChangesResult: 0);
 
@@ -161,7 +161,7 @@ public class CreateTextHandlerTests
     {
         var command = new CreateTextCommand(CreateTextCreateDto());
         var textEntity = CreateTextEntity();
-        const string expectedError = "Cannot map entity!";
+        const string expectedError = "Cannot map entity.";
 
         SetupCreation(command, textEntity, saveChangesResult: 1);
         _mapperMock
