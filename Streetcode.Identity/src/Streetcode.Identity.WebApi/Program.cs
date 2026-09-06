@@ -4,6 +4,7 @@ using Streetcode.Identity.Infrastructure;
 using Streetcode.Identity.Infrastructure.Identity.Seeding;
 using Streetcode.Identity.Infrastructure.Messaging.Kafka;
 using Streetcode.Identity.Infrastructure.Persistence;
+using Streetcode.Identity.Infrastructure.Security;
 using Streetcode.Identity.WebApi.ExceptionHandling;
 using Streetcode.Identity.WebApi.Extensions;
 
@@ -25,6 +26,7 @@ builder.Services.AddJwtServices(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddIdentitySeeding(builder.Configuration);
+builder.Services.AddRefreshTokenServices(builder.Configuration);
 builder.Services.AddKafkaMessaging(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
