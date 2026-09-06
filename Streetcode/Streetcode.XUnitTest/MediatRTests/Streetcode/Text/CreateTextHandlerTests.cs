@@ -223,6 +223,34 @@ public class CreateTextHandlerTests
             Times.Never());
     }
 
+    [Fact]
+    public async Task Handle_WhenSaveChangesThrows_ShouldReturnGenericFailureAndLogDetails()
+    {
+        var command = new CreateTextCommand(CreateTextCreateDto());
+        var textEntity = CreateTextEntity();
+        var thrown = new InvalidOperationException("db explosion detail");
+
+        SetupStreetcodeExists(command);
+        _mapperMock
+            .Setup(mapper => mapper.Map<TextEntity>(command.TextCreateDto))
+            .Returns(textEntity);
+        _textRepositoryMock
+            .Setup(repository => repository.Create(textEntity))
+            .Returns(textEntity);
+        _repositoryWrapperMock
+            .Setup(wrapper => wrapper.SaveChangesAsync())
+            .ThrowsAsync(thrown);
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailed);
+        Assert.Single(result.Errors);
+        Assert.Equal("An error occurred while saving the text during creation.", result.Errors.First().Message);
+        _loggerMock.Verify(
+            logger => logger.LogError(command, thrown.Message),
+            Times.Once());
+    }
+
     private void SetupStreetcodeExists(CreateTextCommand command)
     {
         var streetcode = new StreetcodeEntity { Id = command.TextCreateDto.StreetcodeId };
