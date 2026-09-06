@@ -8,6 +8,7 @@ namespace Streetcode.BLL.DTO.Streetcode.Update
         public int Id { get; set; }
         public int Index { get; set; }
         public string Title { get; set; }
+        public string? ShortDescription { get; set; }
         public StreetcodeType StreetcodeType { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }

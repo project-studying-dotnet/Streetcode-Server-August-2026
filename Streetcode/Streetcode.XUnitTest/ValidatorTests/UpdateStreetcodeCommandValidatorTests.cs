@@ -60,7 +60,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(UpdateStreetcodeDTO.Title), 101)]
         [InlineData(nameof(UpdateStreetcodeDTO.FirstName), 51)]
         [InlineData(nameof(UpdateStreetcodeDTO.LastName), 51)]
-        [InlineData(nameof(UpdateStreetcodeDTO.Teaser), 34)]
+        [InlineData(nameof(UpdateStreetcodeDTO.ShortDescription), 34)]
         public void Validate_WhenTextExceedsLimit_ShouldBeInvalid(
             string propertyName,
             int valueLength)
@@ -126,6 +126,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 Id = 1,
                 Index = 1,
                 Title = new string('a', 100),
+                ShortDescription = new string('a', 33),
                 StreetcodeType = StreetcodeType.Person,
                 FirstName = new string('a', 50),
                 LastName = new string('a', 50),

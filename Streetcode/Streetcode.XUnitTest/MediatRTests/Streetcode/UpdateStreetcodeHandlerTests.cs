@@ -166,6 +166,132 @@ public class UpdateStreetcodeHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenTagIsNotFound()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        updateStreetcodeDTO.Tags = new List<StreetcodeTagDTO>
+        {
+            new StreetcodeTagDTO { Id = 999, Title = "Missing", IsVisible = true, Index = 0 },
+        };
+
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        Assert.Equal("Tag(s) not found: 999", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenAnimationImageIsNotFound()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        _imageRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
+            .ReturnsAsync((Image?)null);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, 1, null);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        Assert.Equal("Animation image not found.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenBlackAndWhiteImageIsNotFound()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        _imageRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
+            .ReturnsAsync((Image?)null);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null, blackAndWhiteImageId: 1);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        Assert.Equal("Black and white image not found.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenRelatedFigureImageIsNotFound()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        _imageRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
+            .ReturnsAsync((Image?)null);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null, relatedFigureImageId: 1);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        Assert.Equal("Related figure image not found.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsFailedResult_WhenAudioIsNotFound()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        _audioRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Audio, bool>>>()))
+            .ReturnsAsync((Audio?)null);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, 1);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        Assert.Equal("Audio not found.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_ReturnsFailedResult_WhenStreetcodeDoesNotExist()
     {
         var presumablyExistingStreetcodeId = 1;
@@ -206,12 +332,18 @@ public class UpdateStreetcodeHandlerTests
         _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
     }
 
-    private static UpdateStreetcodeDTO UpdateStreetcodeBuildDto(StreetcodeType streetcodeType, int? animationImageId, int? audioId)
+    private static UpdateStreetcodeDTO UpdateStreetcodeBuildDto(
+        StreetcodeType streetcodeType,
+        int? animationImageId,
+        int? audioId,
+        int? blackAndWhiteImageId = null,
+        int? relatedFigureImageId = null)
     {
         return new UpdateStreetcodeDTO
         {
             Index = 1,
             Title = "Test Streetcode",
+            ShortDescription = "Test short description.",
             StreetcodeType = streetcodeType,
             FirstName = streetcodeType == StreetcodeType.Person ? "John" : null,
             LastName = streetcodeType == StreetcodeType.Person ? "Doe" : null,
@@ -222,8 +354,8 @@ public class UpdateStreetcodeHandlerTests
             TransliterationUrl = "test-streetcode",
             Tags = new List<StreetcodeTagDTO>(),
             AnimationImageId = animationImageId,
-            BlackAndWhiteImageId = null,
-            RelatedFigureImageId = null,
+            BlackAndWhiteImageId = blackAndWhiteImageId,
+            RelatedFigureImageId = relatedFigureImageId,
             AudioId = audioId,
         };
     }

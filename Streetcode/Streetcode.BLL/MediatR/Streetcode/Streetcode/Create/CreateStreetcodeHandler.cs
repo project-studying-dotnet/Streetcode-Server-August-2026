@@ -37,11 +37,28 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
 
                 var tagIds = dto.Tags?.Select(t => t.Id).ToList() ?? new List<int>();
                 var existingTags = await _repositoryWrapper.TagRepository.GetAllAsync(t => tagIds.Contains(t.Id));
+
+                var missingTagIds = tagIds.Except(existingTags.Select(t => t.Id)).ToList();
+                if (missingTagIds.Any())
+                {
+                    var errorMsg = $"Tag(s) not found: {string.Join(", ", missingTagIds)}";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
                 entity.Tags.AddRange(existingTags);
 
                 var animationImage = dto.AnimationImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.AnimationImageId.Value)
                     : null;
+
+                if (dto.AnimationImageId.HasValue && animationImage is null)
+                {
+                    const string errorMsg = "Animation image not found.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
                 if (animationImage is not null && animationImage.MimeType != "image/gif")
                 {
                     const string errorMsg = "Animation image must be a GIF file.";
@@ -57,6 +74,14 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var blackAndWhiteImage = dto.BlackAndWhiteImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.BlackAndWhiteImageId.Value)
                     : null;
+
+                if (dto.BlackAndWhiteImageId.HasValue && blackAndWhiteImage is null)
+                {
+                    const string errorMsg = "Black and white image not found.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
                 if (blackAndWhiteImage is not null)
                 {
                     _repositoryWrapper.ImageRepository.Attach(blackAndWhiteImage);
@@ -65,6 +90,14 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var relatedImage = dto.RelatedFigureImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.RelatedFigureImageId.Value)
                     : null;
+
+                if (dto.RelatedFigureImageId.HasValue && relatedImage is null)
+                {
+                    const string errorMsg = "Related figure image not found.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
                 if (relatedImage is not null)
                 {
                     _repositoryWrapper.ImageRepository.Attach(relatedImage);
@@ -89,7 +122,15 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 if (dto.AudioId.HasValue)
                 {
                     var audio = await _repositoryWrapper.AudioRepository.GetFirstOrDefaultAsync(a => a.Id == dto.AudioId.Value);
-                    if (audio is not null && audio.MimeType != "audio/mpeg")
+
+                    if (audio is null)
+                    {
+                        const string errorMsg = "Audio not found.";
+                        _logger.LogError(request, errorMsg);
+                        return Result.Fail(errorMsg);
+                    }
+
+                    if (audio.MimeType != "audio/mpeg")
                     {
                         const string errorMsg = "Audio must be an MP3 file.";
                         _logger.LogError(request, errorMsg);
@@ -114,7 +155,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
             {
                 var detailedMessage = ex.InnerException?.Message ?? ex.Message;
                 _logger.LogError(request, detailedMessage);
-                return Result.Fail(detailedMessage);
+                return Result.Fail("An error occurred while saving the streetcode during creation.");
             }
         }
     }
