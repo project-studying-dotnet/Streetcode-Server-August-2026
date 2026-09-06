@@ -1,7 +1,7 @@
 ﻿using FluentValidation;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Create;
-using Streetcode.BLL.MediatR.Streetcode.Streetcode.DeleteSoft;
 using Streetcode.BLL.MediatR.Validators;
+using Streetcode.DAL.Entities.Streetcode;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -14,7 +14,7 @@ public sealed class CreateStreetcodeCommandValidator
             .InclusiveBetween(1, 9999);
 
         RuleFor(command => command.newStreetcode.Title)
-            .MustNotExceedLength(100, "Title");
+            .MustNotExceedLength(StreetcodeContent.TitleMaxLength, "Title");
 
         RuleFor(command => command.newStreetcode.FirstName)
             .MustNotExceedLength(50, "FirstName");
@@ -22,8 +22,8 @@ public sealed class CreateStreetcodeCommandValidator
         RuleFor(command => command.newStreetcode.LastName)
             .MustNotExceedLength(50, "LastName");
 
-        RuleFor(command => command.newStreetcode.Teaser)
-            .MustNotExceedLength(33, "Teaser");
+        RuleFor(command => command.newStreetcode.ShortDescription)
+            .MustNotExceedLength(StreetcodeContent.ShortDescriptionMaxLength, "ShortDescription");
 
         RuleFor(command => command.newStreetcode.TransliterationUrl)
             .MustNotExceedLength(100, "TransliterationUrl")
