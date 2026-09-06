@@ -18,20 +18,8 @@ public sealed class IdentityWebApplicationFactory
     private const string IdentitySeedEnabledEnvironmentVariable =
         "STREETCODE_IDENTITY_IdentitySeed__Enabled";
 
-    private const string IdentitySeedAdminEmailEnvironmentVariable =
-        "STREETCODE_IDENTITY_IdentitySeed__AdminEmail";
-
-    private const string IdentitySeedAdminPasswordEnvironmentVariable =
-        "STREETCODE_IDENTITY_IdentitySeed__AdminPassword";
-
     private const string TestJwtSecret =
         "Integration_Test_Jwt_Secret_Key_At_Least_32_Bytes!";
-
-    private const string TestAdminEmail =
-        "integration-admin@example.com";
-
-    private const string TestAdminPassword =
-        "IntegrationAdminPassword123!";
 
     private static readonly object EnvironmentVariableLock = new();
 
@@ -55,12 +43,6 @@ public sealed class IdentityWebApplicationFactory
             var previousSeedEnabled = Environment.GetEnvironmentVariable(
                 IdentitySeedEnabledEnvironmentVariable);
 
-            var previousAdminEmail = Environment.GetEnvironmentVariable(
-                IdentitySeedAdminEmailEnvironmentVariable);
-
-            var previousAdminPassword = Environment.GetEnvironmentVariable(
-                IdentitySeedAdminPasswordEnvironmentVariable);
-
             try
             {
                 Environment.SetEnvironmentVariable(
@@ -73,15 +55,7 @@ public sealed class IdentityWebApplicationFactory
 
                 Environment.SetEnvironmentVariable(
                     IdentitySeedEnabledEnvironmentVariable,
-                    bool.TrueString);
-
-                Environment.SetEnvironmentVariable(
-                    IdentitySeedAdminEmailEnvironmentVariable,
-                    TestAdminEmail);
-
-                Environment.SetEnvironmentVariable(
-                    IdentitySeedAdminPasswordEnvironmentVariable,
-                    TestAdminPassword);
+                    bool.FalseString);
 
                 return base.CreateClient();
             }
@@ -98,14 +72,6 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     IdentitySeedEnabledEnvironmentVariable,
                     previousSeedEnabled);
-
-                Environment.SetEnvironmentVariable(
-                    IdentitySeedAdminEmailEnvironmentVariable,
-                    previousAdminEmail);
-
-                Environment.SetEnvironmentVariable(
-                    IdentitySeedAdminPasswordEnvironmentVariable,
-                    previousAdminPassword);
             }
         }
     }

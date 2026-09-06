@@ -33,12 +33,6 @@ public sealed class IdentityDataSeeder
         cancellationToken.ThrowIfCancellationRequested();
         var seedOptions = _options.Value;
 
-        if (!seedOptions.Enabled)
-        {
-            _logger.LogInformation("Identity data seeding is disabled");
-            return;
-        }
-
         string[] roleNames =
         [
             RoleNames.User,
@@ -76,6 +70,13 @@ public sealed class IdentityDataSeeder
             _logger.LogInformation(
                 "Identity role {RoleName} was created",
                 roleName);
+        }
+
+        if (!seedOptions.Enabled)
+        {
+            _logger.LogInformation(
+                "Initial administrator seeding is disabled");
+            return;
         }
 
         cancellationToken.ThrowIfCancellationRequested();

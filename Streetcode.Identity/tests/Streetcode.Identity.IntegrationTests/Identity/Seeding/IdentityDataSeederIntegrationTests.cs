@@ -152,7 +152,7 @@ public sealed class IdentityDataSeederIntegrationTests
     }
 
     [Fact]
-    public async Task SeedAsync_WhenDisabled_ShouldNotChangeIdentityData()
+    public async Task SeedAsync_WhenAdminSeedingIsDisabled_ShouldCreateRolesWithoutAdmin()
     {
         var adminEmail = $"disabled-seed-{Guid.NewGuid():N}@example.com";
         const string adminPassword = "ValidAdminPassword123!";
@@ -173,18 +173,23 @@ public sealed class IdentityDataSeederIntegrationTests
         var userManager = scope.ServiceProvider
             .GetRequiredService<UserManager<ApplicationUser>>();
 
+        var roleManager = scope.ServiceProvider
+            .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
         var usersBefore = await dbContext.Users.CountAsync();
-        var rolesBefore = await dbContext.Roles.CountAsync();
+        var outboxMessagesBefore = await dbContext.OutboxMessages.CountAsync();
 
         await seeder.SeedAsync();
 
         var usersAfter = await dbContext.Users.CountAsync();
-        var rolesAfter = await dbContext.Roles.CountAsync();
+        var outboxMessagesAfter = await dbContext.OutboxMessages.CountAsync();
         var admin = await userManager.FindByEmailAsync(adminEmail);
 
         Assert.Equal(usersBefore, usersAfter);
-        Assert.Equal(rolesBefore, rolesAfter);
+        Assert.Equal(outboxMessagesBefore, outboxMessagesAfter);
         Assert.Null(admin);
+        Assert.True(await roleManager.RoleExistsAsync(RoleNames.User));
+        Assert.True(await roleManager.RoleExistsAsync(RoleNames.Admin));
     }
 
     private ServiceProvider CreateServiceProvider(
