@@ -51,7 +51,7 @@ public sealed class EmailDeliveryTests
     public void Constructor_WithDefaultRequestedAtUtc_ThrowsArgumentException()
     {
         var exception = Assert.Throws<ArgumentException>(() =>
-            CreateDelivery(requestedAtUtc: default));
+            CreateDelivery(requestedAtUtc: default(DateTimeOffset)));
 
         Assert.Equal("requestedAtUtc", exception.ParamName);
     }
@@ -74,12 +74,20 @@ public sealed class EmailDeliveryTests
         Assert.Equal("requestedAtUtc", exception.ParamName);
     }
 
+    [Fact]
+    public void Constructor_WithNullTemplate_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(() =>
+            CreateDelivery(template: null!));
+
+        Assert.Equal("template", exception.ParamName);
+    }
+
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_WithInvalidTemplate_ThrowsArgumentException(
-        string? template)
+    public void Constructor_WithEmptyTemplate_ThrowsArgumentException(
+        string template)
     {
         var exception = Assert.Throws<ArgumentException>(() =>
             CreateDelivery(template: template!));
