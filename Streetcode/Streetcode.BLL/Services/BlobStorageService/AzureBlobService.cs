@@ -14,7 +14,7 @@ namespace Streetcode.BLL.Services.BlobStorageService;
 public class AzureBlobService : IBlobService
 {
     private readonly BlobContainerClient _containerClient;
-    private readonly IRepositoryWrapper? _repositoryWrapper;
+    private readonly IRepositoryWrapper _repositoryWrapper;
 
     public AzureBlobService(
         BlobContainerClient blobServiceClient,
@@ -22,7 +22,6 @@ public class AzureBlobService : IBlobService
     {
         _containerClient = blobServiceClient;
         _repositoryWrapper = repositoryWrapper;
-        _containerClient.CreateIfNotExists(PublicAccessType.None);
     }
 
     public void DeleteFileInStorage(string name)
@@ -88,7 +87,13 @@ public class AzureBlobService : IBlobService
 
     public async Task CleanBlobStorage()
     {
-        var blobNames = _containerClient.GetBlobs().Select(b => b.Name).ToList();
+        var safetyThreshold = DateTimeOffset.UtcNow.AddHours(-1);
+
+        var blobsPageable = _containerClient.GetBlobs(BlobTraits.None, BlobStates.None, null, default);
+        var blobNames = (blobsPageable ?? Enumerable.Empty<BlobItem>())
+            .Where(b => b.Properties == null || b.Properties.LastModified == null || b.Properties.LastModified < safetyThreshold)
+            .Select(b => b.Name)
+            .ToList();
 
         var existingImages = await _repositoryWrapper.ImageRepository.GetAllAsync();
         var existingAudios = await _repositoryWrapper.AudioRepository.GetAllAsync();
