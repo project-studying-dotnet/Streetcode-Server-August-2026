@@ -14,14 +14,15 @@ namespace Streetcode.BLL.Services.BlobStorageService;
 public class AzureBlobService : IBlobService
 {
     private readonly BlobContainerClient _containerClient;
-    private readonly IRepositoryWrapper _repositoryWrapper;
+    private readonly IRepositoryWrapper? _repositoryWrapper;
 
     public AzureBlobService(
         BlobContainerClient blobServiceClient,
-        IRepositoryWrapper repositoryWrapper)
+        IRepositoryWrapper? repositoryWrapper = null)
     {
         _containerClient = blobServiceClient;
         _repositoryWrapper = repositoryWrapper;
+        _containerClient.CreateIfNotExists(PublicAccessType.None);
     }
 
     public void DeleteFileInStorage(string name)
@@ -50,11 +51,7 @@ public class AzureBlobService : IBlobService
         var hashBlobStorageName = BlobHelper.GetHashedFileName(name);
         byte[] imageBytes = Convert.FromBase64String(base64);
 
-        extension = BlobHelper.NormalizeExtension(extension);
-
-        var blobName = $"{hashBlobStorageName}.{extension}";
-
-        BlobClient client = _containerClient.GetBlobClient(blobName);
+        BlobClient client = _containerClient.GetBlobClient($"{hashBlobStorageName}.{extension}");
 
         var options = new BlobUploadOptions
         {
@@ -63,14 +60,12 @@ public class AzureBlobService : IBlobService
 
         client.Upload(new MemoryStream(imageBytes), options);
 
-        return blobName;
+        return hashBlobStorageName;
     }
 
     public void SaveFileInStorageBase64(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
-
-        extension = BlobHelper.NormalizeExtension(extension);
 
         BlobClient client = _containerClient.GetBlobClient($"{name}.{extension}");
 
@@ -84,33 +79,26 @@ public class AzureBlobService : IBlobService
 
     public string UpdateFileInStorage(string previousBlobName, string base64Format, string newBlobName, string extension)
     {
-        string blobName = SaveFileInStorage(base64Format, newBlobName, extension);
-
         DeleteFileInStorage(previousBlobName);
 
-        return blobName;
+        string hashBlobStorageName = SaveFileInStorage(base64Format, newBlobName, extension);
+
+        return hashBlobStorageName;
     }
 
     public async Task CleanBlobStorage()
     {
-        var safetyThreshold = DateTimeOffset.UtcNow.AddHours(-1);
-
-        var blobsPageable = _containerClient.GetBlobs(BlobTraits.None, BlobStates.None, null, default);
-        var blobNames = (blobsPageable ?? Enumerable.Empty<BlobItem>())
-            .Where(b => b.Properties == null || b.Properties.LastModified == null || b.Properties.LastModified < safetyThreshold)
-            .Select(b => b.Name)
-            .ToList();
+        var blobNames = _containerClient.GetBlobs().Select(b => b.Name).ToList();
 
         var existingImages = await _repositoryWrapper.ImageRepository.GetAllAsync();
         var existingAudios = await _repositoryWrapper.AudioRepository.GetAllAsync();
 
-        var existingMedia = new HashSet<string>(
-            existingImages.Where(img => img.BlobName != null).Select(img => img.BlobName!)
-                .Concat(existingAudios.Where(a => a.BlobName != null).Select(a => a.BlobName!)),
-            StringComparer.OrdinalIgnoreCase);
+        List<string> existingMedia = new();
 
-        var filesToRemove = blobNames.Where(name => !existingMedia.Contains(name)).ToList();
+        existingMedia.AddRange(existingImages.Select(img => img.BlobName));
+        existingMedia.AddRange(existingAudios.Select(a => a.BlobName));
 
+        var filesToRemove = blobNames.Except(existingMedia).ToList();
         foreach (var file in filesToRemove)
         {
             DeleteFileInStorage(file);
@@ -133,12 +121,11 @@ public class AzureBlobService : IBlobService
         return downloadResult.Content.ToArray();
     }
 
-    private static string GetContentType(string extension) => extension switch
+    private static string GetContentType(string extension) => extension.ToLower() switch
     {
         "png" => "image/png",
         "jpg" or "jpeg" => "image/jpeg",
         "mp3" => "audio/mpeg",
-        "gif" => "image/gif",
         _ => "application/octet-stream",
     };
 }
