@@ -1,16 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Azure.Storage.Blobs;
+using FluentValidation;
 using Hangfire;
 using MediatR;
-using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
-using Streetcode.WebApi.ExceptionHandlers;
-using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
@@ -18,6 +18,7 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.BLL.Services.Email;
 using Streetcode.BLL.Services.Instagram;
@@ -28,6 +29,7 @@ using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
+using Streetcode.WebApi.ExceptionHandlers;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -39,7 +41,7 @@ public static class ServiceCollectionExtensions
     }
 
     [ExcludeFromCodeCoverage(Justification = "DI composition-root wiring; not meaningfully unit-testable")]
-    public static void AddCustomServices(this IServiceCollection services)
+    public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddRepositoryServices();
         services.AddFeatureManagement();
@@ -53,7 +55,24 @@ public static class ServiceCollectionExtensions
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        services.AddScoped<IBlobService, BlobService>();
+        var blobProvider = configuration.GetValue<string>("Blob:Provider");
+
+        if (string.Equals(blobProvider, "Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddSingleton(sp =>
+            {
+                var azureOptions = sp.GetRequiredService<IOptions<BlobEnvironmentVariables>>().Value.Azure;
+
+                return new BlobContainerClient(azureOptions.ConnectionString, azureOptions.ContainerName);
+            });
+
+            services.AddScoped<IBlobService, AzureBlobService>();
+        }
+        else
+        {
+            services.AddScoped<IBlobService, LocalBlobService>();
+        }
+
         services.AddScoped<ILoggerService, LoggerService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPaymentService, PaymentService>();
