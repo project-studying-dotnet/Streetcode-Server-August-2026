@@ -5,6 +5,7 @@ using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
 using DotNetEnv;
+using Streetcode.BLL.Interfaces.BlobStorage;
 
 public class Program
 {
@@ -16,7 +17,7 @@ public class Program
 
         builder.Services.AddApplicationServices(builder.Configuration);
         builder.Services.AddSwaggerServices();
-        builder.Services.AddCustomServices();
+        builder.Services.AddCustomServices(builder.Configuration);
         builder.Services.ConfigureBlob(builder);
         builder.Services.ConfigurePayment(builder);
         builder.Services.ConfigureInstagram(builder);
@@ -53,7 +54,7 @@ public class Program
             wp => wp.ParseZipFileFromWebAsync(), TimeSpan.FromMinutes(1));
             RecurringJob.AddOrUpdate<WebParsingUtils>(
                 wp => wp.ParseZipFileFromWebAsync(), Cron.Monthly);
-            RecurringJob.AddOrUpdate<BlobService>(
+            RecurringJob.AddOrUpdate<IBlobService>(
                 b => b.CleanBlobStorage(), Cron.Monthly);
         }
 
