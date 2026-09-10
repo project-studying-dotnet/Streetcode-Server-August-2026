@@ -78,10 +78,15 @@ public class StreetcodeDbContextModelTests
         var textProperty = entityType.FindProperty(nameof(Comment.Text));
         var updatedAtProperty = entityType.FindProperty(nameof(Comment.UpdatedAt));
 
+        var parentCommentIdProperty = entityType.FindProperty(nameof(Comment.ParentCommentId));
+
         Assert.NotNull(textProperty);
         Assert.False(textProperty.IsNullable);
+        Assert.Equal(Comment.TextMaxLength, textProperty.GetMaxLength());
         Assert.NotNull(updatedAtProperty);
         Assert.True(updatedAtProperty.IsNullable);
+        Assert.NotNull(parentCommentIdProperty);
+        Assert.True(parentCommentIdProperty.IsNullable);
 
         var streetcodeForeignKey = entityType.GetForeignKeys().Single(
             foreignKey => foreignKey.Properties.Any(
@@ -89,5 +94,12 @@ public class StreetcodeDbContextModelTests
 
         Assert.Equal(typeof(StreetcodeContent), streetcodeForeignKey.PrincipalEntityType.ClrType);
         Assert.Equal(DeleteBehavior.Cascade, streetcodeForeignKey.DeleteBehavior);
+
+        var parentCommentForeignKey = entityType.GetForeignKeys().Single(
+            foreignKey => foreignKey.Properties.Any(
+                property => property.Name == nameof(Comment.ParentCommentId)));
+
+        Assert.Equal(typeof(Comment), parentCommentForeignKey.PrincipalEntityType.ClrType);
+        Assert.Equal(DeleteBehavior.Restrict, parentCommentForeignKey.DeleteBehavior);
     }
 }

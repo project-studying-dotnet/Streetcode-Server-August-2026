@@ -10,10 +10,16 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
     {
         builder.ToTable("comments", "streetcode");
         builder.HasKey(comment => comment.Id);
-        builder.Property(comment => comment.Text).IsRequired();
+        builder.Property(comment => comment.Text)
+            .IsRequired()
+            .HasMaxLength(Comment.TextMaxLength);
         builder.HasOne(comment => comment.Streetcode)
             .WithMany()
             .HasForeignKey(comment => comment.StreetcodeId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(comment => comment.ParentComment)
+            .WithMany(comment => comment.Replies)
+            .HasForeignKey(comment => comment.ParentCommentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

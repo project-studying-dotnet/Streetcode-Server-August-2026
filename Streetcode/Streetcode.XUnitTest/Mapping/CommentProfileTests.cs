@@ -23,6 +23,7 @@ namespace Streetcode.XUnitTest.Mapping
             {
                 Id = 42,
                 StreetcodeId = 7,
+                ParentCommentId = 15,
                 AuthorId = Guid.Parse("b1ba3183-45cd-4988-a14d-0a9521e1df65"),
                 Text = "A mapped comment.",
                 CreatedAt = createdAt,
@@ -33,6 +34,7 @@ namespace Streetcode.XUnitTest.Mapping
 
             Assert.Equal(comment.Id, result.Id);
             Assert.Equal(comment.StreetcodeId, result.StreetcodeId);
+            Assert.Equal(comment.ParentCommentId, result.ParentCommentId);
             Assert.Equal(comment.AuthorId, result.AuthorId);
             Assert.Equal(comment.Text, result.Text);
             Assert.Equal(comment.CreatedAt, result.CreatedAt);

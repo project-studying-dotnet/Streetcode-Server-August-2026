@@ -6,6 +6,8 @@ public class CommentDto
 
     public int StreetcodeId { get; set; }
 
+    public int? ParentCommentId { get; set; }
+
     public Guid AuthorId { get; set; }
 
     public string Text { get; set; } = null!;
