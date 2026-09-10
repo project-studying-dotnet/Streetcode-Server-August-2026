@@ -30,6 +30,7 @@ public class CreateStreetcodeHandlerTests
     private readonly Mock<IStreetcodeImageRepository> _streetcodeImageRepositoryMock = new();
     private readonly Mock<IImageRepository> _imageRepositoryMock = new();
     private readonly Mock<IAudioRepository> _audioRepositoryMock = new();
+    private readonly Mock<IStreetcodeTagIndexRepository> _streetcodeTagIndexRepositoryMock = new();
     private readonly CreateStreetcodeHandler _handler;
 
     public CreateStreetcodeHandlerTests()
@@ -67,6 +68,14 @@ public class CreateStreetcodeHandlerTests
         _repositoryMock
             .Setup(wrapper => wrapper.AudioRepository)
             .Returns(_audioRepositoryMock.Object);
+
+        _repositoryMock
+            .Setup(wrapper => wrapper.StreetcodeTagIndexRepository)
+            .Returns(_streetcodeTagIndexRepositoryMock.Object);
+
+        _streetcodeTagIndexRepositoryMock
+            .Setup(repo => repo.CreateRangeAsync(It.IsAny<IEnumerable<StreetcodeTagIndex>>()))
+            .Returns(Task.CompletedTask);
 
         _mapperMock
             .Setup(m => m.Map<StreetcodeDTO>(It.IsAny<StreetcodeEntity>()))
@@ -214,6 +223,32 @@ public class CreateStreetcodeHandlerTests
         Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
         Assert.Equal("Audio not found.", result.Errors.First().Message);
         _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTagsProvided_ShouldPersistIsVisibleAndIndexFromDto()
+    {
+        var tag = new Tag { Id = 5, Title = "Existing" };
+        _tagRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<Tag, bool>>>(),
+                It.IsAny<Func<IQueryable<Tag>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Tag, object>>>()))
+            .ReturnsAsync(new List<Tag> { tag });
+
+        var createStreetcodeDTO = CreateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        createStreetcodeDTO.Tags = new List<StreetcodeTagDTO>
+        {
+            new StreetcodeTagDTO { Id = 5, Title = "Existing", IsVisible = true, Index = 3 },
+        };
+
+        var command = new CreateStreetcodeCommand(createStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.CreateRangeAsync(It.Is<IEnumerable<StreetcodeTagIndex>>(
+                items => items.Any(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 3))),
+            Times.Once);
     }
 
     private static CreateStreetcodeDTO CreateStreetcodeBuildDto(
