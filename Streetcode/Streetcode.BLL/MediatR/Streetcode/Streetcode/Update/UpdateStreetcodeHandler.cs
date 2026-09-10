@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentResults;
 using MediatR;
+using Streetcode.BLL.DTO.AdditionalContent.Tag;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.Interfaces.Logging;
@@ -65,8 +66,37 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                     return Result.Fail(errorMsg);
                 }
 
-                streetcode.Tags.Clear();
-                streetcode.Tags.AddRange(existingTags);
+                var existingTagIndexes = (await _repositoryWrapper.StreetcodeTagIndexRepository
+                    .GetAllAsync(ti => ti.StreetcodeId == streetcode.Id)).ToList();
+
+                var tagIndexesToRemove = existingTagIndexes
+                    .Where(ti => !tagIds.Contains(ti.TagId))
+                    .ToList();
+
+                _repositoryWrapper.StreetcodeTagIndexRepository.DeleteRange(tagIndexesToRemove);
+
+                foreach (var tagDto in dto.Tags ?? Enumerable.Empty<StreetcodeTagDTO>())
+                {
+                    var existingTagIndex = existingTagIndexes
+                        .FirstOrDefault(ti => ti.TagId == tagDto.Id);
+
+                    if (existingTagIndex is not null)
+                    {
+                        existingTagIndex.IsVisible = tagDto.IsVisible;
+                        existingTagIndex.Index = tagDto.Index;
+                        _repositoryWrapper.StreetcodeTagIndexRepository.Update(existingTagIndex);
+                    }
+                    else
+                    {
+                        _repositoryWrapper.StreetcodeTagIndexRepository.Create(new StreetcodeTagIndex
+                        {
+                            StreetcodeId = streetcode.Id,
+                            TagId = tagDto.Id,
+                            IsVisible = tagDto.IsVisible,
+                            Index = tagDto.Index,
+                        });
+                    }
+                }
 
                 _repositoryWrapper.StreetcodeRepository.Update(streetcode);
 

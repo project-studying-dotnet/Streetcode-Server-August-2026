@@ -30,6 +30,7 @@ public class UpdateStreetcodeHandlerTests
     private readonly Mock<IStreetcodeImageRepository> _streetcodeImageRepositoryMock = new();
     private readonly Mock<IImageRepository> _imageRepositoryMock = new();
     private readonly Mock<IAudioRepository> _audioRepositoryMock = new();
+    private readonly Mock<IStreetcodeTagIndexRepository> _streetcodeTagIndexRepositoryMock = new();
     private readonly UpdateStreetcodeHandler _handler;
 
     public UpdateStreetcodeHandlerTests()
@@ -67,6 +68,16 @@ public class UpdateStreetcodeHandlerTests
         _repositoryMock
             .Setup(wrapper => wrapper.AudioRepository)
             .Returns(_audioRepositoryMock.Object);
+
+        _repositoryMock
+            .Setup(wrapper => wrapper.StreetcodeTagIndexRepository)
+            .Returns(_streetcodeTagIndexRepositoryMock.Object);
+
+        _streetcodeTagIndexRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeTagIndex, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeTagIndex>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeTagIndex, object>>>()))
+            .ReturnsAsync(new List<StreetcodeTagIndex>());
 
         _mapperMock
             .Setup(m => m.Map<StreetcodeDTO>(It.IsAny<StreetcodeEntity>()))
@@ -330,6 +341,97 @@ public class UpdateStreetcodeHandlerTests
         Assert.False(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
         Assert.Equal("Streetcode type cannot be changed after creation.", result.Errors.First().Message);
         _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTagIsAlreadyLinked_ShouldUpdateItInsteadOfDuplicating()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        _tagRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<Tag, bool>>>(),
+                It.IsAny<Func<IQueryable<Tag>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Tag, object>>>()))
+            .ReturnsAsync(new List<Tag> { new Tag { Id = 5, Title = "Existing" } });
+
+        var alreadyLinkedTagIndex = new StreetcodeTagIndex
+        {
+            StreetcodeId = existingStreetcodeId,
+            TagId = 5,
+            IsVisible = false,
+            Index = 0,
+        };
+
+        _streetcodeTagIndexRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeTagIndex, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeTagIndex>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeTagIndex, object>>>()))
+            .ReturnsAsync(new List<StreetcodeTagIndex> { alreadyLinkedTagIndex });
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        updateStreetcodeDTO.Tags = new List<StreetcodeTagDTO>
+        {
+            new StreetcodeTagDTO { Id = 5, Title = "Existing", IsVisible = true, Index = 2 },
+        };
+
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.Create(It.IsAny<StreetcodeTagIndex>()),
+            Times.Never);
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.Update(It.Is<StreetcodeTagIndex>(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 2)),
+            Times.Once);
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.DeleteRange(It.Is<IEnumerable<StreetcodeTagIndex>>(items => !items.Any())),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTagIsRemovedFromRequest_ShouldDeleteItsIndex()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        var tagIndexToRemove = new StreetcodeTagIndex
+        {
+            StreetcodeId = existingStreetcodeId,
+            TagId = 7,
+            IsVisible = true,
+            Index = 0,
+        };
+
+        _streetcodeTagIndexRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeTagIndex, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeTagIndex>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeTagIndex, object>>>()))
+            .ReturnsAsync(new List<StreetcodeTagIndex> { tagIndexToRemove });
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        updateStreetcodeDTO.Tags = new List<StreetcodeTagDTO>();
+
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.DeleteRange(It.Is<IEnumerable<StreetcodeTagIndex>>(items => items.Contains(tagIndexToRemove))),
+            Times.Once);
     }
 
     private static UpdateStreetcodeDTO UpdateStreetcodeBuildDto(

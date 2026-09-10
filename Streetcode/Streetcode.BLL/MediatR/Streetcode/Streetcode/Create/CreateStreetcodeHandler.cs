@@ -3,6 +3,7 @@ using FluentResults;
 using MediatR;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.DAL.Entities.AdditionalContent;
 using Streetcode.DAL.Entities.Media.Images;
 using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.DAL.Entities.Streetcode.Types;
@@ -46,7 +47,15 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                     return Result.Fail(errorMsg);
                 }
 
-                entity.Tags.AddRange(existingTags);
+                var tagIndexesToAdd = dto.Tags?
+                    .Select(tagDto => new StreetcodeTagIndex
+                    {
+                        TagId = tagDto.Id,
+                        Streetcode = entity,
+                        IsVisible = tagDto.IsVisible,
+                        Index = tagDto.Index,
+                    })
+                    .ToList() ?? new List<StreetcodeTagIndex>();
 
                 var animationImage = dto.AnimationImageId.HasValue
                     ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.AnimationImageId.Value)
@@ -140,6 +149,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
 
                 await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);
                 await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);
+                await _repositoryWrapper.StreetcodeTagIndexRepository.CreateRangeAsync(tagIndexesToAdd);
                 var success = await _repositoryWrapper.SaveChangesAsync() > 0;
 
                 if (!success)
