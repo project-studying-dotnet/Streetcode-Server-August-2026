@@ -100,60 +100,41 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
 
                 _repositoryWrapper.StreetcodeRepository.Update(streetcode);
 
-                var animationImage = dto.AnimationImageId.HasValue
-                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.AnimationImageId.Value)
-                    : null;
+                var animationImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
+                    _repositoryWrapper, dto.AnimationImageId, "Animation", "image/gif", "GIF");
 
-                if (dto.AnimationImageId.HasValue && animationImage is null)
+                if (animationImageResult.IsFailed)
                 {
-                    const string errorMsg = "Animation image not found.";
+                    var errorMsg = animationImageResult.Errors.First().Message;
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(errorMsg);
                 }
 
-                if (animationImage is not null && animationImage.MimeType != "image/gif")
-                {
-                    const string gifErrorMsg = "Animation image must be a GIF file.";
-                    _logger.LogError(request, gifErrorMsg);
-                    return Result.Fail(gifErrorMsg);
-                }
+                var animationImage = animationImageResult.Value;
 
-                if (animationImage is not null)
-                {
-                    _repositoryWrapper.ImageRepository.Attach(animationImage);
-                }
+                var blackAndWhiteImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
+                    _repositoryWrapper, dto.BlackAndWhiteImageId, "Black and white");
 
-                var blackAndWhiteImage = dto.BlackAndWhiteImageId.HasValue
-                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.BlackAndWhiteImageId.Value)
-                    : null;
-
-                if (dto.BlackAndWhiteImageId.HasValue && blackAndWhiteImage is null)
+                if (blackAndWhiteImageResult.IsFailed)
                 {
-                    const string errorMsg = "Black and white image not found.";
+                    var errorMsg = blackAndWhiteImageResult.Errors.First().Message;
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(errorMsg);
                 }
 
-                if (blackAndWhiteImage is not null)
-                {
-                    _repositoryWrapper.ImageRepository.Attach(blackAndWhiteImage);
-                }
+                var blackAndWhiteImage = blackAndWhiteImageResult.Value;
 
-                var relatedImage = dto.RelatedFigureImageId.HasValue
-                    ? await _repositoryWrapper.ImageRepository.GetFirstOrDefaultAsync(i => i.Id == dto.RelatedFigureImageId.Value)
-                    : null;
+                var relatedImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
+                    _repositoryWrapper, dto.RelatedFigureImageId, "Related figure");
 
-                if (dto.RelatedFigureImageId.HasValue && relatedImage is null)
+                if (relatedImageResult.IsFailed)
                 {
-                    const string errorMsg = "Related figure image not found.";
+                    var errorMsg = relatedImageResult.Errors.First().Message;
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(errorMsg);
                 }
 
-                if (relatedImage is not null)
-                {
-                    _repositoryWrapper.ImageRepository.Attach(relatedImage);
-                }
+                var relatedImage = relatedImageResult.Value;
 
                 var existingRoleImages = (await _repositoryWrapper.StreetcodeImageRepository
                     .GetAllAsync(si => si.StreetcodeId == streetcode.Id && si.ImageAssigment != null)).ToList();
@@ -181,23 +162,13 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                     imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = streetcode, ImageAssigment = ImageAssigment.Relatedfigure });
                 }
 
-                if (dto.AudioId.HasValue)
+                var audioResult = await StreetcodeRoleAssetResolver.ResolveAudioAsync(_repositoryWrapper, dto.AudioId);
+
+                if (audioResult.IsFailed)
                 {
-                    var audio = await _repositoryWrapper.AudioRepository.GetFirstOrDefaultAsync(a => a.Id == dto.AudioId.Value);
-
-                    if (audio is null)
-                    {
-                        const string errorMsg = "Audio not found.";
-                        _logger.LogError(request, errorMsg);
-                        return Result.Fail(errorMsg);
-                    }
-
-                    if (audio.MimeType != "audio/mpeg")
-                    {
-                        const string errorMsg = "Audio must be an MP3 file.";
-                        _logger.LogError(request, errorMsg);
-                        return Result.Fail(errorMsg);
-                    }
+                    var errorMsg = audioResult.Errors.First().Message;
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
                 }
 
                 await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);
