@@ -211,7 +211,38 @@ namespace Streetcode.XUnitTest.Utils
         }
 
         [Fact]
-        public async Task SaveToponymsToDbAsync_WhenSaveFails_ShouldRollbackAndRethrow()
+        public async Task ProcessCsvFileAsync_WhenObsoleteRowIsSubstringOfCurrentRow_ShouldDeleteOnlyObsoleteRow()
+        {
+            string runtimeDirectory = CreateTemporaryDirectory();
+            string csvPath = Path.Combine(runtimeDirectory, "data.csv");
+            string housesCsvPath = Path.Combine(runtimeDirectory, "houses.csv");
+            const string obsoleteRow =
+                "obsolete-region;old;new;gromada;community;unused;street;50.5;30.5";
+            const string currentRow =
+                "prefix-obsolete-region;old;new;gromada;community;unused;street;49.5;31.5";
+            await File.WriteAllLinesAsync(csvPath, new[] { CsvHeader, obsoleteRow, currentRow });
+            await File.WriteAllLinesAsync(housesCsvPath, new[] { CsvHeader, currentRow });
+
+            var options = CreateDbContextOptions();
+
+            try
+            {
+                await using var context = new StreetcodeDbContext(options);
+                var sut = CreateWebParsingUtils(context, runtimeDirectory);
+
+                await sut.ProcessCsvFileAsync(runtimeDirectory);
+
+                var savedRows = await File.ReadAllLinesAsync(csvPath);
+                Assert.Equal(new[] { CsvHeader, currentRow }, savedRows);
+            }
+            finally
+            {
+                DeleteDirectory(runtimeDirectory);
+            }
+        }
+
+        [Fact]
+        public async Task SaveToponymsToDbAsync_WhenSaveFails_ShouldRethrowException()
         {
             string runtimeDirectory = CreateTemporaryDirectory();
             string csvPath = Path.Combine(runtimeDirectory, "data.csv");

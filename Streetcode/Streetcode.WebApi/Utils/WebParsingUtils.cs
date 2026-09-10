@@ -175,8 +175,8 @@ public class WebParsingUtils
         var alreadyParsedRowsToWrite = allLinesFromDataCsv.Distinct().ToList();
 
         var remainsToParse = forParsingRows.Skip(1).Except(alreadyParsedRows)
-            .Select(x => x.Split(';').ToList()).ToList()
             .Take(ParsingBatchSize) // TODO remove batching when global parsing is enabled
+            .Select(x => x.Split(';').ToList())
             .ToList();
 
         var toBeDeleted = alreadyParsedRows.Except(forParsingRows).ToList();
@@ -185,10 +185,10 @@ public class WebParsingUtils
         Console.WriteLine("To be deleted: " + toBeDeleted.Count);
 
         // deletes out of date data in data.csv
-        foreach (var row in toBeDeleted)
-        {
-            alreadyParsedRowsToWrite = alreadyParsedRowsToWrite.Where(x => !x.Contains(row)).ToList();
-        }
+        var rowsToDelete = toBeDeleted.ToHashSet();
+        alreadyParsedRowsToWrite = alreadyParsedRowsToWrite
+            .Where(row => !rowsToDelete.Contains(GetRowKey(row)))
+            .ToList();
 
         await File.WriteAllLinesAsync(csvPath, alreadyParsedRowsToWrite, Encoding.GetEncoding(1251));
 
@@ -385,9 +385,12 @@ public class WebParsingUtils
     /// <param name="beforeColumn">How many columns will be taken.</param>
     /// <returns>A list of distinct rows based on the first seven columns of the input list.</returns>
     private static List<string> GetDistinctRows(IEnumerable<string> rows, byte beforeColumn = 7) =>
-        rows.Select(x => string.Join(";", x.Split(';').Take(beforeColumn)))
+        rows.Select(row => GetRowKey(row, beforeColumn))
             .Distinct()
             .ToList();
+
+    private static string GetRowKey(string row, byte beforeColumn = 7) =>
+        string.Join(";", row.Split(';').Take(beforeColumn));
 
     // Following method returns name of the street optimized in such kind of way that will allow OSM Nominatim find its coordinates
     private static (string, string) OptimizeStreetname(string streetname)
