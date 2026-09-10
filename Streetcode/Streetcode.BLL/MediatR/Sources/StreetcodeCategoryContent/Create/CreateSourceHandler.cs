@@ -81,45 +81,19 @@ public sealed class CreateSourceHandler
         {
             int categoryId = source.SourceLinkCategoryId.Value;
 
-            var category = await _repositoryWrapper.SourceCategoryRepository
-                .GetFirstOrDefaultAsync(
-                    predicate: item => item.Id == categoryId);
+            var existingCategoryResult =
+                await CreateSourceWithExistingCategoryAsync(
+                    request,
+                    source,
+                    categoryId);
 
-            if (category is null)
+            if (existingCategoryResult.IsFailed)
             {
-                string errorMessage =
-                    $"Cannot find source category with id: {categoryId}";
-
-                _logger.LogError(request, errorMessage);
-
                 return Result.Fail<StreetcodeCategoryContentDTO>(
-                    new Error(errorMessage));
+                    existingCategoryResult.Errors);
             }
 
-            var existingSource = await _repositoryWrapper
-                .StreetcodeCategoryContentRepository
-                .GetFirstOrDefaultAsync(
-                    predicate: item =>
-                        item.StreetcodeId == source.StreetcodeId &&
-                        item.SourceLinkCategoryId == categoryId);
-
-            if (existingSource is not null)
-            {
-                const string errorMessage =
-                    "This source category is already added to the streetcode.";
-
-                _logger.LogError(request, errorMessage);
-
-                return Result.Fail<StreetcodeCategoryContentDTO>(
-                    new Error(errorMessage));
-            }
-
-            sourceEntity = new StreetcodeCategoryContentEntity
-            {
-                Text = source.Text,
-                StreetcodeId = source.StreetcodeId,
-                SourceLinkCategoryId = categoryId,
-            };
+            sourceEntity = existingCategoryResult.Value;
         }
 
         bool isSaved;
@@ -168,6 +142,55 @@ public sealed class CreateSourceHandler
             _mapper.Map<StreetcodeCategoryContentDTO>(sourceEntity);
 
         return Result.Ok(createdSource);
+    }
+
+    private async Task<Result<StreetcodeCategoryContentEntity>>
+        CreateSourceWithExistingCategoryAsync(
+            CreateSourceCommand request,
+            SourceCreateDTO source,
+            int categoryId)
+    {
+        var category = await _repositoryWrapper.SourceCategoryRepository
+            .GetFirstOrDefaultAsync(
+                predicate: item => item.Id == categoryId);
+
+        if (category is null)
+        {
+            string errorMessage =
+                $"Cannot find source category with id: {categoryId}";
+
+            _logger.LogError(request, errorMessage);
+
+            return Result.Fail<StreetcodeCategoryContentEntity>(
+                new Error(errorMessage));
+        }
+
+        var existingSource = await _repositoryWrapper
+            .StreetcodeCategoryContentRepository
+            .GetFirstOrDefaultAsync(
+                predicate: item =>
+                    item.StreetcodeId == source.StreetcodeId &&
+                    item.SourceLinkCategoryId == categoryId);
+
+        if (existingSource is not null)
+        {
+            const string errorMessage =
+                "This source category is already added to the streetcode.";
+
+            _logger.LogError(request, errorMessage);
+
+            return Result.Fail<StreetcodeCategoryContentEntity>(
+                new Error(errorMessage));
+        }
+
+        var sourceEntity = new StreetcodeCategoryContentEntity
+        {
+            Text = source.Text,
+            StreetcodeId = source.StreetcodeId,
+            SourceLinkCategoryId = categoryId,
+        };
+
+        return Result.Ok(sourceEntity);
     }
 
     private async Task<Result<NewCategorySourceResult>>
