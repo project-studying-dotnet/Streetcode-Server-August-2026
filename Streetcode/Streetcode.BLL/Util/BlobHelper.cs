@@ -24,4 +24,3 @@ public static class BlobHelper
         return Convert.ToBase64String(result).Replace('/', '_');
     }
 }
-
