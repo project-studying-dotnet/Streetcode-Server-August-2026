@@ -17,6 +17,10 @@ public sealed class UpdateStreetcodeCommandValidator
         RuleFor(command => command.updatedStreetcode.Index)
             .InclusiveBetween(1, 9999);
 
+        RuleFor(command => command.updatedStreetcode.StreetcodeType)
+            .NotNull()
+            .WithMessage("StreetcodeType is required.");
+
         RuleFor(command => command.updatedStreetcode.Title)
             .NotEmpty()
             .WithMessage("Title is required.")
