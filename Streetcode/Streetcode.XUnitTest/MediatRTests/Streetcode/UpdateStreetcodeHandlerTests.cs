@@ -434,6 +434,78 @@ public class UpdateStreetcodeHandlerTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task Handle_WhenAllRoleImagesTagsAndAudioProvided_ShouldUpdateSuccessfullyWithAllOfThem()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .ReturnsAsync(existingStreetcode);
+
+        var images = new List<Image>
+        {
+            new Image { Id = 1, MimeType = "image/gif" },
+            new Image { Id = 2, MimeType = "image/jpeg" },
+            new Image { Id = 3, MimeType = "image/png" },
+        };
+
+        _imageRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<Image, bool>> predicate, Func<IQueryable<Image>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Image, object>>? include) =>
+                Task.FromResult(images.AsQueryable().FirstOrDefault(predicate)));
+
+        var audio = new Audio { Id = 4, MimeType = "audio/mpeg" };
+        _audioRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Audio, bool>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<Audio, bool>> predicate, Func<IQueryable<Audio>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Audio, object>>? include) =>
+                Task.FromResult(new[] { audio }.AsQueryable().FirstOrDefault(predicate)));
+
+        _tagRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<Tag, bool>>>(),
+                It.IsAny<Func<IQueryable<Tag>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Tag, object>>>()))
+            .ReturnsAsync(new List<Tag> { new Tag { Id = 5, Title = "Existing" } });
+
+        _streetcodeImageRepositoryMock
+            .Setup(repo => repo.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeImage, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeImage>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeImage, object>>>()))
+            .ReturnsAsync(new List<StreetcodeImage>());
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(
+            StreetcodeType.Person,
+            animationImageId: 1,
+            audioId: 4,
+            blackAndWhiteImageId: 2,
+            relatedFigureImageId: 3);
+        updateStreetcodeDTO.Tags = new List<StreetcodeTagDTO>
+        {
+            new StreetcodeTagDTO { Id = 5, Title = "Existing", IsVisible = true, Index = 2 },
+        };
+
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once);
+
+        _streetcodeImageRepositoryMock.Verify(
+            repo => repo.CreateRangeAsync(It.Is<IEnumerable<StreetcodeImage>>(items =>
+                items.Count() == 3 &&
+                items.Any(i => i.ImageAssigment == ImageAssigment.Animation && i.Image!.Id == 1) &&
+                items.Any(i => i.ImageAssigment == ImageAssigment.Blackandwhite && i.Image!.Id == 2) &&
+                items.Any(i => i.ImageAssigment == ImageAssigment.Relatedfigure && i.Image!.Id == 3))),
+            Times.Once);
+
+        _streetcodeTagIndexRepositoryMock.Verify(
+            repo => repo.Create(It.Is<StreetcodeTagIndex>(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 2)),
+            Times.Once);
+    }
+
     private static UpdateStreetcodeDTO UpdateStreetcodeBuildDto(
         StreetcodeType streetcodeType,
         int? animationImageId,
