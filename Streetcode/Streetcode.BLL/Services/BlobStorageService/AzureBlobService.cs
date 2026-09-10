@@ -14,7 +14,7 @@ namespace Streetcode.BLL.Services.BlobStorageService;
 public class AzureBlobService : IBlobService
 {
     private readonly BlobContainerClient _containerClient;
-    private readonly IRepositoryWrapper? _repositoryWrapper;
+    private readonly IRepositoryWrapper _repositoryWrapper;
 
     public AzureBlobService(
         BlobContainerClient blobServiceClient,
@@ -22,7 +22,6 @@ public class AzureBlobService : IBlobService
     {
         _containerClient = blobServiceClient;
         _repositoryWrapper = repositoryWrapper;
-        _containerClient.CreateIfNotExists(PublicAccessType.None);
     }
 
     public void DeleteFileInStorage(string name)
@@ -126,6 +125,7 @@ public class AzureBlobService : IBlobService
         "png" => "image/png",
         "jpg" or "jpeg" => "image/jpeg",
         "mp3" => "audio/mpeg",
+        "gif" => "image/gif",
         _ => "application/octet-stream",
     };
 }

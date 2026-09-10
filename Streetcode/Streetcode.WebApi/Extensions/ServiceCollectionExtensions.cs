@@ -63,7 +63,11 @@ public static class ServiceCollectionExtensions
             {
                 var azureOptions = sp.GetRequiredService<IOptions<BlobEnvironmentVariables>>().Value.Azure;
 
-                return new BlobContainerClient(azureOptions.ConnectionString, azureOptions.ContainerName);
+                var client = new BlobContainerClient(azureOptions.ConnectionString, azureOptions.ContainerName);
+
+                client.CreateIfNotExists(Azure.Storage.Blobs.Models.PublicAccessType.None);
+
+                return client;
             });
 
             services.AddScoped<IBlobService, AzureBlobService>();
