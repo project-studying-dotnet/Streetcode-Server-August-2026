@@ -10,6 +10,11 @@ public interface IIdentityService
         string? phoneNumber,
         CancellationToken cancellationToken);
 
+    Task<Result<UserTokenData>> AuthenticateAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken);
+
     Task<Result<UserTokenData>> GetUserTokenDataAsync(
         Guid userId,
         CancellationToken cancellationToken);

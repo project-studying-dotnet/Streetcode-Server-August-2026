@@ -9,21 +9,27 @@ namespace Streetcode.Identity.Infrastructure.Identity;
 
 public sealed class IdentityService : IIdentityService
 {
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly StreetcodeIdentityDbContext _dbContext;
     private readonly IOutboxWriter _outboxWriter;
+    private readonly DummyPasswordHash _dummyPasswordHash;
     private readonly TimeProvider _timeProvider;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         StreetcodeIdentityDbContext dbContext,
         IOutboxWriter outboxWriter,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        DummyPasswordHash dummyPasswordHash)
     {
         _userManager = userManager;
+        _signInManager = signInManager;
         _dbContext = dbContext;
         _outboxWriter = outboxWriter;
         _timeProvider = timeProvider;
+        _dummyPasswordHash = dummyPasswordHash;
     }
 
     public async Task<Result<Guid>> CreateUserAsync(string email, string password, string? phoneNumber, CancellationToken cancellationToken)
@@ -70,6 +76,64 @@ public sealed class IdentityService : IIdentityService
         return Result.Ok(applicationUser.Id);
     }
 
+    public async Task<Result<UserTokenData>> AuthenticateAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(password))
+        {
+            return CreateInvalidCredentialsFailure();
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (user is null)
+        {
+            _ = _userManager.PasswordHasher.VerifyHashedPassword(
+                new ApplicationUser(),
+                _dummyPasswordHash.Value,
+                password);
+
+            return CreateInvalidCredentialsFailure();
+        }
+
+        var signInResult =
+            await _signInManager.CheckPasswordSignInAsync(
+                user,
+                password,
+                lockoutOnFailure: true);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!signInResult.Succeeded)
+        {
+            return CreateInvalidCredentialsFailure();
+        }
+
+        if (!user.IsActive ||
+            string.IsNullOrWhiteSpace(user.Email))
+        {
+            return CreateInvalidCredentialsFailure();
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        return Result.Ok(new UserTokenData(
+            user.Id,
+            user.Email,
+            roles.ToArray(),
+            user.AccessVersion,
+            user.IsActive));
+    }
+
     public async Task<Result<UserTokenData>> GetUserTokenDataAsync(
         Guid userId,
         CancellationToken cancellationToken)
@@ -104,6 +168,13 @@ public sealed class IdentityService : IIdentityService
             user.IsActive);
 
         return Result.Ok(userTokenData);
+    }
+
+    private static Result<UserTokenData> CreateInvalidCredentialsFailure()
+    {
+        return Result.Fail<UserTokenData>(
+            new Error("Invalid email or password")
+                .WithMetadata("Code", "Identity.InvalidCredentials"));
     }
 
     private static Result<UserTokenData> CreateUserTokenDataFailure()
