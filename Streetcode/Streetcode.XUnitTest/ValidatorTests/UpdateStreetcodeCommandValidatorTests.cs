@@ -160,6 +160,22 @@ namespace Streetcode.XUnitTest.ValidatorTests
         }
 
         [Fact]
+        public void Validate_WhenStreetcodeTypeIsNull_ShouldBeInvalid()
+        {
+            var validator = new UpdateStreetcodeCommandValidator();
+            UpdateStreetcodeDTO dto = CreateValidDto();
+            dto.StreetcodeType = null;
+
+            var result = validator.Validate(new UpdateStreetcodeCommand(1, dto));
+
+            Assert.Contains(
+                result.Errors,
+                error => error.PropertyName.EndsWith(
+                    nameof(UpdateStreetcodeDTO.StreetcodeType),
+                    StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void Validate_WhenTagTitleExceedsLimit_ShouldBeInvalid()
         {
             var validator = new UpdateStreetcodeCommandValidator();
