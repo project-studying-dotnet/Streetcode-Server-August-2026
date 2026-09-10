@@ -48,6 +48,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(CreateStreetcodeDTO.FirstName), 51)]
         [InlineData(nameof(CreateStreetcodeDTO.LastName), 51)]
         [InlineData(nameof(CreateStreetcodeDTO.ShortDescription), 34)]
+        [InlineData(nameof(CreateStreetcodeDTO.DateString), 51)]
         public void Validate_WhenTextExceedsLimit_ShouldBeInvalid(
             string propertyName,
             int valueLength)
@@ -85,6 +86,64 @@ namespace Streetcode.XUnitTest.ValidatorTests
                 error => error.PropertyName.EndsWith(
                     nameof(CreateStreetcodeDTO.TransliterationUrl),
                     StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(nameof(CreateStreetcodeDTO.Title))]
+        [InlineData(nameof(CreateStreetcodeDTO.DateString))]
+        [InlineData(nameof(CreateStreetcodeDTO.TransliterationUrl))]
+        public void Validate_WhenRequiredFieldIsEmpty_ShouldBeInvalid(string propertyName)
+        {
+            var validator = new CreateStreetcodeCommandValidator();
+            CreateStreetcodeDTO dto = CreateValidDto();
+
+            var property = typeof(CreateStreetcodeDTO).GetProperty(propertyName);
+            Assert.NotNull(property);
+            property.SetValue(dto, string.Empty);
+
+            var result = validator.Validate(new CreateStreetcodeCommand(dto));
+
+            Assert.Contains(
+                result.Errors,
+                error => error.PropertyName.EndsWith(
+                    propertyName,
+                    StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(nameof(CreateStreetcodeDTO.FirstName))]
+        [InlineData(nameof(CreateStreetcodeDTO.LastName))]
+        public void Validate_WhenPersonNameFieldIsEmpty_ShouldBeInvalid(string propertyName)
+        {
+            var validator = new CreateStreetcodeCommandValidator();
+            CreateStreetcodeDTO dto = CreateValidDto();
+            dto.StreetcodeType = StreetcodeType.Person;
+
+            var property = typeof(CreateStreetcodeDTO).GetProperty(propertyName);
+            Assert.NotNull(property);
+            property.SetValue(dto, string.Empty);
+
+            var result = validator.Validate(new CreateStreetcodeCommand(dto));
+
+            Assert.Contains(
+                result.Errors,
+                error => error.PropertyName.EndsWith(
+                    propertyName,
+                    StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Validate_WhenEventTypeAndNameFieldsAreEmpty_ShouldBeValid()
+        {
+            var validator = new CreateStreetcodeCommandValidator();
+            CreateStreetcodeDTO dto = CreateValidDto();
+            dto.StreetcodeType = StreetcodeType.Event;
+            dto.FirstName = null;
+            dto.LastName = null;
+
+            var result = validator.Validate(new CreateStreetcodeCommand(dto));
+
+            Assert.True(result.IsValid);
         }
 
         [Fact]

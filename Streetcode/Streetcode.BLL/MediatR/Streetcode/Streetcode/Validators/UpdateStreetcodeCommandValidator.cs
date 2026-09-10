@@ -2,6 +2,7 @@
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Update;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.DAL.Entities.Streetcode;
+using Streetcode.DAL.Enums;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -17,7 +18,14 @@ public sealed class UpdateStreetcodeCommandValidator
             .InclusiveBetween(1, 9999);
 
         RuleFor(command => command.updatedStreetcode.Title)
+            .NotEmpty()
+            .WithMessage("Title is required.")
             .MustNotExceedLength(StreetcodeContent.TitleMaxLength, "Title");
+
+        RuleFor(command => command.updatedStreetcode.DateString)
+            .NotEmpty()
+            .WithMessage("DateString is required.")
+            .MustNotExceedLength(50, "DateString");
 
         RuleFor(command => command.updatedStreetcode.FirstName)
             .MustNotExceedLength(50, "FirstName");
@@ -25,10 +33,23 @@ public sealed class UpdateStreetcodeCommandValidator
         RuleFor(command => command.updatedStreetcode.LastName)
             .MustNotExceedLength(50, "LastName");
 
+        When(command => command.updatedStreetcode.StreetcodeType == StreetcodeType.Person, () =>
+        {
+            RuleFor(command => command.updatedStreetcode.FirstName)
+                .NotEmpty()
+                .WithMessage("FirstName is required for a Person streetcode.");
+
+            RuleFor(command => command.updatedStreetcode.LastName)
+                .NotEmpty()
+                .WithMessage("LastName is required for a Person streetcode.");
+        });
+
         RuleFor(command => command.updatedStreetcode.ShortDescription)
             .MustNotExceedLength(StreetcodeContent.ShortDescriptionMaxLength, "ShortDescription");
 
         RuleFor(command => command.updatedStreetcode.TransliterationUrl)
+            .NotEmpty()
+            .WithMessage("TransliterationUrl is required.")
             .MustNotExceedLength(100, "TransliterationUrl")
             .Matches("^[a-z0-9-]+$")
             .WithMessage("URL may only contain lowercase latin letters, numbers, and hyphens.");
