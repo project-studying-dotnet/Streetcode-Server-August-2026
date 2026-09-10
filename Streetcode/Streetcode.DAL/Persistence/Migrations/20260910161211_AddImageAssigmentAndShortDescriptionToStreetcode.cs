@@ -5,7 +5,7 @@
 namespace Streetcode.DAL.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddShortDescriptionToStreetcodeContent : Migration
+    public partial class AddImageAssigmentAndShortDescriptionToStreetcode : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,6 +17,13 @@ namespace Streetcode.DAL.Persistence.Migrations
                 type: "nvarchar(33)",
                 maxLength: 33,
                 nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "ImageAssigment",
+                schema: "streetcode",
+                table: "streetcode_image",
+                type: "int",
+                nullable: true);
         }
 
         /// <inheritdoc />
@@ -26,6 +33,11 @@ namespace Streetcode.DAL.Persistence.Migrations
                 name: "ShortDescription",
                 schema: "streetcode",
                 table: "streetcodes");
+
+            migrationBuilder.DropColumn(
+                name: "ImageAssigment",
+                schema: "streetcode",
+                table: "streetcode_image");
         }
     }
 }

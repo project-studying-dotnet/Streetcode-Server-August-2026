@@ -12,8 +12,8 @@ using Streetcode.DAL.Persistence;
 namespace Streetcode.DAL.Persistence.Migrations
 {
     [DbContext(typeof(StreetcodeDbContext))]
-    [Migration("20260817160123_AddImageAssigmentToStreetcodeImage")]
-    partial class AddImageAssigmentToStreetcodeImage
+    [Migration("20260910161211_AddImageAssigmentAndShortDescriptionToStreetcode")]
+    partial class AddImageAssigmentAndShortDescriptionToStreetcode
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -566,6 +566,10 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.Property<int>("Index")
                         .HasColumnType("int");
 
+                    b.Property<string>("ShortDescription")
+                        .HasMaxLength(33)
+                        .HasColumnType("nvarchar(33)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -625,6 +629,9 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
                     b.Property<string>("FactContent")
                         .IsRequired()
                         .HasMaxLength(600)
@@ -638,8 +645,8 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(68)
+                        .HasColumnType("nvarchar(68)");
 
                     b.HasKey("Id");
 
@@ -692,6 +699,9 @@ namespace Streetcode.DAL.Persistence.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Title")
+                        .IsUnique();
 
                     b.ToTable("terms", "streetcode");
                 });
