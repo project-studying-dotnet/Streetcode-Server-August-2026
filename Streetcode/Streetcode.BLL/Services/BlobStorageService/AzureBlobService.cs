@@ -50,6 +50,8 @@ public class AzureBlobService : IBlobService
         var hashBlobStorageName = BlobHelper.GetHashedFileName(name);
         byte[] imageBytes = Convert.FromBase64String(base64);
 
+        extension = NormalizeExtension(extension);
+
         BlobClient client = _containerClient.GetBlobClient($"{hashBlobStorageName}.{extension}");
 
         var options = new BlobUploadOptions
@@ -66,6 +68,8 @@ public class AzureBlobService : IBlobService
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
 
+        extension = NormalizeExtension(extension);
+
         BlobClient client = _containerClient.GetBlobClient($"{name}.{extension}");
 
         var options = new BlobUploadOptions
@@ -78,9 +82,9 @@ public class AzureBlobService : IBlobService
 
     public string UpdateFileInStorage(string previousBlobName, string base64Format, string newBlobName, string extension)
     {
-        DeleteFileInStorage(previousBlobName);
-
         string hashBlobStorageName = SaveFileInStorage(base64Format, newBlobName, extension);
+
+        DeleteFileInStorage(previousBlobName);
 
         return hashBlobStorageName;
     }
@@ -120,7 +124,7 @@ public class AzureBlobService : IBlobService
         return downloadResult.Content.ToArray();
     }
 
-    private static string GetContentType(string extension) => extension.ToLower() switch
+    private static string GetContentType(string extension) => extension switch
     {
         "png" => "image/png",
         "jpg" or "jpeg" => "image/jpeg",
@@ -128,4 +132,14 @@ public class AzureBlobService : IBlobService
         "gif" => "image/gif",
         _ => "application/octet-stream",
     };
+
+    private static string NormalizeExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return string.Empty;
+        }
+
+        return extension.TrimStart('.').ToLower();
+    }
 }
