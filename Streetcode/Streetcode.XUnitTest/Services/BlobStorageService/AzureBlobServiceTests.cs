@@ -8,7 +8,10 @@ using Streetcode.DAL.Entities.Media.Images;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Streetcode.XUnitTest.Services.BlobStorageService;
@@ -99,8 +102,21 @@ public class AzureBlobServiceTests
         Assert.Equal(expectedBytes, result.ToArray());
     }
 
-    [Fact]
-    public void SaveFileInStorage_ReturnsNonEmptyHash_AndUploadsWithCorrectContentType()
+    [Theory]
+    [InlineData("png", "image/png", ".png")]
+    [InlineData(".png", "image/png", ".png")]
+    [InlineData(".PNG", "image/png", ".png")]
+    [InlineData("gif", "image/gif", ".gif")]
+    [InlineData(".GIF", "image/gif", ".gif")]
+    [InlineData("mp3", "audio/mpeg", ".mp3")]
+    [InlineData(".MP3", "audio/mpeg", ".mp3")]
+    [InlineData("jpg", "image/jpeg", ".jpg")]
+    [InlineData(".jpeg", "image/jpeg", ".jpeg")]
+    [InlineData("unknown", "application/octet-stream", ".unknown")]
+    public void SaveFileInStorage_NormalizesExtension_AndUploadsWithCorrectContentType(
+        string extension,
+        string expectedContentType,
+        string expectedEnding)
     {
         var contentInfo = BlobsModelFactory.BlobContentInfo(
             eTag: new ETag("test-etag"),
@@ -112,28 +128,102 @@ public class AzureBlobServiceTests
             blobSequenceNumber: 0);
         var uploadResponse = Response.FromValue(contentInfo, Mock.Of<Response>());
 
-        var blobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/whatever.png"), new BlobClientOptions());
+        var blobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/blob"), new BlobClientOptions());
         blobClientMock
             .Setup(c => c.Upload(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
             .Returns(uploadResponse);
 
         _containerClientMock
-            .Setup(c => c.GetBlobClient(It.Is<string>(name => name.EndsWith(".png"))))
+            .Setup(c => c.GetBlobClient(It.Is<string>(name => !name.Contains("..") && name.EndsWith(expectedEnding))))
             .Returns(blobClientMock.Object);
 
         string hash = _service.SaveFileInStorage(
-            base64: Convert.ToBase64String(Encoding.UTF8.GetBytes("fake image bytes")),
-            name: "my-image",
-            extension: "png");
+            base64: Convert.ToBase64String(Encoding.UTF8.GetBytes("test content")),
+            name: "test-file",
+            extension: extension);
 
         Assert.False(string.IsNullOrWhiteSpace(hash));
 
         blobClientMock.Verify(
             c => c.Upload(
                 It.IsAny<Stream>(),
-                It.Is<BlobUploadOptions>(o => o.HttpHeaders.ContentType == "image/png"),
+                It.Is<BlobUploadOptions>(o => o.HttpHeaders.ContentType == expectedContentType),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public void UpdateFileInStorage_UploadsNewBlob_BeforeDeletingPreviousBlob()
+    {
+        var contentInfo = BlobsModelFactory.BlobContentInfo(
+            eTag: new ETag("test-etag"),
+            lastModified: DateTimeOffset.UtcNow,
+            contentHash: Array.Empty<byte>(),
+            versionId: null,
+            encryptionKeySha256: null,
+            encryptionScope: null,
+            blobSequenceNumber: 0);
+        var uploadResponse = Response.FromValue(contentInfo, Mock.Of<Response>());
+
+        var newBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/newblob.png"), new BlobClientOptions());
+        var oldBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/oldblob.png"), new BlobClientOptions());
+
+        newBlobClientMock
+            .Setup(c => c.Upload(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
+            .Returns(uploadResponse);
+
+        _containerClientMock
+            .Setup(c => c.GetBlobClient(It.Is<string>(name => name.EndsWith(".png") && !name.Equals("oldblob.png"))))
+            .Returns(newBlobClientMock.Object);
+
+        _containerClientMock
+            .Setup(c => c.GetBlobClient("oldblob.png"))
+            .Returns(oldBlobClientMock.Object);
+
+        string hash = _service.UpdateFileInStorage(
+            previousBlobName: "oldblob.png",
+            base64Format: Convert.ToBase64String(Encoding.UTF8.GetBytes("new content")),
+            newBlobName: "new-file",
+            extension: ".png");
+
+        Assert.False(string.IsNullOrWhiteSpace(hash));
+
+        newBlobClientMock.Verify(
+            c => c.Upload(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        oldBlobClientMock.Verify(
+            c => c.DeleteIfExists(It.IsAny<DeleteSnapshotsOption>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void UpdateFileInStorage_DoesNotDeletePreviousBlob_WhenUploadFails()
+    {
+        var newBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/newblob.png"), new BlobClientOptions());
+        var oldBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/oldblob.png"), new BlobClientOptions());
+
+        newBlobClientMock
+            .Setup(c => c.Upload(It.IsAny<Stream>(), It.IsAny<BlobUploadOptions>(), It.IsAny<CancellationToken>()))
+            .Throws(new RequestFailedException("Upload failed"));
+
+        _containerClientMock
+            .Setup(c => c.GetBlobClient(It.Is<string>(name => !name.Equals("oldblob.png"))))
+            .Returns(newBlobClientMock.Object);
+
+        _containerClientMock
+            .Setup(c => c.GetBlobClient("oldblob.png"))
+            .Returns(oldBlobClientMock.Object);
+
+        Assert.Throws<RequestFailedException>(() => _service.UpdateFileInStorage(
+            previousBlobName: "oldblob.png",
+            base64Format: Convert.ToBase64String(Encoding.UTF8.GetBytes("new content")),
+            newBlobName: "new-file",
+            extension: ".png"));
+
+        oldBlobClientMock.Verify(
+            c => c.DeleteIfExists(It.IsAny<DeleteSnapshotsOption>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
