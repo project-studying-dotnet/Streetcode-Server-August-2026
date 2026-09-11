@@ -134,6 +134,22 @@ namespace Streetcode.XUnitTest.ValidatorTests
         }
 
         [Fact]
+        public void ValidateTimelineItem_WhenDateViewPatternIsMissing_ShouldBeInvalid()
+        {
+            TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();
+            timelineItem.DateViewPattern = null;
+
+            var result = this.timelineItemValidator.Validate(timelineItem);
+
+            Assert.Contains(
+                result.Errors,
+                error => error.PropertyName ==
+                    nameof(TimelineItemCreateUpdateDto.DateViewPattern) &&
+                    error.ErrorMessage ==
+                    "Timeline item date view pattern is required.");
+        }
+
+        [Fact]
         public void ValidateTimelineItem_WhenRequiredValuesAreInvalid_ShouldBeInvalid()
         {
             TimelineItemCreateUpdateDto timelineItem = CreateValidTimelineItem();

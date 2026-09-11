@@ -32,6 +32,9 @@ public sealed class TimelineItemCreateUpdateDtoValidator : AbstractValidator<Tim
             .WithMessage("Timeline item date is required.");
 
         RuleFor(item => item.DateViewPattern)
+            .Cascade(CascadeMode.Stop)
+            .NotNull()
+            .WithMessage("Timeline item date view pattern is required.")
             .IsInEnum()
             .WithMessage("Timeline item date view pattern is invalid.");
 

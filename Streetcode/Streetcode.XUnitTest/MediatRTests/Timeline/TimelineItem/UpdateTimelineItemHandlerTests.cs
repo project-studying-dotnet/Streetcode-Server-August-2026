@@ -12,6 +12,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
     using global::Streetcode.BLL.Interfaces.Timeline;
     using global::Streetcode.BLL.MediatR.Timeline.TimelineItem.Update;
     using global::Streetcode.DAL.Entities.Streetcode;
+    using global::Streetcode.DAL.Enums;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
     using global::Streetcode.DAL.Repositories.Interfaces.Timeline;
@@ -63,10 +64,18 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var command = new UpdateTimelineItemCommand(
                 timelineItemId,
                 CreateTimelineItemDto());
+            var matchingStreetcode = new StreetcodeContent
+            {
+                Id = command.TimelineItem.StreetcodeId,
+            };
+            var otherStreetcode = new StreetcodeContent
+            {
+                Id = command.TimelineItem.StreetcodeId + 1,
+            };
             string expectedError =
                 $"Cannot find a timeline item with corresponding id: {timelineItemId}";
 
-            this.SetupTimelineLookup(null);
+            this.SetupTimelineLookup(timelineItemId, null);
 
             var result = await this.handler.Handle(command, CancellationToken.None);
 
@@ -77,7 +86,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                 Times.Once());
             this.streetcodeRepositoryMock.Verify(
                 repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
+                    It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                        predicate.Compile()(matchingStreetcode) &&
+                        !predicate.Compile()(otherStreetcode)),
                     null),
                 Times.Never());
             this.repositoryWrapperMock.Verify(
@@ -97,11 +108,21 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Cannot find a streetcode with corresponding id: " +
                 $"{timelineItemDto.StreetcodeId}";
+            var matchingStreetcode = new StreetcodeContent
+            {
+                Id = timelineItemDto.StreetcodeId,
+            };
+            var otherStreetcode = new StreetcodeContent
+            {
+                Id = timelineItemDto.StreetcodeId + 1,
+            };
 
-            this.SetupTimelineLookup(timelineItem);
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
             this.streetcodeRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
+                    It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                        predicate.Compile()(matchingStreetcode) &&
+                        !predicate.Compile()(otherStreetcode)),
                     null))
                 .ReturnsAsync((StreetcodeContent?)null);
 
@@ -131,7 +152,15 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                 timelineItemDto);
             string expectedError =
                 $"Cannot move timeline item with id {timelineItem.Id} to another streetcode";
-            this.SetupTimelineLookup(timelineItem);
+            var matchingStreetcode = new StreetcodeContent
+            {
+                Id = timelineItemDto.StreetcodeId,
+            };
+            var otherStreetcode = new StreetcodeContent
+            {
+                Id = timelineItemDto.StreetcodeId + 1,
+            };
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
 
             var result = await this.handler.Handle(command, CancellationToken.None);
 
@@ -145,7 +174,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                     expectedError), Times.Once());
             this.streetcodeRepositoryMock.Verify(
                 repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
+                    It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                        predicate.Compile()(matchingStreetcode) &&
+                        !predicate.Compile()(otherStreetcode)),
                     null), Times.Never());
             this.repositoryWrapperMock.Verify(
                 wrapper => wrapper.SaveChangesAsync(),
@@ -169,7 +200,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Cannot find historical contexts with IDs: {missingContextId}.";
 
-            this.SetupTimelineLookup(timelineItem);
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
             this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
             this.SetupContextResolutionFailure(expectedError);
 
@@ -206,7 +237,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             string expectedError =
                 $"Historical contexts with titles already exist: {contextTitle}.";
 
-            this.SetupTimelineLookup(timelineItem);
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
             this.SetupExistingStreetcode(timelineItemDto.StreetcodeId);
             this.SetupContextResolutionFailure(expectedError);
 
@@ -237,7 +268,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                 timelineItemDto);
             const string expectedError = "Failed to update timeline item.";
 
-            this.SetupTimelineLookup(timelineItem);
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
             this.SetupUpdateBeforeSave(timelineItemDto, timelineItem);
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
@@ -270,7 +301,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             var exception = new DbUpdateException("Database failure");
             const string expectedError = "Failed to update timeline item.";
 
-            this.SetupTimelineLookup(timelineItem);
+            this.SetupTimelineLookup(timelineItem.Id, timelineItem);
             this.SetupUpdateBeforeSave(timelineItemDto, timelineItem);
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
@@ -447,6 +478,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                 Title = "Updated event",
                 Description = "Updated description",
                 Date = new DateTime(1900, 1, 1),
+                DateViewPattern = DateViewPattern.DateMonthYear,
                 HistoricalContexts = historicalContexts ??
                     Array.Empty<HistoricalContextDTO>(),
             };
@@ -466,11 +498,18 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             };
         }
 
-        private void SetupTimelineLookup(TimelineItemEntity? timelineItem)
+        private void SetupTimelineLookup(
+            int timelineItemId,
+            TimelineItemEntity? timelineItem)
         {
+            var matchingTimelineItem = new TimelineItemEntity { Id = timelineItemId };
+            var otherTimelineItem = new TimelineItemEntity { Id = timelineItemId + 1 };
+
             this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
+                    It.Is<Expression<Func<TimelineItemEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingTimelineItem) &&
+                        !predicate.Compile()(otherTimelineItem)),
                     It.IsAny<Func<
                         IQueryable<TimelineItemEntity>,
                         IIncludableQueryable<TimelineItemEntity, object>>?>()))
@@ -481,9 +520,16 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             TimelineItemEntity firstResult,
             TimelineItemEntity? secondResult)
         {
+            var otherTimelineItem = new TimelineItemEntity
+            {
+                Id = firstResult.Id + 1,
+            };
+
             this.timelineRepositoryMock
                 .SetupSequence(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
+                    It.Is<Expression<Func<TimelineItemEntity, bool>>>(predicate =>
+                        predicate.Compile()(firstResult) &&
+                        !predicate.Compile()(otherTimelineItem)),
                     It.IsAny<Func<
                         IQueryable<TimelineItemEntity>,
                         IIncludableQueryable<TimelineItemEntity, object>>?>()))
@@ -493,11 +539,16 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
         private void SetupExistingStreetcode(int streetcodeId)
         {
+            var matchingStreetcode = new StreetcodeContent { Id = streetcodeId };
+            var otherStreetcode = new StreetcodeContent { Id = streetcodeId + 1 };
+
             this.streetcodeRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<StreetcodeContent, bool>>>(),
+                    It.Is<Expression<Func<StreetcodeContent, bool>>>(predicate =>
+                        predicate.Compile()(matchingStreetcode) &&
+                        !predicate.Compile()(otherStreetcode)),
                     null))
-                .ReturnsAsync(new StreetcodeContent { Id = streetcodeId });
+                .ReturnsAsync(matchingStreetcode);
         }
 
         private void SetupMapping(
@@ -515,7 +566,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
                         destination.Title = source.Title;
                         destination.Description = source.Description;
                         destination.Date = source.Date;
-                        destination.DateViewPattern = source.DateViewPattern;
+                        destination.DateViewPattern = source.DateViewPattern ??
+                            throw new InvalidOperationException(
+                                "Date view pattern is required.");
                     })
                 .Returns(timelineItem);
         }

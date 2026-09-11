@@ -100,5 +100,38 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
             _mapperMock.Verify(mapper => mapper.Map<TimelineItemDTO>(It.IsAny<TimelineItemEntity>()), Times.Never());
             _loggerMock.Verify(logger => logger.LogError(query, $"Cannot find a timeline item with corresponding id: {query.Id}"), Times.Once());
         }
+
+        [Fact]
+        public async Task Handle_WhenLookingUpTimelineItem_ShouldUseRequestedIdPredicate()
+        {
+            const int requestedId = 42;
+            var matchingTimelineItem = new TimelineItemEntity { Id = requestedId };
+            var otherTimelineItem = new TimelineItemEntity { Id = requestedId + 1 };
+            var expectedTimelineItem = new TimelineItemDTO { Id = requestedId };
+
+            _timelineRepositoryMock
+                .Setup(repository => repository.GetFirstOrDefaultAsync(
+                    It.Is<Expression<Func<TimelineItemEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingTimelineItem) &&
+                        !predicate.Compile()(otherTimelineItem)),
+                    It.IsAny<Func<
+                        IQueryable<TimelineItemEntity>,
+                        IIncludableQueryable<TimelineItemEntity, object>>?>()))
+                .ReturnsAsync(matchingTimelineItem);
+            _mapperMock
+                .Setup(mapper => mapper.Map<TimelineItemDTO>(matchingTimelineItem))
+                .Returns(expectedTimelineItem);
+            var handler = new GetTimelineItemByIdHandler(
+                _repositoryWrapperMock.Object,
+                _mapperMock.Object,
+                _loggerMock.Object);
+
+            var result = await handler.Handle(
+                new GetTimelineItemByIdQuery(requestedId),
+                CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            Assert.Same(expectedTimelineItem, result.Value);
+        }
     }
 }

@@ -24,19 +24,19 @@ public sealed class HistoricalContextResolver : IHistoricalContextResolver
             .Select(context => context.Id)
             .Distinct()
             .ToList();
-        var newContextTitles = new HashSet<string>(
-            StringComparer.OrdinalIgnoreCase);
+        var newContexts = contexts
+            .Where(context => context.Id == 0)
+            .ToList();
 
-        foreach (var context in contexts.Where(context => context.Id == 0))
+        if (newContexts.Any(context => string.IsNullOrWhiteSpace(context.Title)))
         {
-            if (string.IsNullOrWhiteSpace(context.Title))
-            {
-                return Result.Fail<IReadOnlyCollection<HistoricalContextTimeline>>(
-                    "Historical context title is required.");
-            }
-
-            newContextTitles.Add(context.Title.Trim());
+            return Result.Fail<IReadOnlyCollection<HistoricalContextTimeline>>(
+                "Historical context title is required.");
         }
+
+        var newContextTitles = new HashSet<string>(
+            newContexts.Select(context => context.Title!.Trim()),
+            StringComparer.OrdinalIgnoreCase);
 
         var existingContexts = (await _repositoryWrapper.HistoricalContextRepository
             .GetAllAsync(

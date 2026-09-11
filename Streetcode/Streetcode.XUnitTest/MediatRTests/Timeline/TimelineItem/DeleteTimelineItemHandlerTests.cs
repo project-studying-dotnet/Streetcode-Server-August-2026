@@ -37,12 +37,16 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
         {
             const int timelineItemId = 99;
             var command = new DeleteTimelineItemCommand(timelineItemId);
+            var matchingTimelineItem = new TimelineItemEntity { Id = timelineItemId };
+            var otherTimelineItem = new TimelineItemEntity { Id = timelineItemId + 1 };
             string expectedError =
                 $"Cannot find a timeline item with corresponding id: {timelineItemId}";
 
             this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
+                    It.Is<Expression<Func<TimelineItemEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingTimelineItem) &&
+                        !predicate.Compile()(otherTimelineItem)),
                     null))
                 .ReturnsAsync((TimelineItemEntity?)null);
 
@@ -118,9 +122,16 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
         private void SetupExistingTimelineItem(TimelineItemEntity timelineItem)
         {
+            var otherTimelineItem = new TimelineItemEntity
+            {
+                Id = timelineItem.Id + 1,
+            };
+
             this.timelineRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
+                    It.Is<Expression<Func<TimelineItemEntity, bool>>>(predicate =>
+                        predicate.Compile()(timelineItem) &&
+                        !predicate.Compile()(otherTimelineItem)),
                     null))
                 .ReturnsAsync(timelineItem);
         }

@@ -11,7 +11,7 @@ public class TimelineItemCreateUpdateDto
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTime Date { get; set; }
-    public DateViewPattern DateViewPattern { get; set; }
+    public DateViewPattern? DateViewPattern { get; set; }
     public IEnumerable<HistoricalContextDTO> HistoricalContexts { get; set; }
         = Array.Empty<HistoricalContextDTO>();
 }

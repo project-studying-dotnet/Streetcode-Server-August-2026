@@ -57,10 +57,20 @@ namespace Streetcode.XUnitTest.Services.Timeline
             };
             string expectedError =
                 $"Cannot find historical contexts with IDs: {missingContextId}.";
+            var matchingContext = new HistoricalContextEntity
+            {
+                Id = missingContextId,
+            };
+            var otherContext = new HistoricalContextEntity
+            {
+                Id = missingContextId + 1,
+            };
 
             this.historicalContextRepositoryMock
                 .Setup(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
+                    It.Is<Expression<Func<HistoricalContextEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingContext) &&
+                        !predicate.Compile()(otherContext)),
                     It.IsAny<Func<
                         IQueryable<HistoricalContextEntity>,
                         IIncludableQueryable<HistoricalContextEntity, object>>?>()))
@@ -75,9 +85,11 @@ namespace Streetcode.XUnitTest.Services.Timeline
         [Fact]
         public async Task ResolveAsync_WhenNewContextTitleAlreadyExists_ShouldReturnFailure()
         {
+            const int existingContextId = 7;
             const string contextTitle = "Culture";
             var requestedContexts = new[]
             {
+                new HistoricalContextDTO { Id = existingContextId },
                 new HistoricalContextDTO { Title = $" {contextTitle} " },
             };
             string expectedError =
@@ -88,8 +100,13 @@ namespace Streetcode.XUnitTest.Services.Timeline
                 new HistoricalContextEntity { Id = 1, Title = contextTitle },
             };
 
-            this.SetupRepositorySequence(
-                Array.Empty<HistoricalContextEntity>(),
+            this.SetupRepositoryQueries(
+                existingContextId,
+                contextTitle,
+                new[]
+                {
+                    new HistoricalContextEntity { Id = existingContextId },
+                },
                 conflictingContexts);
 
             var result = await this.resolver.ResolveAsync(requestedContexts);
@@ -110,7 +127,9 @@ namespace Streetcode.XUnitTest.Services.Timeline
                 new HistoricalContextDTO { Title = "culture" },
             };
 
-            this.SetupRepositorySequence(
+            this.SetupRepositoryQueries(
+                existingContextId,
+                "Culture",
                 new[]
                 {
                     new HistoricalContextEntity { Id = existingContextId },
@@ -129,17 +148,46 @@ namespace Streetcode.XUnitTest.Services.Timeline
                 relation => relation.HistoricalContext?.Title == "Culture");
         }
 
-        private void SetupRepositorySequence(
+        private void SetupRepositoryQueries(
+            int existingContextId,
+            string newContextTitle,
             IEnumerable<HistoricalContextEntity> existingContexts,
             IEnumerable<HistoricalContextEntity> conflictingContexts)
         {
+            var matchingIdContext = new HistoricalContextEntity
+            {
+                Id = existingContextId,
+            };
+            var otherIdContext = new HistoricalContextEntity
+            {
+                Id = existingContextId + 1,
+            };
+            var matchingTitleContext = new HistoricalContextEntity
+            {
+                Title = newContextTitle,
+            };
+            var otherTitleContext = new HistoricalContextEntity
+            {
+                Title = $"Other {newContextTitle}",
+            };
+
             this.historicalContextRepositoryMock
-                .SetupSequence(repository => repository.GetAllAsync(
-                    It.IsAny<Expression<Func<HistoricalContextEntity, bool>>>(),
+                .Setup(repository => repository.GetAllAsync(
+                    It.Is<Expression<Func<HistoricalContextEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingIdContext) &&
+                        !predicate.Compile()(otherIdContext)),
                     It.IsAny<Func<
                         IQueryable<HistoricalContextEntity>,
                         IIncludableQueryable<HistoricalContextEntity, object>>?>()))
-                .ReturnsAsync(existingContexts)
+                .ReturnsAsync(existingContexts);
+            this.historicalContextRepositoryMock
+                .Setup(repository => repository.GetAllAsync(
+                    It.Is<Expression<Func<HistoricalContextEntity, bool>>>(predicate =>
+                        predicate.Compile()(matchingTitleContext) &&
+                        !predicate.Compile()(otherTitleContext)),
+                    It.IsAny<Func<
+                        IQueryable<HistoricalContextEntity>,
+                        IIncludableQueryable<HistoricalContextEntity, object>>?>()))
                 .ReturnsAsync(conflictingContexts);
         }
     }
