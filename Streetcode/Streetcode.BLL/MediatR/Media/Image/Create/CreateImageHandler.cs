@@ -29,14 +29,14 @@ public class CreateImageHandler : IRequestHandler<CreateImageCommand, Result<Ima
 
     public async Task<Result<ImageDTO>> Handle(CreateImageCommand request, CancellationToken cancellationToken)
     {
-        string hashBlobStorageName = _blobService.SaveFileInStorage(
+        string blobName = _blobService.SaveFileInStorage(
             request.Image.BaseFormat,
             request.Image.Title,
             request.Image.Extension);
 
         var image = _mapper.Map<DAL.Entities.Media.Images.Image>(request.Image);
 
-        image.BlobName = $"{hashBlobStorageName}.{request.Image.Extension}";
+        image.BlobName = blobName;
 
         await _repositoryWrapper.ImageRepository.CreateAsync(image);
         var resultIsSuccess = await _repositoryWrapper.SaveChangesAsync() > 0;

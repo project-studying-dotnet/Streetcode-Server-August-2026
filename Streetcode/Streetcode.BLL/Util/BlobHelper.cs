@@ -23,4 +23,14 @@ public static class BlobHelper
         byte[] result = hash.ComputeHash(Encoding.UTF8.GetBytes(input));
         return Convert.ToBase64String(result).Replace('/', '_');
     }
+
+    public static string NormalizeExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return string.Empty;
+        }
+
+        return extension.Trim().TrimStart('.').ToLowerInvariant();
+    }
 }

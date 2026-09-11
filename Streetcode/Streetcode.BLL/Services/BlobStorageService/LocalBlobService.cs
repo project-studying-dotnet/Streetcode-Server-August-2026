@@ -49,18 +49,23 @@ public class LocalBlobService : IBlobService
         byte[] imageBytes = Convert.FromBase64String(base64);
 
         string hashBlobStorageName = BlobHelper.GetHashedFileName(name);
+        string normalizedExtension = BlobHelper.NormalizeExtension(extension);
 
         Directory.CreateDirectory(_blobPath);
-        EncryptFile(imageBytes, extension, hashBlobStorageName);
 
-        return hashBlobStorageName;
+        EncryptFile(imageBytes, normalizedExtension, hashBlobStorageName);
+
+        return $"{hashBlobStorageName}.{normalizedExtension}";
     }
 
     public void SaveFileInStorageBase64(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
+
+        string normalizedExtension = BlobHelper.NormalizeExtension(extension);
+
         Directory.CreateDirectory(_blobPath);
-        EncryptFile(imageBytes, extension, name);
+        EncryptFile(imageBytes, normalizedExtension, name);
     }
 
     public void DeleteFileInStorage(string name)
@@ -74,14 +79,14 @@ public class LocalBlobService : IBlobService
         string newBlobName,
         string extension)
     {
-        DeleteFileInStorage(previousBlobName);
-
-        string hashBlobStorageName = SaveFileInStorage(
+        string blobName = SaveFileInStorage(
         base64Format,
         newBlobName,
         extension);
 
-        return hashBlobStorageName;
+        DeleteFileInStorage(previousBlobName);
+
+        return blobName;
     }
 
     public async Task CleanBlobStorage()
