@@ -92,11 +92,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
         var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
@@ -111,11 +107,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new EventStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Event, null, null);
         var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
@@ -130,11 +122,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var badImage = new Image { Id = 1, MimeType = "image/jpeg" };
         _imageRepositoryMock
@@ -156,11 +144,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var badAudio = new Audio { Id = 1, MimeType = "audio/wav" };
         _audioRepositoryMock
@@ -182,11 +166,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
         updateStreetcodeDTO.Tags = new List<StreetcodeTagDTO>
@@ -208,11 +188,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         _imageRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
@@ -233,11 +209,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         _imageRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
@@ -258,11 +230,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         _imageRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Image, bool>>>()))
@@ -283,11 +251,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         _audioRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Audio, bool>>>()))
@@ -328,11 +292,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Event, null, null);
         var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
@@ -349,11 +309,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         _tagRepositoryMock
             .Setup(repo => repo.GetAllAsync(
@@ -402,11 +358,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var tagIndexToRemove = new StreetcodeTagIndex
         {
@@ -440,11 +392,7 @@ public class UpdateStreetcodeHandlerTests
         var existingStreetcodeId = 1;
         var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
 
-        _streetcodeRepositoryMock
-            .Setup(repo => repo.GetFirstOrDefaultAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
-                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
-            .ReturnsAsync(existingStreetcode);
+        SetupExistingStreetcode(existingStreetcode);
 
         var images = new List<Image>
         {
@@ -504,6 +452,88 @@ public class UpdateStreetcodeHandlerTests
         _streetcodeTagIndexRepositoryMock.Verify(
             repo => repo.Create(It.Is<StreetcodeTagIndex>(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 2)),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WhenIndexConflictsWithAnotherStreetcode_ShouldReturnFailure()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+        var conflictingStreetcode = new EventStreetcode { Id = 2, Index = 1 };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>> predicate, Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>? include) =>
+                Task.FromResult(new StreetcodeEntity[] { existingStreetcode, conflictingStreetcode }.AsQueryable().FirstOrDefault(predicate)));
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Streetcode with index 1 already exists.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTransliterationUrlConflictsWithAnotherStreetcode_ShouldReturnFailure()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Tags = new List<Tag>() };
+        var conflictingStreetcode = new EventStreetcode
+        {
+            Id = 2,
+            Index = 2,
+            TransliterationUrl = "test-streetcode",
+        };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>> predicate, Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>? include) =>
+                Task.FromResult(new StreetcodeEntity[] { existingStreetcode, conflictingStreetcode }.AsQueryable().FirstOrDefault(predicate)));
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Transliteration URL is already in use.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenUpdatingOwnUnchangedIndexAndUrl_ShouldSucceed()
+    {
+        var existingStreetcodeId = 1;
+        var existingStreetcode = new PersonStreetcode
+        {
+            Id = existingStreetcodeId,
+            Index = 1,
+            TransliterationUrl = "test-streetcode",
+            Tags = new List<Tag>(),
+        };
+
+        SetupExistingStreetcode(existingStreetcode);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        var command = new UpdateStreetcodeCommand(existingStreetcodeId, updateStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+    }
+
+    private void SetupExistingStreetcode(StreetcodeEntity existingStreetcode)
+    {
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>(),
+                It.IsAny<Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>> predicate, Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>? include) =>
+                Task.FromResult(new[] { existingStreetcode }.AsQueryable().FirstOrDefault(predicate)));
     }
 
     private static UpdateStreetcodeDTO UpdateStreetcodeBuildDto(

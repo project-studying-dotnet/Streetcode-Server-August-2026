@@ -309,6 +309,49 @@ public class CreateStreetcodeHandlerTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task Handle_WhenIndexAlreadyExists_ShouldReturnFailure()
+    {
+        var conflictingStreetcode = new EventStreetcode { Id = 99, Index = 1 };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>> predicate, Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>? include) =>
+                Task.FromResult(new[] { conflictingStreetcode }.AsQueryable().FirstOrDefault(predicate)));
+
+        var createStreetcodeDTO = CreateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        var command = new CreateStreetcodeCommand(createStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Streetcode with index 1 already exists.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenTransliterationUrlAlreadyExists_ShouldReturnFailure()
+    {
+        var conflictingStreetcode = new EventStreetcode
+        {
+            Id = 99,
+            Index = 2,
+            TransliterationUrl = "test-streetcode",
+        };
+
+        _streetcodeRepositoryMock
+            .Setup(repo => repo.GetFirstOrDefaultAsync(It.IsAny<System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>>>()))
+            .Returns((System.Linq.Expressions.Expression<Func<StreetcodeEntity, bool>> predicate, Func<IQueryable<StreetcodeEntity>, Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<StreetcodeEntity, object>>? include) =>
+                Task.FromResult(new[] { conflictingStreetcode }.AsQueryable().FirstOrDefault(predicate)));
+
+        var createStreetcodeDTO = CreateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        var command = new CreateStreetcodeCommand(createStreetcodeDTO);
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Transliteration URL is already in use.", result.Errors.First().Message);
+        _repositoryMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never);
+    }
+
     private static CreateStreetcodeDTO CreateStreetcodeBuildDto(
         StreetcodeType streetcodeType,
         int? animationImageId,

@@ -36,6 +36,26 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
             {
                 _mapper.Map(dto, entity);
 
+                var indexConflict = await _repositoryWrapper.StreetcodeRepository
+                    .GetFirstOrDefaultAsync(s => s.Index == dto.Index);
+
+                if (indexConflict is not null)
+                {
+                    var errorMsg = $"Streetcode with index {dto.Index} already exists.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
+                var transliterationUrlConflict = await _repositoryWrapper.StreetcodeRepository
+                    .GetFirstOrDefaultAsync(s => s.TransliterationUrl == dto.TransliterationUrl);
+
+                if (transliterationUrlConflict is not null)
+                {
+                    const string errorMsg = "Transliteration URL is already in use.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(errorMsg);
+                }
+
                 var tagIds = dto.Tags?.Select(t => t.Id).ToList() ?? new List<int>();
                 var existingTags = await _repositoryWrapper.TagRepository.GetAllAsync(t => tagIds.Contains(t.Id));
 
