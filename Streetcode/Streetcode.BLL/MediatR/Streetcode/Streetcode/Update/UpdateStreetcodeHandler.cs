@@ -53,22 +53,12 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                     return Result.Fail(errorMsg);
                 }
 
-                var indexConflict = await _repositoryWrapper.StreetcodeRepository
-                    .GetFirstOrDefaultAsync(s => s.Index == dto.Index && s.Id != streetcode.Id);
+                var uniquenessResult = await StreetcodeCreateUpdateChecks.EnsureIndexAndUrlAreUniqueAsync(
+                    _repositoryWrapper, dto.Index, dto.TransliterationUrl, streetcode.Id);
 
-                if (indexConflict is not null)
+                if (uniquenessResult.IsFailed)
                 {
-                    var errorMsg = $"Streetcode with index {dto.Index} already exists.";
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
-                }
-
-                var transliterationUrlConflict = await _repositoryWrapper.StreetcodeRepository
-                    .GetFirstOrDefaultAsync(s => s.TransliterationUrl == dto.TransliterationUrl && s.Id != streetcode.Id);
-
-                if (transliterationUrlConflict is not null)
-                {
-                    const string errorMsg = "Transliteration URL is already in use.";
+                    var errorMsg = uniquenessResult.Errors.First().Message;
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(errorMsg);
                 }
@@ -76,12 +66,13 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                 _mapper.Map(dto, streetcode);
 
                 var tagIds = dto.Tags?.Select(t => t.Id).ToList() ?? new List<int>();
-                var existingTags = await _repositoryWrapper.TagRepository.GetAllAsync(t => tagIds.Contains(t.Id));
 
-                var missingTagIds = tagIds.Except(existingTags.Select(t => t.Id)).ToList();
-                if (missingTagIds.Any())
+                var tagsExistResult = await StreetcodeCreateUpdateChecks.ValidateTagsExistAsync(
+                    _repositoryWrapper, tagIds);
+
+                if (tagsExistResult.IsFailed)
                 {
-                    var errorMsg = $"Tag(s) not found: {string.Join(", ", missingTagIds)}";
+                    var errorMsg = tagsExistResult.Errors.First().Message;
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(errorMsg);
                 }
