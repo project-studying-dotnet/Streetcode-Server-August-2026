@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Azure.Storage.Blobs;
 using FluentValidation;
 using Hangfire;
@@ -29,8 +31,6 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
 using Streetcode.WebApi.ExceptionHandlers;
 using Streetcode.WebApi.Service;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace Streetcode.WebApi.Extensions;
 
