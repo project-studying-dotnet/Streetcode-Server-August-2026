@@ -18,7 +18,7 @@ public class AzureBlobService : IBlobService
 
     public AzureBlobService(
         BlobContainerClient blobServiceClient,
-        IRepositoryWrapper? repositoryWrapper = null)
+        IRepositoryWrapper repositoryWrapper)
     {
         _containerClient = blobServiceClient;
         _repositoryWrapper = repositoryWrapper;
