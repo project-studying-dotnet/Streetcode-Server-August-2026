@@ -50,9 +50,11 @@ public class AzureBlobService : IBlobService
         var hashBlobStorageName = BlobHelper.GetHashedFileName(name);
         byte[] imageBytes = Convert.FromBase64String(base64);
 
-        extension = NormalizeExtension(extension);
+        extension = BlobHelper.NormalizeExtension(extension);
 
-        BlobClient client = _containerClient.GetBlobClient($"{hashBlobStorageName}.{extension}");
+        var blobName = $"{hashBlobStorageName}.{extension}";
+
+        BlobClient client = _containerClient.GetBlobClient(blobName);
 
         var options = new BlobUploadOptions
         {
@@ -61,14 +63,14 @@ public class AzureBlobService : IBlobService
 
         client.Upload(new MemoryStream(imageBytes), options);
 
-        return hashBlobStorageName;
+        return blobName;
     }
 
     public void SaveFileInStorageBase64(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
 
-        extension = NormalizeExtension(extension);
+        extension = BlobHelper.NormalizeExtension(extension);
 
         BlobClient client = _containerClient.GetBlobClient($"{name}.{extension}");
 
@@ -82,11 +84,11 @@ public class AzureBlobService : IBlobService
 
     public string UpdateFileInStorage(string previousBlobName, string base64Format, string newBlobName, string extension)
     {
-        string hashBlobStorageName = SaveFileInStorage(base64Format, newBlobName, extension);
+        string blobName = SaveFileInStorage(base64Format, newBlobName, extension);
 
         DeleteFileInStorage(previousBlobName);
 
-        return hashBlobStorageName;
+        return blobName;
     }
 
     public async Task CleanBlobStorage()
@@ -132,14 +134,4 @@ public class AzureBlobService : IBlobService
         "gif" => "image/gif",
         _ => "application/octet-stream",
     };
-
-    private static string NormalizeExtension(string extension)
-    {
-        if (string.IsNullOrWhiteSpace(extension))
-        {
-            return string.Empty;
-        }
-
-        return extension.TrimStart('.').ToLower();
-    }
 }
