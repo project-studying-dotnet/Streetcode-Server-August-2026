@@ -37,6 +37,14 @@ services:
       - azurite-data:/data
     restart: unless-stopped
 
+    healthcheck:
+      test: ["CMD", "node", "-e", "const net = require('net'); const client = net.connect(10000, '127.0.0.1', () => { process.exit(0); }); client.on('error', () => { process.exit(1); });"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+
   api:
     container_name: streetcode-api
     restart: unless-stopped
@@ -62,7 +70,7 @@ services:
       sqlserver:
         condition: service_healthy
       azurite:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   sqlserver-data:
