@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Payment;
 using Streetcode.BLL.MediatR.Payment;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Payment.Validators;
 
@@ -12,7 +13,7 @@ public sealed class CreateInvoiceCommandValidator
     {
         RuleFor(command => command.Payment)
             .NotNull()
-            .WithMessage("Payment data is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(paymentDtoValidator);
     }
 }

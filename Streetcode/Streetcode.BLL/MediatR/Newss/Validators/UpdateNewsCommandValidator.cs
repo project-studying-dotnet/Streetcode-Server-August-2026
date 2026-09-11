@@ -2,6 +2,7 @@ using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.News;
 using Streetcode.BLL.MediatR.Newss.Update;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Newss.Validators;
 
@@ -12,7 +13,7 @@ public sealed class UpdateNewsCommandValidator
     {
         RuleFor(command => command.news)
             .NotNull()
-            .WithMessage("News is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(newsDtoValidator);
         RuleFor(command => command.news.Id)
             .MustBeValidId("News")

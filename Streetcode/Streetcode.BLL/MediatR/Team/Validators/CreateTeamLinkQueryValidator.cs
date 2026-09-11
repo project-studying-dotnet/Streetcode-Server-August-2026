@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Team;
 using Streetcode.BLL.MediatR.Team.TeamMembersLinks.Create;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Team.Validators;
 
@@ -12,7 +13,7 @@ public sealed class CreateTeamLinkQueryValidator
     {
         RuleFor(query => query.teamMember)
             .NotNull()
-            .WithMessage("Team member link is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(linkValidator);
     }
 }

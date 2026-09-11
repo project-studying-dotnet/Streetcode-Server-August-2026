@@ -1,5 +1,6 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Email;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Email.Validators;
 
@@ -11,7 +12,7 @@ public sealed class SendEmailCommandValidator
     {
         RuleFor(command => command.Email)
             .NotNull()
-            .WithMessage("Email is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(emailDtoValidator);
     }
 }

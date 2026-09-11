@@ -2,6 +2,7 @@ using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.AdditionalContent.Tag.GetByStreetcodeId;
 using TagEntity = Streetcode.DAL.Entities.AdditionalContent.Tag;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.AdditionalContent.Tag.Validators;
 
@@ -12,7 +13,7 @@ public sealed class GetTagByTitleQueryValidator
     {
         RuleFor(query => query.Title)
             .NotEmpty()
-            .WithMessage("Tag title is required.")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(TagEntity.TitleMaxLength, "Tag title");
     }
 }

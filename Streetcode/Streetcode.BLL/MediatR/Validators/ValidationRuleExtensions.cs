@@ -1,4 +1,5 @@
 using FluentValidation;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Validators;
 
@@ -10,7 +11,7 @@ public static class ValidationRuleExtensions
     {
         return ruleBuilder
             .GreaterThan(0)
-            .WithMessage($"{resourceName} ID must be greater than 0.");
+            .WithMessage(string.Format(ErrorMessages.MustBeValidId, resourceName));
     }
 
     public static IRuleBuilderOptions<T, string?> MustBeValidHttpUrl<T>(
@@ -23,8 +24,7 @@ public static class ValidationRuleExtensions
                 (Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) &&
                  (uri.Scheme == Uri.UriSchemeHttp ||
                   uri.Scheme == Uri.UriSchemeHttps)))
-            .WithMessage(
-                $"{fieldName} must be a valid HTTP or HTTPS URL.");
+            .WithMessage(string.Format(ErrorMessages.MustBeValidHttpUrl, fieldName));
     }
 
     public static IRuleBuilderOptions<T, string?> MustNotExceedLength<T>(
@@ -34,7 +34,6 @@ public static class ValidationRuleExtensions
     {
         return ruleBuilder
             .MaximumLength(maximumLength)
-            .WithMessage(
-                $"{fieldName} must not exceed {maximumLength} characters.");
+            .WithMessage(string.Format(ErrorMessages.MustNotExceedLength, fieldName, maximumLength));
     }
 }
