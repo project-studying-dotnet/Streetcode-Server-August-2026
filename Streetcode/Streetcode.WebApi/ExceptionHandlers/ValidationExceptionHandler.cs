@@ -47,7 +47,7 @@ public sealed class ValidationExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode =
             StatusCodes.Status400BadRequest;
 
-        bool wasWritten = await _problemDetailsService.TryWriteAsync(
+        var written = await _problemDetailsService.TryWriteAsync(
             new ProblemDetailsContext
             {
                 HttpContext = httpContext,
@@ -55,14 +55,14 @@ public sealed class ValidationExceptionHandler : IExceptionHandler
                 Exception = exception,
             });
 
-        if (!wasWritten)
+        if (written)
         {
-            await httpContext.Response.WriteAsJsonAsync(
-                problemDetails,
-                options: null,
-                contentType: "application/problem+json",
-                cancellationToken: cancellationToken);
+            return true;
         }
+
+        await httpContext.Response.WriteAsJsonAsync(
+            problemDetails,
+            cancellationToken);
 
         return true;
     }
