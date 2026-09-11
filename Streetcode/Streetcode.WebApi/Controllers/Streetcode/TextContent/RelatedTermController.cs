@@ -4,6 +4,8 @@ using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Create;
 using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Delete;
 using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.GetAllByTermId;
 using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Update;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Streetcode.TextContent
 {
@@ -15,18 +17,21 @@ namespace Streetcode.WebApi.Controllers.Streetcode.TextContent
             return HandleResult(await Mediator.Send(new GetAllRelatedTermsByTermIdQuery(id)));
         }
 
+        [AuthorizeRoles(UserRole.MainAdministrator, UserRole.Administrator, UserRole.Moderator)]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] RelatedTermDTO relatedTerm)
         {
             return HandleResult(await Mediator.Send(new CreateRelatedTermCommand(relatedTerm)));
         }
 
+        [AuthorizeRoles(UserRole.MainAdministrator, UserRole.Administrator, UserRole.Moderator)]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] RelatedTermDTO relatedTerm)
         {
             return HandleResult(await Mediator.Send(new UpdateRelatedTermCommand(id, relatedTerm)));
         }
 
+        [AuthorizeRoles(UserRole.MainAdministrator, UserRole.Administrator)]
         [HttpDelete("{word}")]
         public async Task<IActionResult> Delete([FromRoute] string word)
         {

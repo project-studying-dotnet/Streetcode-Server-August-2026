@@ -5,6 +5,8 @@ using Streetcode.BLL.MediatR.Team.Create;
 using Streetcode.BLL.MediatR.Team.GetAll;
 using Streetcode.BLL.MediatR.Team.TeamMembersLinks.Create;
 using Streetcode.BLL.MediatR.Team.TeamMembersLinks.GetAll;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Team
 {
@@ -16,6 +18,7 @@ namespace Streetcode.WebApi.Controllers.Team
             return HandleResult(await Mediator.Send(new GetAllTeamLinkQuery()));
         }
 
+        [AuthorizeRoles(UserRole.MainAdministrator, UserRole.Administrator)]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] TeamMemberLinkDTO teamMemberLink)
         {
