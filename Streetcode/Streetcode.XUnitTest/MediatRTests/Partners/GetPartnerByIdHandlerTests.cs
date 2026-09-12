@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Partners;
@@ -7,6 +6,8 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Partners.GetById;
 using Streetcode.DAL.Entities.Partners;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Partners.GetById;
@@ -24,9 +25,8 @@ public class GetPartnerByIdHandlerTests
         var partner = new Partner { Id = partnerId };
         var partnerDto = new PartnerDTO { Id = partnerId };
 
-        _repositoryMock.Setup(r => r.PartnersRepository.GetSingleOrDefaultAsync(
-                It.IsAny<Expression<Func<Partner, bool>>>(),
-                It.IsAny<Func<IQueryable<Partner>, IIncludableQueryable<Partner, object>>>()))
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .GetBySpecAsync(It.IsAny<GetPartnerByIdSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(partner);
         _mapperMock.Setup(m => m.Map<PartnerDTO>(partner)).Returns(partnerDto);
 
@@ -45,10 +45,10 @@ public class GetPartnerByIdHandlerTests
         var query = new GetPartnerByIdQuery(partnerId);
         var expectedError = $"Cannot find any partner with corresponding id: {partnerId}";
 
-        _repositoryMock.Setup(r => r.PartnersRepository.GetSingleOrDefaultAsync(
-                It.IsAny<Expression<Func<Partner, bool>>>(),
-                It.IsAny<Func<IQueryable<Partner>, IIncludableQueryable<Partner, object>>>()))
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .GetBySpecAsync(It.IsAny<GetPartnerByIdSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Partner)null!);
+
 
         var handler = new GetPartnerByIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
 

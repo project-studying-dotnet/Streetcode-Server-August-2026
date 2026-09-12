@@ -1,5 +1,4 @@
-﻿using System.Linq.Expressions;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
 using Streetcode.BLL.DTO.Team;
@@ -7,6 +6,8 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Team.GetById;
 using Streetcode.DAL.Entities.Team;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Team;
+using System.Linq.Expressions;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Team;
@@ -24,9 +25,8 @@ public class GetByIdTeamHandlerTests
         var member = new TeamMember { Id = searchId };
         var memberDto = new TeamMemberDTO { Id = searchId };
 
-        _repositoryMock.Setup(r => r.TeamRepository.GetSingleOrDefaultAsync(
-            It.IsAny<Expression<Func<TeamMember, bool>>>(),
-            It.IsAny<Func<IQueryable<TeamMember>, IIncludableQueryable<TeamMember, object>>>()))
+        _repositoryMock.Setup(r => r.TeamRepository.GetBySpecAsync(
+            It.IsAny<GetByIdTeamSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(member);
 
         _mapperMock.Setup(m => m.Map<TeamMemberDTO>(member)).Returns(memberDto);
@@ -43,9 +43,8 @@ public class GetByIdTeamHandlerTests
     public async Task Handle_ReturnsFailResult_WhenMemberNotFound()
     {
         int searchId = 999;
-        _repositoryMock.Setup(r => r.TeamRepository.GetSingleOrDefaultAsync(
-            It.IsAny<Expression<Func<TeamMember, bool>>>(),
-            It.IsAny<Func<IQueryable<TeamMember>, IIncludableQueryable<TeamMember, object>>>()))
+        _repositoryMock.Setup(r => r.TeamRepository.GetBySpecAsync(
+            It.IsAny<GetByIdTeamSpecification>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((TeamMember)null!);
 
         var handler = new GetByIdTeamHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);

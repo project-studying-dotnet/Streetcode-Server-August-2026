@@ -5,6 +5,7 @@ using Streetcode.BLL.DTO.AdditionalContent.Subtitles;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.GetAllPartnerShort
 {
@@ -23,7 +24,9 @@ namespace Streetcode.BLL.MediatR.Partners.GetAllPartnerShort
 
         public async Task<Result<IEnumerable<PartnerShortDTO>>> Handle(GetAllPartnersShortQuery request, CancellationToken cancellationToken)
         {
-            var partners = await _repositoryWrapper.PartnersRepository.GetAllAsync();
+            var specification = new GetAllPartnerShortSpecification();
+            var partners = await _repositoryWrapper.PartnersRepository
+                .ListAsync(specification, cancellationToken);
 
             if (partners is null)
             {
