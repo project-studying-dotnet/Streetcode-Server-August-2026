@@ -1,24 +1,27 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using FluentValidation;
 using Hangfire;
 using MediatR;
-using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.FeatureManagement;
+using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
-using Streetcode.WebApi.ExceptionHandlers;
-using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Services.BlobStorageService;
+using Streetcode.BLL.Services.CacheService;
 using Streetcode.BLL.Services.Email;
 using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
@@ -28,6 +31,7 @@ using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
+using Streetcode.WebApi.ExceptionHandlers;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -66,6 +70,8 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetRequiredConnectionString();
         var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
         services.AddSingleton(emailConfig);
+
+        services.AddRedisCaching(configuration);
 
         services.AddDbContext<StreetcodeDbContext>(options =>
         {
@@ -116,6 +122,29 @@ public static class ServiceCollectionExtensions
             opt.SwaggerDoc("v1", new OpenApiInfo { Title = "MyApi", Version = "v1" });
             opt.CustomSchemaIds(x => x.FullName);
         });
+    }
+
+    public static void AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<CacheOptions>(configuration.GetSection("Cache"));
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+                                     ?? configuration["REDIS_CONNECTION_STRING"];
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "streetcode:";
+            });
+
+            services.AddSingleton<ICacheService, CacheService>();
+        }
+        else
+        {
+            services.AddSingleton<ICacheService, NoOpCacheService>();
+        }
     }
 
     public class CorsConfiguration
