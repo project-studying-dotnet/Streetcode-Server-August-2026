@@ -417,6 +417,129 @@ public sealed class AuthControllerIntegrationTests
             problemDetails.Errors.Keys);
     }
 
+    [Fact]
+    public async Task Logout_WhenRefreshTokenDoesNotExist_ShouldReturnNoContent()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = $"unknown-{Guid.NewGuid():N}"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            response.StatusCode);
+
+        Assert.Empty(
+            await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Logout_WhenRefreshTokenIsEmpty_ShouldReturnValidationProblem()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = string.Empty
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "One or more validation errors occurred.",
+            problemDetails.Title);
+
+        Assert.Contains(
+            nameof(LogoutRequestDto.RefreshToken),
+            problemDetails.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Logout_WhenCalledTwice_ShouldReturnNoContentAndMakeRefreshUnauthorized()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var registerRequest = new RegisterRequestDto
+        {
+            Email = $"logout-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            registerRequest);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var registeredUser =
+            await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
+
+        Assert.NotNull(registeredUser);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var refreshTokenService = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var issueResult = await refreshTokenService.IssueAsync(
+            registeredUser.UserId,
+            CancellationToken.None);
+
+        Assert.True(issueResult.IsSuccess);
+
+        var refreshToken = issueResult.Value.Token;
+        var logoutRequest = new LogoutRequestDto
+        {
+            RefreshToken = refreshToken
+        };
+
+        var firstLogoutResponse = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            logoutRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            firstLogoutResponse.StatusCode);
+
+        var secondLogoutResponse = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            logoutRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            secondLogoutResponse.StatusCode);
+
+        var refreshResponse = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new RefreshSessionRequestDto
+            {
+                RefreshToken = refreshToken
+            });
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            refreshResponse.StatusCode);
+    }
+
     private sealed class FailingRefreshTokenService
         : IRefreshTokenService
     {

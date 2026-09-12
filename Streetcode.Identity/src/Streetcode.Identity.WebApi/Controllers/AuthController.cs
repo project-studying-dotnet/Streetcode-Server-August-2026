@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Streetcode.Identity.Application.Features.Authentication.Login;
+using Streetcode.Identity.Application.Features.Authentication.Logout;
 using Streetcode.Identity.Application.Features.Authentication.Refresh;
 using Streetcode.Identity.Application.Features.Registration;
 using Streetcode.Identity.WebApi.DTOs;
@@ -108,5 +109,32 @@ public sealed class AuthController : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<HttpValidationProblemDetails>(
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(
+        StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Logout(
+        [FromBody] LogoutRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var command = new LogoutCommand(request.RefreshToken);
+
+        var result = await _sender.Send(
+            command,
+            cancellationToken);
+
+        if (result.IsFailed)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status500InternalServerError,
+                title: "Logout failed",
+                detail: "An unexpected error occurred while processing the logout request");
+        }
+
+        return NoContent();
     }
 }
