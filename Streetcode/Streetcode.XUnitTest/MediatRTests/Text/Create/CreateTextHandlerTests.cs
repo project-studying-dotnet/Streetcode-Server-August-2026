@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Moq;
@@ -12,7 +12,7 @@ using Xunit;
 using TextEntity = Streetcode.DAL.Entities.Streetcode.TextContent.Text;
 using StreetcodeEntity = Streetcode.DAL.Entities.Streetcode.StreetcodeContent;
 
-namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Text;
+namespace Streetcode.XUnitTest.MediatRTests.Text.Create;
 
 public class CreateTextHandlerTests
 {
@@ -46,7 +46,8 @@ public class CreateTextHandlerTests
 
         _streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                It.Is<Expression<Func<StreetcodeEntity, bool>>>(
+                    predicate => MatchesStreetcodeLookup(predicate, command.TextCreateDto.StreetcodeId)),
                 It.IsAny<Func<IQueryable<StreetcodeEntity>, IIncludableQueryable<StreetcodeEntity, object>>?>()))
             .ReturnsAsync((StreetcodeEntity)null!);
 
@@ -59,7 +60,7 @@ public class CreateTextHandlerTests
             mapper => mapper.Map<TextEntity>(It.IsAny<TextCreateDTO>()),
             Times.Never());
         _textRepositoryMock.Verify(
-            repository => repository.Create(It.IsAny<TextEntity>()),
+            repository => repository.CreateAsync(It.IsAny<TextEntity>()),
             Times.Never());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
@@ -78,7 +79,8 @@ public class CreateTextHandlerTests
         SetupStreetcodeExists(command);
         _textRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<TextEntity, bool>>>(),
+                It.Is<Expression<Func<TextEntity, bool>>>(
+                    predicate => MatchesTextLookup(predicate, command.TextCreateDto.StreetcodeId)),
                 It.IsAny<Func<IQueryable<TextEntity>, IIncludableQueryable<TextEntity, object>>?>()))
             .ReturnsAsync(CreateTextEntity());
 
@@ -91,7 +93,7 @@ public class CreateTextHandlerTests
             mapper => mapper.Map<TextEntity>(It.IsAny<TextCreateDTO>()),
             Times.Never());
         _textRepositoryMock.Verify(
-            repository => repository.Create(It.IsAny<TextEntity>()),
+            repository => repository.CreateAsync(It.IsAny<TextEntity>()),
             Times.Never());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
@@ -118,7 +120,7 @@ public class CreateTextHandlerTests
         Assert.Single(result.Errors);
         Assert.Equal(expectedError, result.Errors.First().Message);
         _textRepositoryMock.Verify(
-            repository => repository.Create(It.IsAny<TextEntity>()),
+            repository => repository.CreateAsync(It.IsAny<TextEntity>()),
             Times.Never());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
@@ -143,7 +145,7 @@ public class CreateTextHandlerTests
         Assert.Single(result.Errors);
         Assert.Equal(expectedError, result.Errors.First().Message);
         _textRepositoryMock.Verify(
-            repository => repository.Create(textEntity),
+            repository => repository.CreateAsync(textEntity),
             Times.Once());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
@@ -206,11 +208,12 @@ public class CreateTextHandlerTests
         Assert.Same(expectedDto, result.Value);
         _streetcodeRepositoryMock.Verify(
             repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                It.Is<Expression<Func<StreetcodeEntity, bool>>>(
+                    predicate => MatchesStreetcodeLookup(predicate, command.TextCreateDto.StreetcodeId)),
                 It.IsAny<Func<IQueryable<StreetcodeEntity>, IIncludableQueryable<StreetcodeEntity, object>>?>()),
             Times.Once());
         _textRepositoryMock.Verify(
-            repository => repository.Create(textEntity),
+            repository => repository.CreateAsync(textEntity),
             Times.Once());
         _repositoryWrapperMock.Verify(
             wrapper => wrapper.SaveChangesAsync(),
@@ -235,8 +238,8 @@ public class CreateTextHandlerTests
             .Setup(mapper => mapper.Map<TextEntity>(command.TextCreateDto))
             .Returns(textEntity);
         _textRepositoryMock
-            .Setup(repository => repository.Create(textEntity))
-            .Returns(textEntity);
+            .Setup(repository => repository.CreateAsync(textEntity))
+            .ReturnsAsync(textEntity);
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ThrowsAsync(thrown);
@@ -251,19 +254,41 @@ public class CreateTextHandlerTests
             Times.Once());
     }
 
+    private static bool MatchesStreetcodeLookup(
+        Expression<Func<StreetcodeEntity, bool>> predicate,
+        int streetcodeId)
+    {
+        var compiled = predicate.Compile();
+        var matching = new StreetcodeEntity { Id = streetcodeId };
+        var other = new StreetcodeEntity { Id = streetcodeId + 1 };
+        return compiled(matching) && !compiled(other);
+    }
+
+    private static bool MatchesTextLookup(
+        Expression<Func<TextEntity, bool>> predicate,
+        int streetcodeId)
+    {
+        var compiled = predicate.Compile();
+        var matching = new TextEntity { StreetcodeId = streetcodeId };
+        var other = new TextEntity { StreetcodeId = streetcodeId + 1 };
+        return compiled(matching) && !compiled(other);
+    }
+
     private void SetupStreetcodeExists(CreateTextCommand command)
     {
         var streetcode = new StreetcodeEntity { Id = command.TextCreateDto.StreetcodeId };
 
         _streetcodeRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<StreetcodeEntity, bool>>>(),
+                It.Is<Expression<Func<StreetcodeEntity, bool>>>(
+                    predicate => MatchesStreetcodeLookup(predicate, command.TextCreateDto.StreetcodeId)),
                 It.IsAny<Func<IQueryable<StreetcodeEntity>, IIncludableQueryable<StreetcodeEntity, object>>?>()))
             .ReturnsAsync(streetcode);
 
         _textRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<TextEntity, bool>>>(),
+                It.Is<Expression<Func<TextEntity, bool>>>(
+                    predicate => MatchesTextLookup(predicate, command.TextCreateDto.StreetcodeId)),
                 It.IsAny<Func<IQueryable<TextEntity>, IIncludableQueryable<TextEntity, object>>?>()))
             .ReturnsAsync((TextEntity)null!);
     }
@@ -278,8 +303,8 @@ public class CreateTextHandlerTests
             .Setup(mapper => mapper.Map<TextEntity>(command.TextCreateDto))
             .Returns(textEntity);
         _textRepositoryMock
-            .Setup(repository => repository.Create(textEntity))
-            .Returns(textEntity);
+            .Setup(repository => repository.CreateAsync(textEntity))
+            .ReturnsAsync(textEntity);
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(saveChangesResult);

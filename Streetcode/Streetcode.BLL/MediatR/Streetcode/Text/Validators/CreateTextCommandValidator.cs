@@ -19,16 +19,15 @@ public sealed class CreateTextCommandValidator : AbstractValidator<CreateTextCom
             .NotEmpty()
             .WithMessage("Title is required.")
             .MustNotExceedLength(
-                300,
+                TextEntity.TitleMaxLength,
                 "Title");
 
         RuleFor(command => command.TextCreateDto.AdditionalText)
             .MustNotExceedLength(
-                500,
+                TextEntity.AdditionalTextMaxLength,
                 "Additional text");
 
         RuleFor(command => command.TextCreateDto.StreetcodeId)
-            .GreaterThan(0)
-            .WithMessage("StreetcodeId must be a valid positive identifier.");
+            .MustBeValidId("Streetcode");
     }
 }

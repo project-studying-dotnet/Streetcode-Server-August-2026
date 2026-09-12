@@ -55,7 +55,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
                     return Result.Fail(new Error(errorMsg));
                 }
 
-                var createdText = _repository.TextRepository.Create(text);
+                var createdText = await _repository.TextRepository.CreateAsync(text);
 
                 var isSuccessResult = await _repository.SaveChangesAsync() > 0;
 
