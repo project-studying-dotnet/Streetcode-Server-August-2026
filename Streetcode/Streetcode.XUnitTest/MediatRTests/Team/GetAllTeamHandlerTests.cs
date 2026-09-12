@@ -68,7 +68,7 @@ public class GetAllTeamHandlerTests
 
         var handler = new GetAllTeamHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllTeamQuery();
-        var expectedError = "Cannot find any team";
+        var expectedError = TestMessages.CannotFindAnyTeam;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

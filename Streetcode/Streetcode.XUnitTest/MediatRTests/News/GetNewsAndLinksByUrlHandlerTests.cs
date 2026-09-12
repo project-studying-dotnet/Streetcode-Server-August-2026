@@ -77,7 +77,7 @@ public class GetNewsAndLinksByUrlHandlerTests
     {
         var url = "not-found";
         var query = new GetNewsAndLinksByUrlQuery(url);
-        var expectedError = $"No news by entered Url - {url}";
+        var expectedError = string.Format(TestMessages.NoNewsByEnteredUrl, url);
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync((DAL.Entities.News.News)null!);
@@ -129,7 +129,7 @@ public class GetNewsAndLinksByUrlHandlerTests
         var news = new DAL.Entities.News.News { Id = 1, URL = url };
         var newsDto = new NewsDTO { Id = 1, URL = url };
         var query = new GetNewsAndLinksByUrlQuery(url);
-        var expectedError = "There are no news in the database";
+        var expectedError = TestMessages.ThereAreNoNewsInDatabase;
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
             It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
@@ -160,7 +160,7 @@ public class GetNewsAndLinksByUrlHandlerTests
         var newsDto = new NewsDTO { Id = 1, URL = url };
         var query = new GetNewsAndLinksByUrlQuery(url);
         var emptyList = new List<DAL.Entities.News.News>();
-        var expectedError = "There are no news in the database";
+        var expectedError = TestMessages.ThereAreNoNewsInDatabase;
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
             It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),
@@ -190,7 +190,7 @@ public class GetNewsAndLinksByUrlHandlerTests
         var news = new DAL.Entities.News.News { Id = 99, URL = url };
         var newsDto = new NewsDTO { Id = 99, URL = url };
         var query = new GetNewsAndLinksByUrlQuery(url);
-        var expectedError = "No news found by entered Id - 99";
+        var expectedError = string.Format(TestMessages.NoNewsFoundByEnteredId, 99);
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(
             It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(),

@@ -72,7 +72,7 @@ public class CreatePartnerHandlerTests
         var createPartnerDto = new CreatePartnerDTO();
         var partnerEntity = new Partner();
         var query = new CreatePartnerQuery(createPartnerDto);
-        var expectedError = "Database error";
+        var expectedError = TestMessages.DatabaseError;
 
         _mapperMock.Setup(m => m.Map<Partner>(createPartnerDto)).Returns(partnerEntity);
 

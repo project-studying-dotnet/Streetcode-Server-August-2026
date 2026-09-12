@@ -52,7 +52,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal($"Cannot find a coordinate with corresponding categoryId: {command.Id}", result.Errors[0].Message);
+            Assert.Equal(string.Format(TestMessages.CannotFindCoordinateWithCorrespondingCategoryId, command.Id), result.Errors[0].Message);
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal("Failed to delete a coordinate", result.Errors[0].Message);
+            Assert.Equal(TestMessages.FailedToDeleteCoordinate, result.Errors[0].Message);
         }
     }
 }

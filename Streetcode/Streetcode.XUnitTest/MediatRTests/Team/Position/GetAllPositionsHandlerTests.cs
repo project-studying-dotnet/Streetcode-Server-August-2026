@@ -39,7 +39,7 @@ public class GetAllPositionsHandlerTests
 
         var handler = new GetAllPositionsHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllPositionsQuery();
-        var expectedError = "Cannot find any positions";
+        var expectedError = TestMessages.CannotFindAnyPositions;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

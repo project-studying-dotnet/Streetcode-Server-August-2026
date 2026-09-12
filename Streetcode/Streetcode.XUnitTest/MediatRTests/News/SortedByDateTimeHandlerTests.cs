@@ -49,7 +49,7 @@ public class SortedByDateTimeHandlerTests
 
         var handler = new SortedByDateTimeHandler(_repositoryMock.Object, _mapperMock.Object, _blobServiceMock.Object, _loggerMock.Object);
         var query = new SortedByDateTimeQuery();
-        var expectedError = "There are no news in the database";
+        var expectedError = TestMessages.ThereAreNoNewsInDatabase;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

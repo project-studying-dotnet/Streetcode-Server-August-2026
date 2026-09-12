@@ -79,7 +79,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal($"Cannot find a coordinates by a streetcode id: {query.StreetcodeId}, because such streetcode doesn`t exist", result.Errors[0].Message);
+            Assert.Equal(string.Format(TestMessages.CannotFindCoordinatesByStreetcodeIdBecauseStreetcodeDoesNotExist, query.StreetcodeId), result.Errors[0].Message);
         }
 
         [Fact]
@@ -98,9 +98,9 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Coordinate
             var result = await _handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal($"Cannot find a coordinates by a streetcode id: {query.StreetcodeId}", result.Errors[0].Message);
+            Assert.Equal(string.Format(TestMessages.CannotFindCoordinatesByStreetcodeId, query.StreetcodeId), result.Errors[0].Message);
 
-            _mockLogger.Verify(l => l.LogError(query, $"Cannot find a coordinates by a streetcode id: {query.StreetcodeId}"), Times.Once);
+            _mockLogger.Verify(l => l.LogError(query, string.Format(TestMessages.CannotFindCoordinatesByStreetcodeId, query.StreetcodeId)), Times.Once);
         }
     }
 }

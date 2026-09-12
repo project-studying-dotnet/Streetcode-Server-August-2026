@@ -124,8 +124,9 @@ public class CreateTermHandlerTests
             Title = "Test term",
             Description = "Existing description",
         };
-        const string expectedError =
-            "A term with the title 'Test term' already exists.";
+        var expectedError = string.Format(
+            TestMessages.TermWithTitleAlreadyExists,
+            termCreateDto.Title);
         _mapperMock
             .Setup(mapper => mapper.Map<TermEntity>(termCreateDto))
             .Returns(termEntity);
@@ -174,8 +175,7 @@ public class CreateTermHandlerTests
             Title = "Test term",
             Description = "Test description",
         };
-        const string expectedError =
-            "Cannot save changes in the database after creation";
+        var expectedError = TestMessages.CannotSaveChangesAfterCreation;
 
         _mapperMock
             .Setup(mapper => mapper.Map<TermEntity>(termCreateDto))
@@ -252,8 +252,7 @@ public class CreateTermHandlerTests
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ThrowsAsync(dbUpdateException);
 
-        const string expectedError =
-            "Cannot save changes in the database after creation";
+        var expectedError = TestMessages.CannotSaveChangesAfterCreation;
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

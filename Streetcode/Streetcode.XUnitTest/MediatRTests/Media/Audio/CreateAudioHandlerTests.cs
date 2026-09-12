@@ -118,7 +118,7 @@ public class CreateAudioHandlerTests
         var command = new CreateAudioCommand(audioFileBaseDto);
         var hashBlobStorageName = "pjomncjaotiv50391nvk93jvs";
         var expectedBlobName = $"{hashBlobStorageName}.{audioFileBaseDto.Extension}";
-        const string expectedError = "Failed to create an audio";
+        var expectedError = TestMessages.FailedToCreateAnAudio;
         var audioEntity = new AudioEntity
         {
             Id = 3,

@@ -43,7 +43,7 @@ public class DeletePartnerHandlerTests
     {
         int partnerId = 99;
         var query = new DeletePartnerQuery(partnerId);
-        string expectedError = "No partner with such id";
+        var expectedError = TestMessages.NoPartnerWithSuchId;
 
         _repositoryMock.Setup(r => r.PartnersRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<Partner, bool>>>(), null))
             .ReturnsAsync((Partner)null!);
@@ -64,7 +64,7 @@ public class DeletePartnerHandlerTests
         int partnerId = 1;
         var partnerEntity = new Partner { Id = partnerId };
         var query = new DeletePartnerQuery(partnerId);
-        string expectedError = "DB save failed";
+        var expectedError = TestMessages.DatabaseSaveFailed;
 
         _repositoryMock.Setup(r => r.PartnersRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<Partner, bool>>>(), null))
             .ReturnsAsync(partnerEntity);

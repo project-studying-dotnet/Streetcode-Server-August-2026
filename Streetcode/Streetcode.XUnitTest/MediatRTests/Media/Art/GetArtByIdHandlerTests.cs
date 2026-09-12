@@ -47,7 +47,7 @@ public class GetArtByIdHandlerTests
 
         var handler = new GetArtByIdHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetArtByIdQuery(searchId);
-        string expectedErrorMsg = $"Cannot find an art with corresponding id: {searchId}";
+        var expectedErrorMsg = string.Format(TestMessages.CannotFindAnArtWithCorrespondingId, searchId);
 
         var result = await handler.Handle(query, CancellationToken.None);
 

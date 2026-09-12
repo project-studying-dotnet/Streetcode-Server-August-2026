@@ -45,7 +45,7 @@ public class GetNewsByUrlHandlerTests
     {
         string url = "not-found";
         var query = new GetNewsByUrlQuery(url);
-        var expectedError = $"No news by entered Url - {url}";
+        var expectedError = string.Format(TestMessages.NoNewsByEnteredUrl, url);
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), It.IsAny<Func<IQueryable<DAL.Entities.News.News>, IIncludableQueryable<DAL.Entities.News.News, object>>>()))
             .ReturnsAsync((DAL.Entities.News.News)null!);

@@ -43,7 +43,7 @@ public class GetPartnerByIdHandlerTests
     {
         int partnerId = 99;
         var query = new GetPartnerByIdQuery(partnerId);
-        var expectedError = $"Cannot find any partner with corresponding id: {partnerId}";
+        var expectedError = string.Format(TestMessages.CannotFindAnyPartnerWithCorrespondingId, partnerId);
 
         _repositoryMock.Setup(r => r.PartnersRepository.GetSingleOrDefaultAsync(
                 It.IsAny<Expression<Func<Partner, bool>>>(),

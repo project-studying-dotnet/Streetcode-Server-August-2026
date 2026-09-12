@@ -67,7 +67,7 @@ public class DeleteNewsHandlerTests
     {
         int newsId = 99;
         var command = new DeleteNewsCommand(newsId);
-        var expectedError = $"No news found by entered Id - {newsId}";
+        var expectedError = string.Format(TestMessages.NoNewsFoundByEnteredId, newsId);
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
             .ReturnsAsync((DAL.Entities.News.News)null!);
@@ -87,7 +87,7 @@ public class DeleteNewsHandlerTests
         int newsId = 1;
         var news = new DAL.Entities.News.News { Id = newsId };
         var command = new DeleteNewsCommand(newsId);
-        var expectedError = "Failed to delete news";
+        var expectedError = TestMessages.FailedToDeleteNews;
 
         _repositoryMock.Setup(r => r.NewsRepository.GetFirstOrDefaultAsync(It.IsAny<Expression<Func<DAL.Entities.News.News, bool>>>(), null))
             .ReturnsAsync(news);
