@@ -7,6 +7,8 @@ namespace Streetcode.DAL.Entities.Team
     [Table("team_member_links", Schema = "team")]
     public class TeamMemberLink
     {
+        public const int TargetUrlMaxLength = 255;
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
@@ -15,7 +17,7 @@ namespace Streetcode.DAL.Entities.Team
         public LogoType LogoType { get; set; }
 
         [Required]
-        [MaxLength(255)]
+        [MaxLength(TargetUrlMaxLength)]
         public string? TargetUrl { get; set; }
 
         [Required]

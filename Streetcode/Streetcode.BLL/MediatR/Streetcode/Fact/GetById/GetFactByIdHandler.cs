@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentResults;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Fact;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
@@ -22,15 +23,19 @@ public class GetFactByIdHandler : IRequestHandler<GetFactByIdQuery, Result<FactD
 
     public async Task<Result<FactDto>> Handle(GetFactByIdQuery request, CancellationToken cancellationToken)
     {
-        var facts = await _repositoryWrapper.FactRepository.GetFirstOrDefaultAsync(f => f.Id == request.Id);
+        var fact = await _repositoryWrapper.FactRepository.GetFirstOrDefaultAsync(
+            predicate: f => f.Id == request.Id,
+            include: query => query
+                .Include(f => f.Image!)
+                .ThenInclude(image => image.ImageDetails!));
 
-        if (facts is null)
+        if (fact is null)
         {
             string errorMsg = $"Cannot find any fact with corresponding id: {request.Id}";
             _logger.LogError(request, errorMsg);
             return Result.Fail(new Error(errorMsg));
         }
 
-        return Result.Ok(_mapper.Map<FactDto>(facts));
+        return Result.Ok(_mapper.Map<FactDto>(fact));
     }
 }

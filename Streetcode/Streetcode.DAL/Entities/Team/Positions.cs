@@ -11,11 +11,13 @@ namespace Streetcode.DAL.Entities.Team
     [Table("positions", Schema = "team")]
     public class Positions
     {
+        public const int PositionMaxLength = 50;
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
-        [MaxLength(50)]
+        [MaxLength(PositionMaxLength)]
         public string? Position { get; set; }
         public List<TeamMember>? TeamMembers { get; set; }
     }

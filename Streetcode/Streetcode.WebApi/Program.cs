@@ -36,9 +36,11 @@ public class Program
         await app.ApplyMigrations();
 
         // await app.SeedDataAsync(); // uncomment for seeding data in local
-        app.UseCors();
         app.UseHttpsRedirection();
         app.UseRouting();
+
+        app.UseCors();
+        app.UseExceptionHandler();
 
         app.UseAuthentication();
         app.UseAuthorization();

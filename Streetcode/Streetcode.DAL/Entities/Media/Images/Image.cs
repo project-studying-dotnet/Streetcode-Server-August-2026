@@ -11,6 +11,8 @@ namespace Streetcode.DAL.Entities.Media.Images;
 [Table("images", Schema = "media")]
 public class Image
 {
+    public const int MimeTypeMaxLength = 10;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
@@ -23,7 +25,7 @@ public class Image
     public string? BlobName { get; set; }
 
     [Required]
-    [MaxLength(10)]
+    [MaxLength(MimeTypeMaxLength)]
     public string? MimeType { get; set; }
 
     public ImageDetails? ImageDetails { get; set; }

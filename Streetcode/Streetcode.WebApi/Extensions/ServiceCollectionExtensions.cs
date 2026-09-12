@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Hangfire;
 using MediatR;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -9,6 +10,8 @@ using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
+using Streetcode.WebApi.ExceptionHandlers;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Email;
@@ -44,10 +47,13 @@ public static class ServiceCollectionExtensions
         services.AddRepositoryServices();
         services.AddFeatureManagement();
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var bllAssembly = typeof(ValidationBehavior<,>).Assembly;
         services.AddAutoMapper(currentAssemblies);
+        services.AddValidatorsFromAssembly(bllAssembly);
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssemblies(currentAssemblies);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
         services.AddScoped<IBlobService, BlobService>();
@@ -101,6 +107,9 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddLogging();
+        services.AddProblemDetails();
+        services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddControllers();
     }
 

@@ -8,6 +8,8 @@ namespace Streetcode.DAL.Entities.Toponyms;
 [Table("toponyms", Schema = "toponyms")]
 public class Toponym
 {
+    public const int StreetNameMaxLength = 150;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
@@ -29,7 +31,7 @@ public class Toponym
     public string? Community { get; set; }
 
     [Required]
-    [MaxLength(150)]
+    [MaxLength(StreetNameMaxLength)]
     public string StreetName { get; set; }
 
     [MaxLength(50)]

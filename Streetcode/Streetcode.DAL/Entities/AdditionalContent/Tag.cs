@@ -7,12 +7,14 @@ namespace Streetcode.DAL.Entities.AdditionalContent;
 [Table("tags", Schema = "add_content")]
 public class Tag
 {
+    public const int TitleMaxLength = 50;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(50)]
+    [MaxLength(TitleMaxLength)]
     public string Title { get; set; }
 
     public IEnumerable<StreetcodeTagIndex> StreetcodeTagIndices { get; set; }
