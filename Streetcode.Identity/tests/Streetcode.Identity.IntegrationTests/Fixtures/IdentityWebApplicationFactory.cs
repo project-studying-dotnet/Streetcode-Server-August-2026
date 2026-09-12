@@ -16,6 +16,9 @@ public sealed class IdentityWebApplicationFactory
     private const string JwtSecretEnvironmentVariable =
         "STREETCODE_IDENTITY_Jwt__SecretKey";
 
+    private const string IdentitySeedEnabledEnvironmentVariable =
+        "STREETCODE_IDENTITY_IdentitySeed__Enabled";
+
     private const string TestJwtSecret =
         "Integration_Test_Jwt_Secret_Key_At_Least_32_Bytes!";
 
@@ -38,6 +41,9 @@ public sealed class IdentityWebApplicationFactory
             var previousJwtSecret = Environment.GetEnvironmentVariable(
                 JwtSecretEnvironmentVariable);
 
+            var previousSeedEnabled = Environment.GetEnvironmentVariable(
+                IdentitySeedEnabledEnvironmentVariable);
+
             try
             {
                 Environment.SetEnvironmentVariable(
@@ -47,6 +53,10 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     JwtSecretEnvironmentVariable,
                     TestJwtSecret);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedEnabledEnvironmentVariable,
+                    bool.FalseString);
 
                 return base.CreateClient();
             }
@@ -59,6 +69,10 @@ public sealed class IdentityWebApplicationFactory
                 Environment.SetEnvironmentVariable(
                     JwtSecretEnvironmentVariable,
                     previousJwtSecret);
+
+                Environment.SetEnvironmentVariable(
+                    IdentitySeedEnabledEnvironmentVariable,
+                    previousSeedEnabled);
             }
         }
     }
