@@ -1,17 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using FluentValidation;
 using Hangfire;
 using MediatR;
-using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.FeatureManagement;
+using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
-using Streetcode.WebApi.ExceptionHandlers;
-using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Email;
@@ -20,6 +19,7 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.BLL.Services.CacheService;
 using Streetcode.BLL.Services.Email;
@@ -31,6 +31,7 @@ using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
+using Streetcode.WebApi.ExceptionHandlers;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -125,6 +126,8 @@ public static class ServiceCollectionExtensions
 
     public static void AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<CacheOptions>(configuration.GetSection("Cache"));
+
         var redisConnectionString = configuration.GetConnectionString("Redis")
                                      ?? configuration["REDIS_CONNECTION_STRING"];
 
@@ -135,13 +138,13 @@ public static class ServiceCollectionExtensions
                 options.Configuration = redisConnectionString;
                 options.InstanceName = "streetcode:";
             });
+
+            services.AddSingleton<ICacheService, CacheService>();
         }
         else
         {
-            services.AddDistributedMemoryCache();
+            services.AddSingleton<ICacheService, NoOpCacheService>();
         }
-
-        services.AddSingleton<ICacheService, CacheService>();
     }
 
     public class CorsConfiguration
