@@ -12,6 +12,7 @@ namespace Streetcode.XUnitTest.Controllers
     using Microsoft.Extensions.DependencyInjection;
     using Moq;
     using Streetcode.BLL.DTO.Streetcode.Comments;
+    using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.WebApi.Attributes;
     using Streetcode.WebApi.Controllers.Streetcode;
@@ -19,6 +20,57 @@ namespace Streetcode.XUnitTest.Controllers
 
     public class CommentControllerTests
     {
+        [Fact]
+        public async Task Delete_ShouldSendCommandWithCancellationTokenAndReturnOk()
+        {
+            const int commentId = 15;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<DeleteCommentCommand>(command => command.Id == commentId),
+                    cancellationToken))
+                .ReturnsAsync(Result.Ok(Unit.Value));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                    },
+                },
+            };
+
+            var result = await controller.Delete(commentId, cancellationToken);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(Unit.Value, okResult.Value);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public void Delete_ShouldHaveExpectedRouteAndReviewRoles()
+        {
+            MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.Delete));
+
+            Assert.NotNull(method);
+            var httpDeleteAttribute = method.GetCustomAttribute<HttpDeleteAttribute>();
+            var authorizeAttribute = method.GetCustomAttribute<AuthorizeRoles>();
+
+            Assert.NotNull(httpDeleteAttribute);
+            Assert.Equal("{id:int}", httpDeleteAttribute.Template);
+            Assert.NotNull(authorizeAttribute);
+            Assert.Equal(
+                "MainAdministrator,Administrator,Moderator",
+                authorizeAttribute.Roles);
+        }
+
         [Fact]
         public async Task GetById_ShouldSendQueryWithCancellationTokenAndReturnOk()
         {
