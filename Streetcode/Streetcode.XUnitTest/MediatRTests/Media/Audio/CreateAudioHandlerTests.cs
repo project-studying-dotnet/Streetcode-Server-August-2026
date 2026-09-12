@@ -31,19 +31,22 @@ public class CreateAudioHandlerTests
             .Returns(_audioRepositoryMock.Object);
     }
 
-    [Fact]
-    public async Task Handle_WhenAudioIsSaved_ShouldReturnSuccess()
+    [Theory]
+    [InlineData("mp3")]
+    [InlineData(".mp3")]
+    [InlineData("MP3")]
+    [InlineData(".MP3")]
+    public async Task Handle_WhenAudioIsSaved_ShouldReturnSuccessAndPersistExactReturnedBlobName(string extension)
     {
         var audioFileBaseDto = new AudioFileBaseCreateDTO
         {
             Title = "audio",
             BaseFormat = "jfgjutvdioo3eoxl",
             MimeType = "audio/mpeg",
-            Extension = "mp3",
+            Extension = extension,
         };
         var command = new CreateAudioCommand(audioFileBaseDto);
-        var hashBlobStorageName = "pjomncjaotiv50391nvk93jvs";
-        var expectedBlobName = $"{hashBlobStorageName}.{audioFileBaseDto.Extension}";
+        const string expectedFullBlobName = "pjomncjaotiv50391nvk93jvs.mp3";
         var audioEntity = new AudioEntity
         {
             Id = 3,
@@ -53,7 +56,7 @@ public class CreateAudioHandlerTests
         var createdAudioDto = new AudioDTO
         {
             Id = audioEntity.Id,
-            BlobName = expectedBlobName,
+            BlobName = expectedFullBlobName,
             MimeType = audioEntity.MimeType,
             Base64 = string.Empty,
         };
@@ -63,7 +66,8 @@ public class CreateAudioHandlerTests
                 audioFileBaseDto.BaseFormat!,
                 audioFileBaseDto.Title!,
                 audioFileBaseDto.Extension!))
-            .Returns(hashBlobStorageName);
+            .Returns(expectedFullBlobName);
+
         _mapperMock
             .Setup(mapper => mapper.Map<AudioEntity>(audioFileBaseDto))
             .Returns(audioEntity);
@@ -87,8 +91,8 @@ public class CreateAudioHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.Same(createdAudioDto, result.Value);
-        Assert.Equal(expectedBlobName, audioEntity.BlobName);
-        Assert.Equal(expectedBlobName, result.Value.BlobName);
+        Assert.Equal(expectedFullBlobName, audioEntity.BlobName);
+        Assert.Equal(expectedFullBlobName, result.Value.BlobName);
 
         _blobServiceMock.Verify(
             blob => blob.SaveFileInStorage(
@@ -116,8 +120,7 @@ public class CreateAudioHandlerTests
             Extension = "mp3",
         };
         var command = new CreateAudioCommand(audioFileBaseDto);
-        var hashBlobStorageName = "pjomncjaotiv50391nvk93jvs";
-        var expectedBlobName = $"{hashBlobStorageName}.{audioFileBaseDto.Extension}";
+        const string expectedFullBlobName = "pjomncjaotiv50391nvk93jvs.mp3";
         const string expectedError = "Failed to create an audio";
         var audioEntity = new AudioEntity
         {
@@ -125,12 +128,14 @@ public class CreateAudioHandlerTests
             BlobName = string.Empty,
             MimeType = audioFileBaseDto.MimeType,
         };
+
         _blobServiceMock
             .Setup(blob => blob.SaveFileInStorage(
                 audioFileBaseDto.BaseFormat!,
                 audioFileBaseDto.Title!,
                 audioFileBaseDto.Extension!))
-            .Returns(hashBlobStorageName);
+            .Returns(expectedFullBlobName);
+
         _mapperMock
             .Setup(mapper => mapper.Map<AudioEntity>(audioFileBaseDto))
             .Returns(audioEntity);
@@ -140,6 +145,7 @@ public class CreateAudioHandlerTests
         _repositoryWrapperMock
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(0);
+
         var handler = new CreateAudioHandler(
             _blobServiceMock.Object,
             _repositoryWrapperMock.Object,
@@ -151,7 +157,7 @@ public class CreateAudioHandlerTests
         Assert.True(result.IsFailed);
         Assert.Single(result.Errors);
         Assert.Equal(expectedError, result.Errors[0].Message);
-        Assert.Equal(expectedBlobName, audioEntity.BlobName);
+        Assert.Equal(expectedFullBlobName, audioEntity.BlobName);
 
         _blobServiceMock.Verify(
             blob => blob.SaveFileInStorage(

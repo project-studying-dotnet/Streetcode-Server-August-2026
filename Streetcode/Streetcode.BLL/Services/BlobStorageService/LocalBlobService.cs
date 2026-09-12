@@ -2,18 +2,19 @@
 using System.Text;
 using Microsoft.Extensions.Options;
 using Streetcode.BLL.Interfaces.BlobStorage;
+using Streetcode.BLL.Util;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.Services.BlobStorageService;
 
-public class BlobService : IBlobService
+public class LocalBlobService : IBlobService
 {
     private readonly BlobEnvironmentVariables _envirovment;
     private readonly string _keyCrypt;
     private readonly string _blobPath;
     private readonly IRepositoryWrapper _repositoryWrapper;
 
-    public BlobService(IOptions<BlobEnvironmentVariables> environment, IRepositoryWrapper? repositoryWrapper = null)
+    public LocalBlobService(IOptions<BlobEnvironmentVariables> environment, IRepositoryWrapper? repositoryWrapper = null)
     {
         _envirovment = environment.Value;
         _keyCrypt = _envirovment.BlobStoreKey;
@@ -46,24 +47,25 @@ public class BlobService : IBlobService
     public string SaveFileInStorage(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
-        string createdFileName = $"{DateTime.Now}{name}"
-            .Replace(" ", "_")
-            .Replace(".", "_")
-            .Replace(":", "_");
 
-        string hashBlobStorageName = HashFunction(createdFileName);
+        string hashBlobStorageName = BlobHelper.GetHashedFileName(name);
+        string normalizedExtension = BlobHelper.NormalizeExtension(extension);
 
         Directory.CreateDirectory(_blobPath);
-        EncryptFile(imageBytes, extension, hashBlobStorageName);
 
-        return hashBlobStorageName;
+        EncryptFile(imageBytes, normalizedExtension, hashBlobStorageName);
+
+        return $"{hashBlobStorageName}.{normalizedExtension}";
     }
 
     public void SaveFileInStorageBase64(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
+
+        string normalizedExtension = BlobHelper.NormalizeExtension(extension);
+
         Directory.CreateDirectory(_blobPath);
-        EncryptFile(imageBytes, extension, name);
+        EncryptFile(imageBytes, normalizedExtension, name);
     }
 
     public void DeleteFileInStorage(string name)
@@ -77,14 +79,14 @@ public class BlobService : IBlobService
         string newBlobName,
         string extension)
     {
-        DeleteFileInStorage(previousBlobName);
-
-        string hashBlobStorageName = SaveFileInStorage(
+        string blobName = SaveFileInStorage(
         base64Format,
         newBlobName,
         extension);
 
-        return hashBlobStorageName;
+        DeleteFileInStorage(previousBlobName);
+
+        return blobName;
     }
 
     public async Task CleanBlobStorage()
@@ -94,7 +96,7 @@ public class BlobService : IBlobService
         var existingImagesInDatabase = await _repositoryWrapper.ImageRepository.GetAllAsync();
         var existingAudiosInDatabase = await _repositoryWrapper.AudioRepository.GetAllAsync();
 
-        List<string> existingMedia = new ();
+        List<string> existingMedia = new();
         existingMedia.AddRange(existingImagesInDatabase.Select(img => img.BlobName));
         existingMedia.AddRange(existingAudiosInDatabase.Select(img => img.BlobName));
 
@@ -112,16 +114,6 @@ public class BlobService : IBlobService
         var paths = Directory.EnumerateFiles(_blobPath);
 
         return paths.Select(p => Path.GetFileName(p));
-    }
-
-    private string HashFunction(string createdFileName)
-    {
-        using (var hash = SHA256.Create())
-        {
-            Encoding enc = Encoding.UTF8;
-            byte[] result = hash.ComputeHash(enc.GetBytes(createdFileName));
-            return Convert.ToBase64String(result).Replace('/', '_');
-        }
     }
 
     private void EncryptFile(byte[] imageBytes, string type, string name)
