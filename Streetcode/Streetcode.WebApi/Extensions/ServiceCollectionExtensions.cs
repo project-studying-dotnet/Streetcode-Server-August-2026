@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
+using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
@@ -162,6 +163,8 @@ public static class ServiceCollectionExtensions
 
     public static void AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<CacheOptions>(configuration.GetSection("Cache"));
+
         var redisConnectionString = configuration.GetConnectionString("Redis")
                                      ?? configuration["REDIS_CONNECTION_STRING"];
 
@@ -172,13 +175,13 @@ public static class ServiceCollectionExtensions
                 options.Configuration = redisConnectionString;
                 options.InstanceName = "streetcode:";
             });
+
+            services.AddSingleton<ICacheService, CacheService>();
         }
         else
         {
-            services.AddDistributedMemoryCache();
+            services.AddSingleton<ICacheService, NoOpCacheService>();
         }
-
-        services.AddSingleton<ICacheService, CacheService>();
     }
 
     public class CorsConfiguration
