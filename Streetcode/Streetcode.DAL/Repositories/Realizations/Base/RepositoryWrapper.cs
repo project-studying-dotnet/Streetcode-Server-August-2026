@@ -1,4 +1,3 @@
-using System.Transactions;
 using Repositories.Interfaces;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
@@ -563,10 +562,5 @@ public class RepositoryWrapper : IRepositoryWrapper
     public async Task<int> SaveChangesAsync()
     {
         return await _streetcodeDbContext.SaveChangesAsync();
-    }
-
-    public TransactionScope BeginTransaction()
-    {
-        return new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
     }
 }
