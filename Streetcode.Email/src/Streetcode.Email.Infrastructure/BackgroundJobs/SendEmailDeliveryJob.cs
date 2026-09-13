@@ -14,7 +14,7 @@ public sealed class SendEmailDeliveryJob
 
     [AutomaticRetry(
         Attempts = 5,
-        OnAttemptsExceeded = AttemptsExceededAction.Fail)]
+        OnAttemptsExceeded = AttemptsExceededAction.Delete)]
     [DisableConcurrentExecution(
         "email-delivery:{0}",
         300)]

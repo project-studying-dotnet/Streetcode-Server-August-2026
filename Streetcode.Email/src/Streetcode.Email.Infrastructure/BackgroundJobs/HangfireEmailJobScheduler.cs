@@ -23,10 +23,17 @@ public sealed class HangfireEmailJobScheduler : IEmailJobScheduler
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        _jobClient.Enqueue<SendEmailDeliveryJob>(
+        var sendJobId = _jobClient.Enqueue<SendEmailDeliveryJob>(
             job => job.ExecuteAsync(
                 messageId,
                 CancellationToken.None));
+
+        _jobClient.ContinueJobWith<MarkEmailDeliveryAsFailedJob>(
+            sendJobId,
+            job => job.ExecuteAsync(
+                messageId,
+                CancellationToken.None),
+            JobContinuationOptions.OnlyOnDeletedState);
 
         return Task.CompletedTask;
     }

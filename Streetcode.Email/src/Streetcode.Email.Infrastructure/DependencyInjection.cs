@@ -37,6 +37,8 @@ public static class DependencyInjection
 
         services.AddScoped<SendEmailDeliveryJob>();
 
+        services.AddScoped<MarkEmailDeliveryAsFailedJob>();
+
         services.AddScoped<FeedbackEmailMessageFactory>();
 
         services.AddScoped<IEmailDeliverySender, MailKitEmailDeliverySender>();
