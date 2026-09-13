@@ -7,15 +7,20 @@ namespace Streetcode.DAL.Entities.Media.Images;
 [Table("arts", Schema = "media")]
 public class Art
 {
+    public const int TitleMaxLength = 150;
+    public const int DescriptionMaxLength = 400;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
-    [MaxLength(400)]
+    [MaxLength(DescriptionMaxLength)]
     public string? Description { get; set; }
 
-    [MaxLength(150)]
-    public string? Title { get; set; }
+    [MaxLength(TitleMaxLength)]
+    
+
+public string? Title { get; set; }
 
     public int ImageId { get; set; }
 
