@@ -18,9 +18,7 @@ public class Art
     public string? Description { get; set; }
 
     [MaxLength(TitleMaxLength)]
-    
-
-public string? Title { get; set; }
+    public string? Title { get; set; }
 
     public int ImageId { get; set; }
 
