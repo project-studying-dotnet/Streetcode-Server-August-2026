@@ -52,8 +52,8 @@ public sealed class RequestEmailDeliveryCommandHandler
         }
         else if (!HasSameRequestData(delivery, command))
         {
-            throw new InvalidOperationException(
-                "The same MessageId was received with different request data.");
+            throw new EmailRequestConflictException(
+                command.MessageId);
         }
 
         if (delivery.Status != EmailDeliveryStatus.Pending)

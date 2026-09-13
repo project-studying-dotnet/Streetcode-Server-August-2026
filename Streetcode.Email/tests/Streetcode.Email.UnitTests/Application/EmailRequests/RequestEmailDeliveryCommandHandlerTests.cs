@@ -122,11 +122,13 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
         var scheduler = new FakeEmailJobScheduler(calls);
         var handler = CreateHandler(repository, scheduler);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<EmailRequestConflictException>(
             () => handler.HandleAsync(command, CancellationToken.None));
 
+        Assert.Equal(command.MessageId, exception.MessageId);
         Assert.Equal(
-            "The same MessageId was received with different request data.",
+            $"Email request '{command.MessageId}' conflicts with " +
+            "the existing request data.",
             exception.Message);
         Assert.Null(repository.AddedDelivery);
         Assert.Empty(scheduler.EnqueuedMessageIds);
