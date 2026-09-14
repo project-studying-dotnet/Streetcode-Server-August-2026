@@ -108,6 +108,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         {
             var query = new GetCommentsToReviewQuery(
                 new GetCommentsToReviewRequestDto());
+            this.SetupRepository(Array.Empty<CommentEntity>());
             using var cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
 
