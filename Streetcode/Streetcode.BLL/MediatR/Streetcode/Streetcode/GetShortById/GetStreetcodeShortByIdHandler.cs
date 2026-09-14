@@ -26,6 +26,8 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.GetShortById
         public async Task<Result<StreetcodeShortDTO>> Handle(GetStreetcodeShortByIdQuery request, CancellationToken cancellationToken)
         {
             var cacheKey = $"streetcode:short:{request.id}";
+            var streetcodeNotFound = false;
+
             var streetcodeShortDto = await _cacheService.GetOrCreateAsync(
                 cacheKey,
                 async (ct) =>
@@ -33,15 +35,28 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.GetShortById
                     var streetcode = await _repository.StreetcodeRepository
                                         .GetFirstOrDefaultAsync(st => st.Id == request.id);
 
-                    return streetcode is not null ? _mapper.Map<StreetcodeShortDTO>(streetcode) : null;
+                    if(streetcode is null)
+                    {
+                        streetcodeNotFound = true;
+                        return null;
+                    }
+
+                    return _mapper.Map<StreetcodeShortDTO>(streetcode);
                 },
                 cancellationToken: cancellationToken);
 
             if(streetcodeShortDto == null)
             {
-                const string errorMsg = "Cannot map streetcode to shortDTO";
-                _logger.LogError(request, errorMsg);
-                return Result.Fail(new Error(errorMsg));
+                if (streetcodeNotFound)
+                {
+                    const string notFoundMsg = "Cannot find streetcode by id";
+                    _logger.LogError(request, notFoundMsg);
+                    return Result.Fail(new Error(notFoundMsg));
+                }
+
+                const string mapErrorMsg = "Cannot map streetcode to shortDTO";
+                _logger.LogError(request, mapErrorMsg);
+                return Result.Fail(new Error(mapErrorMsg));
             }
 
             return Result.Ok(streetcodeShortDto);
