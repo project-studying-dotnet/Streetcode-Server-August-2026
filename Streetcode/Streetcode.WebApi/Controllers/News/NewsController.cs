@@ -9,60 +9,61 @@ using Streetcode.BLL.MediatR.Newss.GetByUrl;
 using Streetcode.BLL.MediatR.Newss.GetNewsAndLinksByUrl;
 using Streetcode.BLL.MediatR.Newss.SortedByDateTime;
 using Streetcode.BLL.MediatR.Newss.Update;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
-namespace Streetcode.WebApi.Controllers.News
+namespace Streetcode.WebApi.Controllers.News;
+
+public class NewsController : BaseApiController
 {
-    public class NewsController : BaseApiController
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
     {
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            return HandleResult(await Mediator.Send(new GetAllNewsQuery()));
-        }
+        return HandleResult(await Mediator.Send(new GetAllNewsQuery()));
+    }
 
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            return HandleResult(await Mediator.Send(new GetNewsByIdQuery(id)));
-        }
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        return HandleResult(await Mediator.Send(new GetNewsByIdQuery(id)));
+    }
 
-        [HttpGet("{url}")]
-        public async Task<IActionResult> GetByUrl(string url)
-        {
-            return HandleResult(await Mediator.Send(new GetNewsByUrlQuery(url)));
-        }
+    [HttpGet("{url}")]
+    public async Task<IActionResult> GetByUrl(string url)
+    {
+        return HandleResult(await Mediator.Send(new GetNewsByUrlQuery(url)));
+    }
 
-        [HttpGet]
-        public async Task<IActionResult> GetSortedByDateTime()
-        {
-            return HandleResult(await Mediator.Send(new SortedByDateTimeQuery()));
-        }
+    [HttpGet]
+    public async Task<IActionResult> GetSortedByDateTime()
+    {
+        return HandleResult(await Mediator.Send(new SortedByDateTimeQuery()));
+    }
 
-        [HttpGet("{url}")]
-        public async Task<IActionResult> GetNewsAndLinks(string url)
-        {
-            return HandleResult(await Mediator.Send(new GetNewsAndLinksByUrlQuery(url)));
-        }
+    [HttpGet("{url}")]
+    public async Task<IActionResult> GetNewsAndLinks(string url)
+    {
+        return HandleResult(await Mediator.Send(new GetNewsAndLinksByUrlQuery(url)));
+    }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> Create(NewsDTO news)
-        {
-            return HandleResult(await Mediator.Send(new CreateNewsCommand(news)));
-        }
+    [Authorize(Roles = "Admin")]
+    [HttpPost]
+    public async Task<IActionResult> Create(NewsDTO news)
+    {
+        return HandleResult(await Mediator.Send(new CreateNewsCommand(news)));
+    }
 
-        [Authorize(Roles = "Admin")]
-        [HttpPut]
-        public async Task<IActionResult> Update(NewsDTO news)
-        {
-            return HandleResult(await Mediator.Send(new UpdateNewsCommand(news)));
-        }
+    [Authorize(Roles = "Admin")]
+    [HttpPut]
+    public async Task<IActionResult> Update(NewsDTO news)
+    {
+        return HandleResult(await Mediator.Send(new UpdateNewsCommand(news)));
+    }
 
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            return HandleResult(await Mediator.Send(new DeleteNewsCommand(id)));
-        }
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        return HandleResult(await Mediator.Send(new DeleteNewsCommand(id)));
     }
 }
