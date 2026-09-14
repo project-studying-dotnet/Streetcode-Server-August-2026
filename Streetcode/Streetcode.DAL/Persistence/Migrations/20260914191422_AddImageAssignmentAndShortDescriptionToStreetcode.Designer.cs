@@ -12,8 +12,8 @@ using Streetcode.DAL.Persistence;
 namespace Streetcode.DAL.Persistence.Migrations
 {
     [DbContext(typeof(StreetcodeDbContext))]
-    [Migration("20260914182936_AddImageAssigmentAndShortDescriptionToStreetcode")]
-    partial class AddImageAssigmentAndShortDescriptionToStreetcode
+    [Migration("20260914191422_AddImageAssignmentAndShortDescriptionToStreetcode")]
+    partial class AddImageAssignmentAndShortDescriptionToStreetcode
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -288,7 +288,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.Property<int>("StreetcodeId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ImageAssigment")
+                    b.Property<int?>("ImageAssignment")
                         .HasColumnType("int");
 
                     b.HasKey("ImageId", "StreetcodeId");

@@ -5,7 +5,7 @@
 namespace Streetcode.DAL.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddImageAssigmentAndShortDescriptionToStreetcode : Migration
+    public partial class AddImageAssignmentAndShortDescriptionToStreetcode : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,7 +19,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
-                name: "ImageAssigment",
+                name: "ImageAssignment",
                 schema: "streetcode",
                 table: "streetcode_image",
                 type: "int",
@@ -35,7 +35,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                 table: "streetcodes");
 
             migrationBuilder.DropColumn(
-                name: "ImageAssigment",
+                name: "ImageAssignment",
                 schema: "streetcode",
                 table: "streetcode_image");
         }

@@ -120,29 +120,29 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                 var relatedImage = assetsResult.Value.RelatedImage;
 
                 var existingRoleImages = (await _repositoryWrapper.StreetcodeImageRepository
-                    .GetAllAsync(si => si.StreetcodeId == streetcode.Id && si.ImageAssigment != null)).ToList();
+                    .GetAllAsync(si => si.StreetcodeId == streetcode.Id && si.ImageAssignment != null)).ToList();
 
                 var toRemove = existingRoleImages.Where(si =>
-                    (si.ImageAssigment == ImageAssigment.Animation && si.ImageId != dto.AnimationImageId) ||
-                    (si.ImageAssigment == ImageAssigment.Blackandwhite && si.ImageId != dto.BlackAndWhiteImageId) ||
-                    (si.ImageAssigment == ImageAssigment.Relatedfigure && si.ImageId != dto.RelatedFigureImageId));
+                    (si.ImageAssignment == ImageAssignment.Animation && si.ImageId != dto.AnimationImageId) ||
+                    (si.ImageAssignment == ImageAssignment.BlackAndWhite && si.ImageId != dto.BlackAndWhiteImageId) ||
+                    (si.ImageAssignment == ImageAssignment.RelatedFigure && si.ImageId != dto.RelatedFigureImageId));
 
                 _repositoryWrapper.StreetcodeImageRepository.DeleteRange(toRemove);
 
                 var imagesToAdd = new List<StreetcodeImage>();
-                if (animationImage is not null && !existingRoleImages.Any(si => si.ImageAssigment == ImageAssigment.Animation && si.ImageId == animationImage.Id))
+                if (animationImage is not null && !existingRoleImages.Any(si => si.ImageAssignment == ImageAssignment.Animation && si.ImageId == animationImage.Id))
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = streetcode, ImageAssigment = ImageAssigment.Animation });
+                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = streetcode, ImageAssignment = ImageAssignment.Animation });
                 }
 
-                if (blackAndWhiteImage is not null && !existingRoleImages.Any(si => si.ImageAssigment == ImageAssigment.Blackandwhite && si.ImageId == blackAndWhiteImage.Id))
+                if (blackAndWhiteImage is not null && !existingRoleImages.Any(si => si.ImageAssignment == ImageAssignment.BlackAndWhite && si.ImageId == blackAndWhiteImage.Id))
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = streetcode, ImageAssigment = ImageAssigment.Blackandwhite });
+                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = streetcode, ImageAssignment = ImageAssignment.BlackAndWhite });
                 }
 
-                if (relatedImage is not null && !existingRoleImages.Any(si => si.ImageAssigment == ImageAssigment.Relatedfigure && si.ImageId == relatedImage.Id))
+                if (relatedImage is not null && !existingRoleImages.Any(si => si.ImageAssignment == ImageAssignment.RelatedFigure && si.ImageId == relatedImage.Id))
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = streetcode, ImageAssigment = ImageAssigment.Relatedfigure });
+                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = streetcode, ImageAssignment = ImageAssignment.RelatedFigure });
                 }
 
                 await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);

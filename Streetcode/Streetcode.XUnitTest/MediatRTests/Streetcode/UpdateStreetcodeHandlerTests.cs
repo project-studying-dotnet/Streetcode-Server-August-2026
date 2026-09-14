@@ -444,9 +444,9 @@ public class UpdateStreetcodeHandlerTests
         _streetcodeImageRepositoryMock.Verify(
             repo => repo.CreateRangeAsync(It.Is<IEnumerable<StreetcodeImage>>(items =>
                 items.Count() == 3 &&
-                items.Any(i => i.ImageAssigment == ImageAssigment.Animation && i.Image!.Id == 1) &&
-                items.Any(i => i.ImageAssigment == ImageAssigment.Blackandwhite && i.Image!.Id == 2) &&
-                items.Any(i => i.ImageAssigment == ImageAssigment.Relatedfigure && i.Image!.Id == 3))),
+                items.Any(i => i.ImageAssignment == ImageAssignment.Animation && i.Image!.Id == 1) &&
+                items.Any(i => i.ImageAssignment == ImageAssignment.BlackAndWhite && i.Image!.Id == 2) &&
+                items.Any(i => i.ImageAssignment == ImageAssignment.RelatedFigure && i.Image!.Id == 3))),
             Times.Once);
 
         _streetcodeTagIndexRepositoryMock.Verify(

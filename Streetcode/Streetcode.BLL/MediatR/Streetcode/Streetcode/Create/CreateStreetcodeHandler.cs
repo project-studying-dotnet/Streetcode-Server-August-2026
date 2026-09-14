@@ -79,17 +79,17 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var imagesToAdd = new List<StreetcodeImage>();
                 if (animationImage is not null)
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = entity, ImageAssigment = ImageAssigment.Animation });
+                    imagesToAdd.Add(new StreetcodeImage { Image = animationImage, Streetcode = entity, ImageAssignment = ImageAssignment.Animation });
                 }
 
                 if (blackAndWhiteImage is not null)
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = entity, ImageAssigment = ImageAssigment.Blackandwhite });
+                    imagesToAdd.Add(new StreetcodeImage { Image = blackAndWhiteImage, Streetcode = entity, ImageAssignment = ImageAssignment.BlackAndWhite });
                 }
 
                 if (relatedImage is not null)
                 {
-                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = entity, ImageAssigment = ImageAssigment.Relatedfigure });
+                    imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = entity, ImageAssignment = ImageAssignment.RelatedFigure });
                 }
 
                 await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);

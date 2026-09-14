@@ -33,6 +33,11 @@ internal static class StreetcodeCreateUpdateChecks
     {
         var tagIdList = tagIds.ToList();
 
+        if (!tagIdList.Any())
+        {
+            return Result.Ok();
+        }
+
         var existingTags = await repositoryWrapper.TagRepository
             .GetAllAsync(t => tagIdList.Contains(t.Id));
 
