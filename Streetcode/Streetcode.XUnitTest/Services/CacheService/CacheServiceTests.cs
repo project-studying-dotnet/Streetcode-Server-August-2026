@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Logging;
-using Moq;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Moq;
+using Streetcode.BLL.Services.CacheService;
 using Xunit;
 
 namespace Streetcode.XUnitTest.Services.CacheService
@@ -21,7 +23,11 @@ namespace Streetcode.XUnitTest.Services.CacheService
         {
             _distributedCacheMock = new Mock<IDistributedCache>();
             _loggerMock = new Mock<ILogger<Streetcode.BLL.Services.CacheService.CacheService>>();
-            _sut = new Streetcode.BLL.Services.CacheService.CacheService(_distributedCacheMock.Object, _loggerMock.Object);
+            var cacheOptions = Options.Create(new CacheOptions { DefaultExpirationMinutes = 30 });
+            _sut = new Streetcode.BLL.Services.CacheService.CacheService(
+                _distributedCacheMock.Object,
+                _loggerMock.Object,
+                cacheOptions);
         }
 
         [Fact]
