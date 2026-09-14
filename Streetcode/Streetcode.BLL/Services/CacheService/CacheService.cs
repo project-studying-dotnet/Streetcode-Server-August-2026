@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Streetcode.BLL.Interfaces.CacheService;
-using System.Text.Json;
 
 namespace Streetcode.BLL.Services.CacheService
 {
@@ -70,7 +70,7 @@ namespace Streetcode.BLL.Services.CacheService
             {
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to write to cache for key: {Key}", key);
             }
