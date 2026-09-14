@@ -285,7 +285,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.Property<int>("StreetcodeId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ImageAssigment")
+                    b.Property<int?>("ImageAssignment")
                         .HasColumnType("int");
 
                     b.HasKey("ImageId", "StreetcodeId");

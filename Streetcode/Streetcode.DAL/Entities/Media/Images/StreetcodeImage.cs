@@ -16,6 +16,6 @@ namespace Streetcode.DAL.Entities.Media.Images
 
         public StreetcodeContent? Streetcode { get; set; }
 
-        public ImageAssigment? ImageAssigment { get; set; }
+        public ImageAssignment? ImageAssignment { get; set; }
     }
 }

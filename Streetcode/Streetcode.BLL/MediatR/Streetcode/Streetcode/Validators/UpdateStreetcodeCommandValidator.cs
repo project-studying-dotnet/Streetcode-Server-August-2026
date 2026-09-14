@@ -61,7 +61,7 @@ public sealed class UpdateStreetcodeCommandValidator
             .WithMessage("TransliterationUrl is required.")
             .MustNotExceedLength(100, "TransliterationUrl")
             .Matches("^[a-z0-9-]+$")
-            .WithMessage("URL may only contain lowercase latin letters, numbers, and hyphens.");
+            .WithMessage("TransliterationUrl must contain only lowercase letters, numbers, and hyphens.");
 
         RuleForEach(command => command.updatedStreetcode.Tags)
             .ChildRules(tag => tag.RuleFor(t => t.Title).MustNotExceedLength(50, "Tag title"));
