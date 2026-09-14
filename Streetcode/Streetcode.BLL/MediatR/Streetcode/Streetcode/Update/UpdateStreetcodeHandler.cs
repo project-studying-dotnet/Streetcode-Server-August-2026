@@ -110,31 +110,24 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                 var animationImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.AnimationImageId, "Animation", "image/gif", "GIF");
 
-                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(animationImageResult, request, _logger) is { } animationFailure)
-                {
-                    return animationFailure;
-                }
-
-                var animationImage = animationImageResult.Value;
-
                 var blackAndWhiteImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.BlackAndWhiteImageId, "Black and white");
-
-                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(blackAndWhiteImageResult, request, _logger) is { } blackAndWhiteFailure)
-                {
-                    return blackAndWhiteFailure;
-                }
-
-                var blackAndWhiteImage = blackAndWhiteImageResult.Value;
 
                 var relatedImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.RelatedFigureImageId, "Related figure");
 
-                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(relatedImageResult, request, _logger) is { } relatedFailure)
+                var audioResult = await StreetcodeRoleAssetResolver.ResolveAudioAsync(_repositoryWrapper, dto.AudioId);
+
+                if (StreetcodeCreateUpdateChecks.ExtractCombinedFailure<StreetcodeDTO>(
+                        new ResultBase[] { animationImageResult, blackAndWhiteImageResult, relatedImageResult, audioResult },
+                        request,
+                        _logger) is { } assetsFailure)
                 {
-                    return relatedFailure;
+                    return assetsFailure;
                 }
 
+                var animationImage = animationImageResult.Value;
+                var blackAndWhiteImage = blackAndWhiteImageResult.Value;
                 var relatedImage = relatedImageResult.Value;
 
                 var existingRoleImages = (await _repositoryWrapper.StreetcodeImageRepository
@@ -161,13 +154,6 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
                 if (relatedImage is not null && !existingRoleImages.Any(si => si.ImageAssigment == ImageAssigment.Relatedfigure && si.ImageId == relatedImage.Id))
                 {
                     imagesToAdd.Add(new StreetcodeImage { Image = relatedImage, Streetcode = streetcode, ImageAssigment = ImageAssigment.Relatedfigure });
-                }
-
-                var audioResult = await StreetcodeRoleAssetResolver.ResolveAudioAsync(_repositoryWrapper, dto.AudioId);
-
-                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(audioResult, request, _logger) is { } audioFailure)
-                {
-                    return audioFailure;
                 }
 
                 await _repositoryWrapper.StreetcodeImageRepository.CreateRangeAsync(imagesToAdd);

@@ -196,6 +196,19 @@ namespace Streetcode.XUnitTest.ValidatorTests
                     StringComparison.Ordinal));
         }
 
+        [Fact]
+        public void Validate_WhenSameImageIdUsedForMultipleRoles_ShouldBeInvalid()
+        {
+            var validator = new UpdateStreetcodeCommandValidator();
+            UpdateStreetcodeDTO dto = CreateValidDto();
+            dto.AnimationImageId = 5;
+            dto.RelatedFigureImageId = 5;
+
+            var result = validator.Validate(new UpdateStreetcodeCommand(1, dto));
+
+            Assert.False(result.IsValid);
+        }
+
         private static UpdateStreetcodeDTO CreateValidDto()
         {
             return new UpdateStreetcodeDTO
