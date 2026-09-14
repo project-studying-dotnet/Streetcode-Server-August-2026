@@ -55,7 +55,7 @@ public class GetAllToponymsHandler : IRequestHandler<GetAllToponymsQuery,
             .ToLower()
             .Contains(title
             .ToLower()))
-            .GroupBy(s => s.StreetName)
+            .GroupBy(s => s.StreetName.ToLower())
             .Select(g => g.First());
     }
 
