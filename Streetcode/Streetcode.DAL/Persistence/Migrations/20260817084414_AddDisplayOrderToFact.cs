@@ -18,15 +18,22 @@ namespace Streetcode.DAL.Persistence.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            migrationBuilder.Sql(@"
-                UPDATE f
-                SET f.DisplayOrder = ranked.RowNum
-                FROM [streetcode].[facts] f
-                INNER JOIN (
-                    SELECT Id, ROW_NUMBER() OVER (PARTITION BY StreetcodeId ORDER BY Id) AS RowNum
-                    FROM [streetcode].[facts]
-                ) AS ranked ON f.Id = ranked.Id;
-            ");
+            migrationBuilder.Sql(
+                """
+                EXEC sp_executesql N'
+                    UPDATE f
+                    SET f.DisplayOrder = ranked.RowNum
+                    FROM [streetcode].[facts] f
+                    INNER JOIN (
+                        SELECT Id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY StreetcodeId
+                                   ORDER BY Id
+                               ) AS RowNum
+                        FROM [streetcode].[facts]
+                    ) AS ranked ON f.Id = ranked.Id;
+                ';
+                """);
         }
 
         /// <inheritdoc />

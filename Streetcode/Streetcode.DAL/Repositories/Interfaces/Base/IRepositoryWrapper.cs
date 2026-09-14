@@ -1,4 +1,3 @@
-using System.Transactions;
 using Repositories.Interfaces;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
 using Streetcode.DAL.Repositories.Interfaces.Analytics;
@@ -52,9 +51,8 @@ public interface IRepositoryWrapper
     IHistoricalContextTimelineRepository HistoricalContextTimelineRepository { get; }
     IStreetcodeToponymRepository StreetcodeToponymRepository { get; }
     IStreetcodeImageRepository StreetcodeImageRepository { get; }
+    ICommentRepository CommentRepository { get; }
     public int SaveChanges();
 
     public Task<int> SaveChangesAsync();
-
-    public TransactionScope BeginTransaction();
 }

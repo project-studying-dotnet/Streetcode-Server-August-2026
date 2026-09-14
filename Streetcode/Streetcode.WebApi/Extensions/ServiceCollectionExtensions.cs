@@ -16,6 +16,7 @@ using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
+using Streetcode.BLL.Interfaces.Sources;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
 using Streetcode.BLL.MediatR.Behaviors;
@@ -24,6 +25,7 @@ using Streetcode.BLL.Services.Email;
 using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
 using Streetcode.BLL.Services.Payment;
+using Streetcode.BLL.Services.Sources;
 using Streetcode.BLL.Services.Text;
 using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
@@ -93,6 +95,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IInstagramService, InstagramService>();
         services.AddScoped<ITextService, AddTermsToTextService>();
+        services.AddScoped<ISourceCategoryImageProcessor, SourceCategoryImageProcessor>();
     }
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
@@ -105,6 +108,7 @@ public static class ServiceCollectionExtensions
         {
             options.UseSqlServer(connectionString, opt =>
             {
+                opt.EnableRetryOnFailure();
                 opt.MigrationsAssembly(typeof(StreetcodeDbContext).Assembly.GetName().Name);
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schema: "entity_framework");
             });
