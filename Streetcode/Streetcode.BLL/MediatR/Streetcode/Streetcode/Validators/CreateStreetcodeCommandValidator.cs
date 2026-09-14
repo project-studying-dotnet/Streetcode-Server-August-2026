@@ -48,6 +48,11 @@ public sealed class CreateStreetcodeCommandValidator
         RuleFor(command => command.newStreetcode.ShortDescription)
             .MustNotExceedLength(StreetcodeContent.ShortDescriptionMaxLength, "ShortDescription");
 
+        RuleFor(command => command.newStreetcode.Teaser)
+            .NotEmpty()
+            .WithMessage("Teaser is required.")
+            .MustNotExceedLength(650, "Teaser");
+
         RuleFor(command => command.newStreetcode.TransliterationUrl)
             .NotEmpty()
             .WithMessage("TransliterationUrl is required.")
