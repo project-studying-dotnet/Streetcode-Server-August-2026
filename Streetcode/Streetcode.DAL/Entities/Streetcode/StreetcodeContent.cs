@@ -24,6 +24,7 @@ public class StreetcodeContent
     public const int TitleMaxLength = 100;
     public const int TransliterationUrlMaxLength = 150;
     public const int ShortDescriptionMaxLength = 33;
+    public const int TeaserMaxLength = 650;
 
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -32,7 +33,7 @@ public class StreetcodeContent
     [Required]
     public int Index { get; set; }
 
-    [MaxLength(650)]
+    [MaxLength(TeaserMaxLength)]
     public string? Teaser { get; set; }
 
     [Required]

@@ -107,28 +107,17 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Update
 
                 _repositoryWrapper.StreetcodeRepository.Update(streetcode);
 
-                var animationImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
-                    _repositoryWrapper, dto.AnimationImageId, "Animation", "image/gif", "GIF");
+                var assetsResult = await StreetcodeRoleAssetResolver.ResolveAllAsync(
+                    _repositoryWrapper, dto.AnimationImageId, dto.BlackAndWhiteImageId, dto.RelatedFigureImageId, dto.AudioId);
 
-                var blackAndWhiteImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
-                    _repositoryWrapper, dto.BlackAndWhiteImageId, "Black and white");
-
-                var relatedImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
-                    _repositoryWrapper, dto.RelatedFigureImageId, "Related figure");
-
-                var audioResult = await StreetcodeRoleAssetResolver.ResolveAudioAsync(_repositoryWrapper, dto.AudioId);
-
-                if (StreetcodeCreateUpdateChecks.ExtractCombinedFailure<StreetcodeDTO>(
-                        new ResultBase[] { animationImageResult, blackAndWhiteImageResult, relatedImageResult, audioResult },
-                        request,
-                        _logger) is { } assetsFailure)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(assetsResult, request, _logger) is { } assetsFailure)
                 {
                     return assetsFailure;
                 }
 
-                var animationImage = animationImageResult.Value;
-                var blackAndWhiteImage = blackAndWhiteImageResult.Value;
-                var relatedImage = relatedImageResult.Value;
+                var animationImage = assetsResult.Value.AnimationImage;
+                var blackAndWhiteImage = assetsResult.Value.BlackAndWhiteImage;
+                var relatedImage = assetsResult.Value.RelatedImage;
 
                 var existingRoleImages = (await _repositoryWrapper.StreetcodeImageRepository
                     .GetAllAsync(si => si.StreetcodeId == streetcode.Id && si.ImageAssigment != null)).ToList();

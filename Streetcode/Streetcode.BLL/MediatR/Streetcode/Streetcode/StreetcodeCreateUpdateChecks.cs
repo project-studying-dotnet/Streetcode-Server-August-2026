@@ -21,23 +21,6 @@ internal static class StreetcodeCreateUpdateChecks
         return Result.Fail<TValue>(errorMsg);
     }
 
-    public static Result<TValue>? ExtractCombinedFailure<TValue>(
-        IEnumerable<ResultBase> results,
-        object request,
-        ILoggerService logger)
-    {
-        var merged = Result.Merge(results.ToArray());
-
-        if (!merged.IsFailed)
-        {
-            return null;
-        }
-
-        var errorMsg = string.Join(" ", merged.Errors.Select(e => e.Message));
-        logger.LogError(request, errorMsg);
-        return Result.Fail<TValue>(errorMsg);
-    }
-
     public static bool HasDuplicateImageRoleIds(params int?[] imageIds)
     {
         var assignedIds = imageIds.Where(id => id.HasValue).Select(id => id!.Value).ToList();
