@@ -99,14 +99,15 @@ namespace Streetcode.XUnitTest.Services.Timeline
             {
                 new HistoricalContextEntity { Id = 1, Title = contextTitle },
             };
+            var existingContexts = new[]
+            {
+                new HistoricalContextEntity { Id = existingContextId },
+            };
 
             this.SetupRepositoryQueries(
                 existingContextId,
                 contextTitle,
-                new[]
-                {
-                    new HistoricalContextEntity { Id = existingContextId },
-                },
+                existingContexts,
                 conflictingContexts);
 
             var result = await this.resolver.ResolveAsync(requestedContexts);
@@ -126,14 +127,15 @@ namespace Streetcode.XUnitTest.Services.Timeline
                 new HistoricalContextDTO { Title = " Culture " },
                 new HistoricalContextDTO { Title = "culture" },
             };
+            var existingContexts = new[]
+            {
+                new HistoricalContextEntity { Id = existingContextId },
+            };
 
             this.SetupRepositoryQueries(
                 existingContextId,
                 "Culture",
-                new[]
-                {
-                    new HistoricalContextEntity { Id = existingContextId },
-                },
+                existingContexts,
                 Array.Empty<HistoricalContextEntity>());
 
             var result = await this.resolver.ResolveAsync(requestedContexts);
