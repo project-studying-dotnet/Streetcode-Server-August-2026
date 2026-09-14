@@ -450,7 +450,7 @@ public class UpdateStreetcodeHandlerTests
             Times.Once);
 
         _streetcodeTagIndexRepositoryMock.Verify(
-            repo => repo.Create(It.Is<StreetcodeTagIndex>(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 2)),
+            repo => repo.CreateAsync(It.Is<StreetcodeTagIndex>(ti => ti.TagId == 5 && ti.IsVisible == true && ti.Index == 2)),
             Times.Once);
     }
 

@@ -39,11 +39,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var uniquenessResult = await StreetcodeCreateUpdateChecks.EnsureIndexAndUrlAreUniqueAsync(
                     _repositoryWrapper, dto.Index, dto.TransliterationUrl);
 
-                if (uniquenessResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(uniquenessResult, request, _logger) is { } uniquenessFailure)
                 {
-                    var errorMsg = uniquenessResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return uniquenessFailure;
                 }
 
                 var tagIds = dto.Tags?.Select(t => t.Id).ToList() ?? new List<int>();
@@ -51,11 +49,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var tagsExistResult = await StreetcodeCreateUpdateChecks.ValidateTagsExistAsync(
                     _repositoryWrapper, tagIds);
 
-                if (tagsExistResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(tagsExistResult, request, _logger) is { } tagsFailure)
                 {
-                    var errorMsg = tagsExistResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return tagsFailure;
                 }
 
                 var tagIndexesToAdd = dto.Tags?
@@ -71,11 +67,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var animationImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.AnimationImageId, "Animation", "image/gif", "GIF");
 
-                if (animationImageResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(animationImageResult, request, _logger) is { } animationFailure)
                 {
-                    var errorMsg = animationImageResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return animationFailure;
                 }
 
                 var animationImage = animationImageResult.Value;
@@ -83,11 +77,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var blackAndWhiteImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.BlackAndWhiteImageId, "Black and white");
 
-                if (blackAndWhiteImageResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(blackAndWhiteImageResult, request, _logger) is { } blackAndWhiteFailure)
                 {
-                    var errorMsg = blackAndWhiteImageResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return blackAndWhiteFailure;
                 }
 
                 var blackAndWhiteImage = blackAndWhiteImageResult.Value;
@@ -95,11 +87,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
                 var relatedImageResult = await StreetcodeRoleAssetResolver.ResolveRoleImageAsync(
                     _repositoryWrapper, dto.RelatedFigureImageId, "Related figure");
 
-                if (relatedImageResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(relatedImageResult, request, _logger) is { } relatedFailure)
                 {
-                    var errorMsg = relatedImageResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return relatedFailure;
                 }
 
                 var relatedImage = relatedImageResult.Value;
@@ -122,11 +112,9 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Create
 
                 var audioResult = await StreetcodeRoleAssetResolver.ResolveAudioAsync(_repositoryWrapper, dto.AudioId);
 
-                if (audioResult.IsFailed)
+                if (StreetcodeCreateUpdateChecks.ExtractFailure<StreetcodeDTO>(audioResult, request, _logger) is { } audioFailure)
                 {
-                    var errorMsg = audioResult.Errors.First().Message;
-                    _logger.LogError(request, errorMsg);
-                    return Result.Fail(errorMsg);
+                    return audioFailure;
                 }
 
                 await _repositoryWrapper.StreetcodeRepository.CreateAsync(entity);

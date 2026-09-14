@@ -1,10 +1,26 @@
 using FluentResults;
+using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode;
 
 internal static class StreetcodeCreateUpdateChecks
 {
+    public static Result<TValue>? ExtractFailure<TValue>(
+        IResultBase result,
+        object request,
+        ILoggerService logger)
+    {
+        if (!result.IsFailed)
+        {
+            return null;
+        }
+
+        var errorMsg = result.Errors[0].Message;
+        logger.LogError(request, errorMsg);
+        return Result.Fail<TValue>(errorMsg);
+    }
+
     public static async Task<Result> ValidateTagsExistAsync(
         IRepositoryWrapper repositoryWrapper,
         IEnumerable<int> tagIds)
