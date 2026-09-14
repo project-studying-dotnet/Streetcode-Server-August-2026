@@ -64,6 +64,7 @@
   <data name="DatabaseErrorDuringUpdate" xml:space="preserve"><value>Database error during update</value></data>
   <data name="DatabaseSaveFailed" xml:space="preserve"><value>DB save failed</value></data>
   <data name="DefaultConnectionConfigurationKey" xml:space="preserve"><value>ConnectionStrings:DefaultConnection</value></data>
+  <data name="DeleteAudioCommandHandledSuccessfully" xml:space="preserve"><value>DeleteAudioCommand handled successfully</value></data>
   <data name="FailedToCreateAnAudio" xml:space="preserve"><value>Failed to create an audio</value></data>
   <data name="FailedToCreateStreetcodeCoordinate" xml:space="preserve"><value>Failed to create a streetcodeCoordinate</value></data>
   <data name="FailedToCreateTeam" xml:space="preserve"><value>Failed to create a team</value></data>

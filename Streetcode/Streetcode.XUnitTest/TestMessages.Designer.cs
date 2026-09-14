@@ -61,6 +61,7 @@ internal static class TestMessages
     internal static string DatabaseErrorDuringUpdate => GetString(nameof(DatabaseErrorDuringUpdate));
     internal static string DatabaseSaveFailed => GetString(nameof(DatabaseSaveFailed));
     internal static string DefaultConnectionConfigurationKey => GetString(nameof(DefaultConnectionConfigurationKey));
+    internal static string DeleteAudioCommandHandledSuccessfully => GetString(nameof(DeleteAudioCommandHandledSuccessfully));
     internal static string FailedToCreateAnAudio => GetString(nameof(FailedToCreateAnAudio));
     internal static string FailedToCreateStreetcodeCoordinate => GetString(nameof(FailedToCreateStreetcodeCoordinate));
     internal static string FailedToCreateTeam => GetString(nameof(FailedToCreateTeam));

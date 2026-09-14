@@ -55,7 +55,7 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Tag
         {
             var createTagDto = new CreateTagDTO { Title = "Exception Tag" };
             var query = new CreateTagQuery(createTagDto);
-            var exception = new Exception("Database error");
+            var exception = new Exception(TestMessages.DatabaseError);
 
             _mockRepositoryWrapper.Setup(r => r.TagRepository.CreateAsync(It.IsAny<DAL.Entities.AdditionalContent.Tag>()))
                 .ReturnsAsync(new DAL.Entities.AdditionalContent.Tag());

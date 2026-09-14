@@ -84,7 +84,7 @@ public class DeleteAudioHandlerTests
             BlobName = "audio.mp3",
             MimeType = "audio/mpeg",
         };
-        const string expectedLogMessage = "DeleteAudioCommand handled successfully";
+        var expectedLogMessage = TestMessages.DeleteAudioCommandHandledSuccessfully;
         _audioRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<AudioEntity, bool>>>(),
