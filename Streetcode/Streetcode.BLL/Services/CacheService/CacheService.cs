@@ -1,7 +1,8 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Streetcode.BLL.Interfaces.CacheService;
+using System.Text.Json;
 
 namespace Streetcode.BLL.Services.CacheService
 {
@@ -11,11 +12,11 @@ namespace Streetcode.BLL.Services.CacheService
         private readonly ILogger<CacheService> _logger;
         private readonly TimeSpan _defaultExpiration;
 
-        public CacheService(IDistributedCache cache, ILogger<CacheService> logger)
+        public CacheService(IDistributedCache cache, ILogger<CacheService> logger, IOptions<CacheOptions> cacheOptions)
         {
             _cache = cache;
             _logger = logger;
-            _defaultExpiration = TimeSpan.FromMinutes(30);
+            _defaultExpiration = TimeSpan.FromMinutes(cacheOptions.Value.DefaultExpirationMinutes);
         }
 
         public async Task<T?> GetOrCreateAsync<T>(
