@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Streetcode.DAL.Persistence;
 
@@ -11,9 +12,11 @@ using Streetcode.DAL.Persistence;
 namespace Streetcode.DAL.Persistence.Migrations
 {
     [DbContext(typeof(StreetcodeDbContext))]
-    partial class StreetcodeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914130058_AddComments")]
+    partial class AddComments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -283,9 +286,6 @@ namespace Streetcode.DAL.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("StreetcodeId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ImageAssigment")
                         .HasColumnType("int");
 
                     b.HasKey("ImageId", "StreetcodeId");
@@ -611,10 +611,6 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     b.Property<int>("Index")
                         .HasColumnType("int");
-
-                    b.Property<string>("ShortDescription")
-                        .HasMaxLength(33)
-                        .HasColumnType("nvarchar(33)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
