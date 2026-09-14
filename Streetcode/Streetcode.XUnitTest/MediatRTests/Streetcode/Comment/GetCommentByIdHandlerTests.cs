@@ -9,8 +9,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
     using global::Streetcode.BLL.DTO.Streetcode.Comments;
     using global::Streetcode.BLL.Interfaces.Logging;
     using global::Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
+    using global::Streetcode.DAL.Persistence;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
+    using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Query;
     using Moq;
     using Xunit;
@@ -40,9 +42,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 Id = query.Id,
                 Replies =
                 {
-                    CreateReply(18, earlierDate.AddMinutes(1)),
-                    CreateReply(17, earlierDate),
                     CreateReply(16, earlierDate),
+                    CreateReply(17, earlierDate),
+                    CreateReply(18, earlierDate.AddMinutes(1)),
                 },
             };
 
@@ -77,7 +79,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                         !predicate.Compile()(new CommentEntity { Id = query.Id + 1 })),
                     It.Is<Func<
                         IQueryable<CommentEntity>,
-                        IIncludableQueryable<CommentEntity, object>>?>(include => include != null)),
+                        IIncludableQueryable<CommentEntity, object>>?>(include =>
+                            IncludesOrderedReplies(include))),
                 Times.Once());
             this.mapperMock.Verify(mapper => mapper.Map<CommentWithRepliesDto>(comment), Times.Once());
             this.loggerMock.VerifyNoOtherCalls();
@@ -138,6 +141,31 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 Id = id,
                 CreatedAt = createdAt,
             };
+        }
+
+        private static bool IncludesOrderedReplies(
+            Func<IQueryable<CommentEntity>,
+                IIncludableQueryable<CommentEntity, object>>? include)
+        {
+            if (include is null)
+            {
+                return false;
+            }
+
+            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseSqlServer("Server=.;Database=Test;")
+                .Options;
+            using var context = new StreetcodeDbContext(options);
+
+            string expression = include(context.Comments)
+                .Expression
+                .ToString();
+
+            return expression.Contains(nameof(CommentEntity.Replies), StringComparison.Ordinal) &&
+                expression.Contains(nameof(Queryable.OrderBy), StringComparison.Ordinal) &&
+                expression.Contains(nameof(CommentEntity.CreatedAt), StringComparison.Ordinal) &&
+                expression.Contains(nameof(Queryable.ThenBy), StringComparison.Ordinal) &&
+                expression.Contains(nameof(CommentEntity.Id), StringComparison.Ordinal);
         }
 
         private GetCommentByIdHandler CreateHandler()
