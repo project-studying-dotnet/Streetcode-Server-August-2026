@@ -27,7 +27,7 @@ namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByTransliterationUrl
 
         public async Task<Result<StreetcodeDTO>> Handle(GetStreetcodeByTransliterationUrlQuery request, CancellationToken cancellationToken)
         {
-            var cacheKey = $"streetcode:url:{request.url}";
+            var cacheKey = $"streetcode:url:{request.url.ToLowerInvariant()}";
             var streetcodeDto = await _cacheService.GetOrCreateAsync(
                 cacheKey,
                 async (ct) =>
