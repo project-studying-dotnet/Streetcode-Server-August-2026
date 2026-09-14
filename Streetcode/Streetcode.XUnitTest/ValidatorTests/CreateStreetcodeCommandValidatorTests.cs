@@ -49,6 +49,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(CreateStreetcodeDTO.LastName), 51)]
         [InlineData(nameof(CreateStreetcodeDTO.ShortDescription), 34)]
         [InlineData(nameof(CreateStreetcodeDTO.DateString), 51)]
+        [InlineData(nameof(CreateStreetcodeDTO.Teaser), 651)]
         public void Validate_WhenTextExceedsLimit_ShouldBeInvalid(
             string propertyName,
             int valueLength)
@@ -92,6 +93,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(CreateStreetcodeDTO.Title))]
         [InlineData(nameof(CreateStreetcodeDTO.DateString))]
         [InlineData(nameof(CreateStreetcodeDTO.TransliterationUrl))]
+        [InlineData(nameof(CreateStreetcodeDTO.Teaser))]
         public void Validate_WhenRequiredFieldIsEmpty_ShouldBeInvalid(string propertyName)
         {
             var validator = new CreateStreetcodeCommandValidator();

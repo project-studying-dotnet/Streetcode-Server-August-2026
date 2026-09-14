@@ -62,6 +62,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(UpdateStreetcodeDTO.LastName), 51)]
         [InlineData(nameof(UpdateStreetcodeDTO.ShortDescription), 34)]
         [InlineData(nameof(UpdateStreetcodeDTO.DateString), 51)]
+        [InlineData(nameof(UpdateStreetcodeDTO.Teaser), 651)]
         public void Validate_WhenTextExceedsLimit_ShouldBeInvalid(
             string propertyName,
             int valueLength)
@@ -105,6 +106,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         [InlineData(nameof(UpdateStreetcodeDTO.Title))]
         [InlineData(nameof(UpdateStreetcodeDTO.DateString))]
         [InlineData(nameof(UpdateStreetcodeDTO.TransliterationUrl))]
+        [InlineData(nameof(UpdateStreetcodeDTO.Teaser))]
         public void Validate_WhenRequiredFieldIsEmpty_ShouldBeInvalid(string propertyName)
         {
             var validator = new UpdateStreetcodeCommandValidator();
