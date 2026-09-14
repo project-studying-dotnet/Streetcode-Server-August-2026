@@ -1,6 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Streetcode.BLL.Interfaces.CacheService;
 
 namespace Streetcode.BLL.Services.CacheService;
