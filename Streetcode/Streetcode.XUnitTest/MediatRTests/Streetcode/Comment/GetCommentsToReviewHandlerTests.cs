@@ -10,6 +10,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
     using global::Streetcode.BLL.MediatR.Streetcode.Comment.GetAll;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
+    using Microsoft.EntityFrameworkCore.Query;
     using Moq;
     using Xunit;
     using CommentEntity = global::Streetcode.DAL.Entities.Streetcode.Comment;
@@ -115,7 +116,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             this.commentRepositoryMock.Verify(
                 repository => repository.FindAll(
                     It.IsAny<Expression<Func<CommentEntity, bool>>>()),
-                Times.Never());
+                Times.Once());
         }
 
         private static CommentEntity CreateComment(int id, DateTimeOffset createdAt)
@@ -132,7 +133,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             this.commentRepositoryMock
                 .Setup(repository => repository.FindAll(
                     It.IsAny<Expression<Func<CommentEntity, bool>>>()))
-                .Returns(comments.AsQueryable());
+                .Returns(new TestAsyncEnumerable<CommentEntity>(comments));
         }
 
         private void SetupMapping()
@@ -150,6 +151,113 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             return new GetCommentsToReviewHandler(
                 this.repositoryWrapperMock.Object,
                 this.mapperMock.Object);
+        }
+
+        private sealed class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
+        {
+            private readonly IQueryProvider inner;
+
+            public TestAsyncQueryProvider(IQueryProvider inner)
+            {
+                this.inner = inner;
+            }
+
+            public IQueryable CreateQuery(Expression expression)
+            {
+                return new TestAsyncEnumerable<TEntity>(expression);
+            }
+
+            public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+            {
+                return new TestAsyncEnumerable<TElement>(expression);
+            }
+
+            public object? Execute(Expression expression)
+            {
+                return this.inner.Execute(expression);
+            }
+
+            public TResult Execute<TResult>(Expression expression)
+            {
+                return this.inner.Execute<TResult>(expression);
+            }
+
+            public TResult ExecuteAsync<TResult>(
+                Expression expression,
+                CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                Type resultType = typeof(TResult).GetGenericArguments().Single();
+                object? result = this.inner.Execute(expression);
+                var fromResultMethod = typeof(Task).GetMethod(nameof(Task.FromResult));
+
+                if (fromResultMethod is null)
+                {
+                    throw new InvalidOperationException("Task.FromResult method was not found.");
+                }
+
+                object? taskResult = fromResultMethod
+                    .MakeGenericMethod(resultType)
+                    .Invoke(null, new[] { result });
+
+                return taskResult is TResult typedTaskResult
+                    ? typedTaskResult
+                    : throw new InvalidOperationException("Async query result has an unexpected type.");
+            }
+        }
+
+        private sealed class TestAsyncEnumerable<T> : EnumerableQuery<T>,
+            IAsyncEnumerable<T>,
+            IQueryable<T>
+        {
+            public TestAsyncEnumerable(IEnumerable<T> enumerable)
+                : base(enumerable)
+            {
+            }
+
+            public TestAsyncEnumerable(Expression expression)
+                : base(expression)
+            {
+            }
+
+            IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
+
+            public IAsyncEnumerator<T> GetAsyncEnumerator(
+                CancellationToken cancellationToken = default)
+            {
+                return new TestAsyncEnumerator<T>(
+                    this.AsEnumerable().GetEnumerator(),
+                    cancellationToken);
+            }
+        }
+
+        private sealed class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+        {
+            private readonly IEnumerator<T> inner;
+            private readonly CancellationToken cancellationToken;
+
+            public TestAsyncEnumerator(
+                IEnumerator<T> inner,
+                CancellationToken cancellationToken)
+            {
+                this.inner = inner;
+                this.cancellationToken = cancellationToken;
+            }
+
+            public T Current => this.inner.Current;
+
+            public ValueTask<bool> MoveNextAsync()
+            {
+                this.cancellationToken.ThrowIfCancellationRequested();
+                return ValueTask.FromResult(this.inner.MoveNext());
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                this.inner.Dispose();
+                return ValueTask.CompletedTask;
+            }
         }
     }
 }
