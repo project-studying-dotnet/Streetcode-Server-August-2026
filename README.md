@@ -67,21 +67,59 @@ cd Streetcode-Server-August-2026
 
 `dev` is the default branch and the base for all work.
 
-### Database
+### Run with Docker Compose
 
-The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
-
-For local development, copy the tracked environment template:
+Make sure Docker Desktop is running in Linux containers mode. Copy the tracked environment template before starting the services:
 
 ```bash
 cp .env.example .env
 ```
 
-Then replace the placeholder in `.env` with the connection string for the local SQL Server instance:
+Then replace the Docker Compose placeholders in `.env` with values appropriate for the local environment:
 
 ```dotenv
-STREETCODE_ConnectionStrings__DefaultConnection="Server=localhost;Database=StreetcodeDb;User Id=sa;Password=your_password;TrustServerCertificate=True;MultipleActiveResultSets=true"
+MS_SQL_DB_PORT=1433
+API_PORT=5000
+SA_PASSWORD=your-strong-password
+DB_USER=sa
+DB_NAME=StreetcodeDb
 ```
+
+Build and start the Web API and SQL Server:
+
+```bash
+docker compose up --build
+```
+
+The SQL Server health check prevents the API from starting before the database is ready. On startup, the API applies the Entity Framework Core migrations automatically.
+
+When both services are running, the application is available at:
+
+| | |
+|---|---|
+| Swagger UI | <http://localhost:5000/swagger> |
+| HTTP | <http://localhost:5000> |
+| Hangfire dashboard | <http://localhost:5000/dash> |
+| SQL Server | `localhost:1433` |
+
+Docker Compose uses the `Local` environment to enable Swagger. The Hangfire dashboard remains available, but recurring background jobs are not registered in this environment, so the dashboard can be empty.
+
+Useful commands:
+
+```bash
+docker compose ps          # show service status
+docker compose logs -f api # follow API logs
+docker compose up -d       # start in the background
+docker compose down        # stop and remove the containers
+```
+
+The `sqlserver-data` volume preserves database data when the containers are stopped or recreated. To remove the containers together with the database data, run `docker compose down --volumes`.
+
+### Database
+
+The application reads the database connection string from the standard `ConnectionStrings:DefaultConnection` configuration key.
+
+For host-based local development, replace the relevant placeholders in `.env` with values appropriate for the local environment.
 
 The `STREETCODE_` prefix is removed by the environment configuration provider, and the double underscore `__` represents the configuration section separator `:`. Therefore, `STREETCODE_ConnectionStrings__DefaultConnection` overrides `ConnectionStrings:DefaultConnection`.
 
@@ -89,21 +127,9 @@ The `.env` file is ignored by Git and must never be committed. Do not put real c
 
 The `STREETCODE_Blob__BlobStoreKey` value is required when media files are encrypted or decrypted. Set it in the local `.env` file to a private key whose UTF-8 representation is exactly 32 bytes, as required for AES-256. The application may start when this value is empty or invalid, but media upload and download operations will fail. Never commit the real encryption key.
 
-#### Option A — SQL Server in a container
+Docker Compose configures the containerized API to connect to the `sqlserver` service automatically. The following override is only needed when running the API directly on the host with a local named SQL Server instance.
 
-Replace `your_strong_password` with a strong local password before running the command:
-
-```bash
-docker run -d --name streetcode-db \
-  -e "ACCEPT_EULA=Y" \
-  -e "MSSQL_SA_PASSWORD=your_strong_password" \
-  -p 1433:1433 \
-  mcr.microsoft.com/mssql/server:2022-latest
-```
-
-For this setup, use `127.0.0.1,1433` as the server, `StreetcodeDb` as the database, `sa` as the user, and the same password that was supplied to the container.
-
-#### Option B — a local SQL Server instance
+#### Local SQL Server instance
 
 Set `STREETCODE_ConnectionStrings__DefaultConnection` to a complete connection string for the local SQL Server instance. For a named SQL Server instance, the `Server` value can be set to something such as `localhost\SQLEXPRESS`.
 
@@ -232,7 +258,6 @@ Inherited from the reference tree and left as is:
 
 * The GitHub Actions workflows target `master`/`develop` and an upstream SonarCloud project whose token this repository does not hold. A red check on a PR is expected and does **not** block a merge — no status checks are required by branch protection.
 * `.github/PULL_REQUEST_TEMPLATE/develop.md` and `master.md` are leftovers named after branches that no longer exist. GitHub uses `.github/pull_request_template.md`.
-* The Nuke targets `SetupDocker` and `CleanDocker` call `docker-compose`, but no compose file ships with this repository.
 * The `.editorconfig` referenced by the project files is absent.
 
 ---

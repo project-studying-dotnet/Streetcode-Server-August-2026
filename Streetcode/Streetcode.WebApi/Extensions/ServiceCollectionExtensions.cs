@@ -2,17 +2,21 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Hangfire;
 using MediatR;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
+using Streetcode.WebApi.ExceptionHandlers;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
+using Streetcode.BLL.Interfaces.Sources;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
 using Streetcode.BLL.Services.BlobStorageService;
@@ -20,6 +24,7 @@ using Streetcode.BLL.Services.Email;
 using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
 using Streetcode.BLL.Services.Payment;
+using Streetcode.BLL.Services.Sources;
 using Streetcode.BLL.Services.Text;
 using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
@@ -41,10 +46,13 @@ public static class ServiceCollectionExtensions
         services.AddRepositoryServices();
         services.AddFeatureManagement();
         var currentAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+        var bllAssembly = typeof(ValidationBehavior<,>).Assembly;
         services.AddAutoMapper(currentAssemblies);
+        services.AddValidatorsFromAssembly(bllAssembly);
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssemblies(currentAssemblies);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
         services.AddScoped<IBlobService, BlobService>();
@@ -53,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IInstagramService, InstagramService>();
         services.AddScoped<ITextService, AddTermsToTextService>();
+        services.AddScoped<ISourceCategoryImageProcessor, SourceCategoryImageProcessor>();
     }
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
@@ -65,6 +74,7 @@ public static class ServiceCollectionExtensions
         {
             options.UseSqlServer(connectionString, opt =>
             {
+                opt.EnableRetryOnFailure();
                 opt.MigrationsAssembly(typeof(StreetcodeDbContext).Assembly.GetName().Name);
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schema: "entity_framework");
             });
@@ -96,6 +106,9 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddLogging();
+        services.AddProblemDetails();
+        services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddControllers();
     }
 

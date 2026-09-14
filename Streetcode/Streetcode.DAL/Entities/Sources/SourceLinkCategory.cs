@@ -9,16 +9,22 @@ namespace Streetcode.DAL.Entities.Sources;
 [Table("source_link_categories", Schema = "sources")]
 public class SourceLinkCategory
 {
+    public const int TitleMaxLength = 23;
+    public const int ImageHashLength = 64;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(100)]
+    [MaxLength(TitleMaxLength)]
     public string? Title { get; set; }
 
     [Required]
     public int ImageId { get; set; }
+
+    [MaxLength(ImageHashLength)]
+    public string? ImageHash { get; set; }
 
     public Image? Image { get; set; }
 

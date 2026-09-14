@@ -1,4 +1,3 @@
-using System.Transactions;
 using Repositories.Interfaces;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
 using Streetcode.DAL.Repositories.Interfaces.Analytics;
@@ -55,6 +54,4 @@ public interface IRepositoryWrapper
     public int SaveChanges();
 
     public Task<int> SaveChangesAsync();
-
-    public TransactionScope BeginTransaction();
 }
