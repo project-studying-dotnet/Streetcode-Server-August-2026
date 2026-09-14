@@ -30,7 +30,9 @@ public class GetCommentByIdHandler : IRequestHandler<GetCommentByIdQuery, Result
     {
         var comment = await _repositoryWrapper.CommentRepository.GetFirstOrDefaultAsync(
             predicate: comment => comment.Id == request.Id,
-            include: query => query.Include(comment => comment.Replies));
+            include: query => query.Include(comment => comment.Replies
+                .OrderBy(reply => reply.CreatedAt)
+                .ThenBy(reply => reply.Id)));
 
         if (comment is null)
         {
@@ -38,11 +40,6 @@ public class GetCommentByIdHandler : IRequestHandler<GetCommentByIdQuery, Result
             _logger.LogError(request, errorMessage);
             return Result.Fail(new Error(errorMessage));
         }
-
-        comment.Replies = comment.Replies
-            .OrderBy(reply => reply.CreatedAt)
-            .ThenBy(reply => reply.Id)
-            .ToList();
 
         return Result.Ok(_mapper.Map<CommentWithRepliesDto>(comment));
     }
