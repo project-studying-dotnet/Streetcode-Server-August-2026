@@ -65,5 +65,10 @@ public sealed class UpdateStreetcodeCommandValidator
 
         RuleForEach(command => command.updatedStreetcode.Tags)
             .ChildRules(tag => tag.RuleFor(t => t.Title).MustNotExceedLength(50, "Tag title"));
+
+        RuleFor(command => command.updatedStreetcode)
+            .Must(dto => !StreetcodeCreateUpdateChecks.HasDuplicateImageRoleIds(
+                dto.AnimationImageId, dto.BlackAndWhiteImageId, dto.RelatedFigureImageId))
+            .WithMessage("An image cannot be assigned to more than one role (Animation, Black and white, Related figure).");
     }
 }
