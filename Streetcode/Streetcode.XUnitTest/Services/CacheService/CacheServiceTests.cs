@@ -234,12 +234,15 @@ public class CacheServiceTests
     [Fact]
     public async Task RemoveAsync_Cancelled_PropagatesOperationCanceledException()
     {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
         _distributedCacheMock
-            .Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(c => c.RemoveAsync(It.IsAny<string>(), cts.Token))
             .ThrowsAsync(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(
-            () => _sut.RemoveAsync("key"));
+            () => _sut.RemoveAsync("key", cts.Token));
     }
 
     [Fact]

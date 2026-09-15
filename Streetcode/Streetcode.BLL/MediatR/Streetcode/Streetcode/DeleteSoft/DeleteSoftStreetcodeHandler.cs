@@ -41,7 +41,6 @@ public class DeleteSoftStreetcodeHandler : IRequestHandler<DeleteSoftStreetcodeC
         if (resultIsDeleteSucces)
         {
             var normalizedUrl = streetcode.TransliterationUrl?.ToLowerInvariant() ?? string.Empty;
-
             var cacheKeys = new List<string>
             {
                 $"streetcode:id:{streetcode.Id}",
@@ -49,9 +48,7 @@ public class DeleteSoftStreetcodeHandler : IRequestHandler<DeleteSoftStreetcodeC
                 $"streetcode:index:{streetcode.Index}",
                 $"streetcode:url:{normalizedUrl}"
             };
-
-            await _cacheService.RemoveAsync(cacheKeys, cancellationToken);
-
+            await _cacheService.RemoveAsync(cacheKeys, CancellationToken.None);
             return Result.Ok(Unit.Value);
         }
         else

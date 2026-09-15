@@ -80,17 +80,32 @@ public class CacheService : ICacheService
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        try
+        const int maxRetries = 3;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            await _cache.RemoveAsync(key, cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to remove cache for key: {Key}", key);
+            try
+            {
+                await _cache.RemoveAsync(key, cancellationToken);
+                return;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Attempt {Attempt} to remove cache key {Key} failed", attempt, key);
+
+                if (attempt == maxRetries)
+                {
+                    _logger.LogError(ex, "Exhausted retries removing cache key {Key}", key);
+                }
+                else
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50 * Math.Pow(2, attempt - 1)), CancellationToken.None);
+                }
+            }
         }
     }
 

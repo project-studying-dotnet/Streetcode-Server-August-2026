@@ -82,4 +82,3 @@ public class GetStreetcodeByIdHandlerTests
         Assert.True(result.IsFailed);
     }
 }
-
