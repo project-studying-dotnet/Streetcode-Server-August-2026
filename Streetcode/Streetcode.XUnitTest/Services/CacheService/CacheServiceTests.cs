@@ -17,7 +17,18 @@ public class CacheServiceTests
     private readonly Mock<ILogger<Streetcode.BLL.Services.CacheService.CacheService>> _loggerMock;
     private readonly Streetcode.BLL.Services.CacheService.CacheService _sut;
 
-    private record TestDto(int Id, string Name);
+    private class TestDto
+    {
+        public TestDto(int id, string name)
+        {
+            this.Id = id;
+            this.Name = name;
+        }
+
+        public int Id { get; set; }
+
+        public string Name { get; set; }
+    }
 
     public CacheServiceTests()
     {
