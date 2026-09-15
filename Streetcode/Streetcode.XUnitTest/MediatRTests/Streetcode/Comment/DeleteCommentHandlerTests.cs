@@ -17,6 +17,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
 
     public class DeleteCommentHandlerTests
     {
+        private static readonly int[] expectedDepthFirstReplyIds = { 19, 18, 17, 16 };
+
         private readonly Mock<IRepositoryWrapper> repositoryWrapperMock = new ();
         private readonly Mock<ICommentRepository> commentRepositoryMock = new ();
         private readonly Mock<ILoggerService> loggerMock = new ();
@@ -52,7 +54,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.True(result.IsSuccess);
             Assert.Equal(Unit.Value, result.Value);
             this.commentRepositoryMock.Verify(
-                repository => repository.DeleteRange(replies),
+                repository => repository.DeleteRange(
+                    It.Is<IEnumerable<CommentEntity>>(deletedReplies =>
+                        replies.All(deletedReplies.Contains) &&
+                        deletedReplies.Count() == replies.Count)),
                 Times.Once());
             this.commentRepositoryMock.Verify(
                 repository => repository.Delete(comment),
@@ -111,7 +116,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 repository => repository.DeleteRange(
                     It.Is<IEnumerable<CommentEntity>>(replies =>
                         replies.Select(reply => reply.Id)
-                            .SequenceEqual(new[] { 19, 18, 16, 17 }))),
+                            .SequenceEqual(expectedDepthFirstReplyIds))),
                 Times.Once());
             this.commentRepositoryMock.Verify(
                 repository => repository.Delete(comment),

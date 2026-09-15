@@ -78,10 +78,11 @@ public class DeleteCommentHandler : IRequestHandler<DeleteCommentCommand, Result
                 break;
             }
 
-            repliesDepthFirst.InsertRange(0, replies);
+            repliesDepthFirst.AddRange(replies);
             parentIds = replies.Select(reply => reply.Id).ToList();
         }
 
+        repliesDepthFirst.Reverse();
         return repliesDepthFirst;
     }
 }

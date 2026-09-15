@@ -55,13 +55,14 @@ namespace Streetcode.XUnitTest.Controllers
         }
 
         [Fact]
-        public void Delete_ShouldHaveExpectedRouteAndReviewRoles()
+        public void Delete_ShouldHaveExpectedEndpointMetadata()
         {
             MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.Delete));
 
             Assert.NotNull(method);
             var httpDeleteAttribute = method.GetCustomAttribute<HttpDeleteAttribute>();
             var authorizeAttribute = method.GetCustomAttribute<AuthorizeRoles>();
+            var responseTypes = method.GetCustomAttributes<ProducesResponseTypeAttribute>().ToList();
 
             Assert.NotNull(httpDeleteAttribute);
             Assert.Equal("{id:int}", httpDeleteAttribute.Template);
@@ -69,6 +70,11 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Equal(
                 "MainAdministrator,Administrator,Moderator",
                 authorizeAttribute.Roles);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status200OK);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status400BadRequest);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status401Unauthorized);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status403Forbidden);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status404NotFound);
         }
 
         [Fact]
