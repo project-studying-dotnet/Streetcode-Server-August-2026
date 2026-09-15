@@ -285,6 +285,9 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.Property<int>("StreetcodeId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ImageAssignment")
+                        .HasColumnType("int");
+
                     b.HasKey("ImageId", "StreetcodeId");
 
                     b.HasIndex("StreetcodeId");
@@ -501,6 +504,43 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.ToTable("streetcode_source_link_categories", "sources");
                 });
 
+            modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.Comment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("ParentCommentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StreetcodeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.HasIndex("StreetcodeId");
+
+                    b.ToTable("comments", "streetcode");
+                });
+
             modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.RelatedFigure", b =>
                 {
                     b.Property<int>("ObserverId")
@@ -571,6 +611,10 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     b.Property<int>("Index")
                         .HasColumnType("int");
+
+                    b.Property<string>("ShortDescription")
+                        .HasMaxLength(33)
+                        .HasColumnType("nvarchar(33)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -1274,6 +1318,24 @@ namespace Streetcode.DAL.Persistence.Migrations
                     b.Navigation("Streetcode");
                 });
 
+            modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.Comment", b =>
+                {
+                    b.HasOne("Streetcode.DAL.Entities.Streetcode.Comment", "ParentComment")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Streetcode.DAL.Entities.Streetcode.StreetcodeContent", "Streetcode")
+                        .WithMany()
+                        .HasForeignKey("StreetcodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ParentComment");
+
+                    b.Navigation("Streetcode");
+                });
+
             modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.RelatedFigure", b =>
                 {
                     b.HasOne("Streetcode.DAL.Entities.Streetcode.StreetcodeContent", "Observer")
@@ -1525,6 +1587,11 @@ namespace Streetcode.DAL.Persistence.Migrations
             modelBuilder.Entity("Streetcode.DAL.Entities.Sources.SourceLinkCategory", b =>
                 {
                     b.Navigation("StreetcodeCategoryContents");
+                });
+
+            modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.Comment", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.StreetcodeContent", b =>
