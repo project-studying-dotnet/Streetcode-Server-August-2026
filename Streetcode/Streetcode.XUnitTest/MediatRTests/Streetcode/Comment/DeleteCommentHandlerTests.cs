@@ -40,9 +40,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var comment = new CommentEntity
             {
                 Id = command.Id,
-                Replies = replies,
             };
             this.SetupComment(command.Id, comment);
+            this.SetupReplies(replies);
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(3);
@@ -73,6 +73,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 ParentCommentId = 15,
             };
             this.SetupComment(command.Id, reply);
+            this.SetupReplies(Array.Empty<CommentEntity>());
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(1);
@@ -81,11 +82,42 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
 
             Assert.True(result.IsSuccess);
             this.commentRepositoryMock.Verify(
-                repository => repository.DeleteRange(
-                    It.Is<IEnumerable<CommentEntity>>(comments => !comments.Any())),
-                Times.Once());
+                repository => repository.DeleteRange(It.IsAny<IEnumerable<CommentEntity>>()),
+                Times.Never());
             this.commentRepositoryMock.Verify(
                 repository => repository.Delete(reply),
+                Times.Once());
+        }
+
+        [Fact]
+        public async Task Handle_WhenRepliesAreNested_ShouldDeleteEntireSubtreeDepthFirst()
+        {
+            var command = new DeleteCommentCommand(15);
+            var comment = new CommentEntity { Id = command.Id };
+            var directReply = new CommentEntity { Id = 16, ParentCommentId = command.Id };
+            var siblingReply = new CommentEntity { Id = 17, ParentCommentId = command.Id };
+            var nestedReply = new CommentEntity { Id = 18, ParentCommentId = directReply.Id };
+            var deepestReply = new CommentEntity { Id = 19, ParentCommentId = nestedReply.Id };
+            this.SetupComment(command.Id, comment);
+            this.SetupReplies(new[] { directReply, siblingReply, nestedReply, deepestReply });
+            this.repositoryWrapperMock
+                .Setup(wrapper => wrapper.SaveChangesAsync())
+                .ReturnsAsync(5);
+
+            var result = await this.CreateHandler().Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            this.commentRepositoryMock.Verify(
+                repository => repository.DeleteRange(
+                    It.Is<IEnumerable<CommentEntity>>(replies =>
+                        replies.Select(reply => reply.Id)
+                            .SequenceEqual(new[] { 19, 18, 16, 17 }))),
+                Times.Once());
+            this.commentRepositoryMock.Verify(
+                repository => repository.Delete(comment),
+                Times.Once());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(),
                 Times.Once());
         }
 
@@ -121,6 +153,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var comment = new CommentEntity { Id = command.Id };
             const string expectedMessage = "Failed to delete comment with id: 15";
             this.SetupComment(command.Id, comment);
+            this.SetupReplies(Array.Empty<CommentEntity>());
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(0);
@@ -137,6 +170,31 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 Times.Once());
         }
 
+        [Fact]
+        public async Task Handle_WhenCancellationIsRequested_ShouldNotQueryOrDelete()
+        {
+            var command = new DeleteCommentCommand(15);
+            using var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                this.CreateHandler().Handle(command, cancellationTokenSource.Token));
+
+            this.commentRepositoryMock.Verify(
+                repository => repository.GetFirstOrDefaultAsync(
+                    It.IsAny<Expression<Func<CommentEntity, bool>>>(),
+                    It.IsAny<Func<
+                        IQueryable<CommentEntity>,
+                        IIncludableQueryable<CommentEntity, object>>?>()),
+                Times.Never());
+            this.commentRepositoryMock.Verify(
+                repository => repository.Delete(It.IsAny<CommentEntity>()),
+                Times.Never());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(),
+                Times.Never());
+        }
+
         private void SetupComment(int expectedId, CommentEntity? comment)
         {
             this.commentRepositoryMock
@@ -146,8 +204,23 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                         !predicate.Compile()(new CommentEntity { Id = expectedId + 1 })),
                     It.Is<Func<
                         IQueryable<CommentEntity>,
-                        IIncludableQueryable<CommentEntity, object>>?>(include => include != null)))
+                        IIncludableQueryable<CommentEntity, object>>?>(include => include == null)))
                 .ReturnsAsync(comment);
+        }
+
+        private void SetupReplies(IEnumerable<CommentEntity> comments)
+        {
+            this.commentRepositoryMock
+                .Setup(repository => repository.GetAllAsync(
+                    It.IsAny<Expression<Func<CommentEntity, bool>>>(),
+                    It.IsAny<Func<
+                        IQueryable<CommentEntity>,
+                        IIncludableQueryable<CommentEntity, object>>?>()))
+                .ReturnsAsync((
+                    Expression<Func<CommentEntity, bool>> predicate,
+                    Func<IQueryable<CommentEntity>,
+                        IIncludableQueryable<CommentEntity, object>>? _) =>
+                    comments.Where(predicate.Compile()).ToList());
         }
 
         private DeleteCommentHandler CreateHandler()

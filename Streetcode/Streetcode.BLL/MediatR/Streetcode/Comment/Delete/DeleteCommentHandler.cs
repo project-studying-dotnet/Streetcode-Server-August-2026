@@ -1,8 +1,8 @@
 using FluentResults;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using CommentEntity = Streetcode.DAL.Entities.Streetcode.Comment;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 
@@ -23,9 +23,10 @@ public class DeleteCommentHandler : IRequestHandler<DeleteCommentCommand, Result
         DeleteCommentCommand request,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var comment = await _repositoryWrapper.CommentRepository.GetFirstOrDefaultAsync(
-            predicate: comment => comment.Id == request.Id,
-            include: query => query.Include(comment => comment.Replies));
+            predicate: comment => comment.Id == request.Id);
 
         if (comment is null)
         {
@@ -34,9 +35,15 @@ public class DeleteCommentHandler : IRequestHandler<DeleteCommentCommand, Result
             return Result.Fail<Unit>(new Error(errorMessage));
         }
 
-        _repositoryWrapper.CommentRepository.DeleteRange(comment.Replies);
+        var replies = await GetRepliesDepthFirstAsync(comment.Id, cancellationToken);
+        if (replies.Count > 0)
+        {
+            _repositoryWrapper.CommentRepository.DeleteRange(replies);
+        }
+
         _repositoryWrapper.CommentRepository.Delete(comment);
 
+        cancellationToken.ThrowIfCancellationRequested();
         bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
         if (!isSaved)
         {
@@ -46,5 +53,35 @@ public class DeleteCommentHandler : IRequestHandler<DeleteCommentCommand, Result
         }
 
         return Result.Ok(Unit.Value);
+    }
+
+    private async Task<List<CommentEntity>> GetRepliesDepthFirstAsync(
+        int commentId,
+        CancellationToken cancellationToken)
+    {
+        var repliesDepthFirst = new List<CommentEntity>();
+        var visitedIds = new HashSet<int> { commentId };
+        var parentIds = new List<int> { commentId };
+
+        while (parentIds.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var replies = (await _repositoryWrapper.CommentRepository.GetAllAsync(
+                    reply => reply.ParentCommentId.HasValue &&
+                             parentIds.Contains(reply.ParentCommentId.Value)))
+                .Where(reply => visitedIds.Add(reply.Id))
+                .ToList();
+
+            if (replies.Count == 0)
+            {
+                break;
+            }
+
+            repliesDepthFirst.InsertRange(0, replies);
+            parentIds = replies.Select(reply => reply.Id).ToList();
+        }
+
+        return repliesDepthFirst;
     }
 }
