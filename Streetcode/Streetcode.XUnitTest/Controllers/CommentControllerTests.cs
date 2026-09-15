@@ -12,6 +12,7 @@ namespace Streetcode.XUnitTest.Controllers
     using Microsoft.Extensions.DependencyInjection;
     using Moq;
     using Streetcode.BLL.DTO.Streetcode.Comments;
+    using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.WebApi.Attributes;
     using Streetcode.WebApi.Controllers.Streetcode;
@@ -19,6 +20,99 @@ namespace Streetcode.XUnitTest.Controllers
 
     public class CommentControllerTests
     {
+        [Fact]
+        public async Task Delete_ShouldSendCommandWithCancellationTokenAndReturnOk()
+        {
+            const int commentId = 15;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<DeleteCommentCommand>(command => command.Id == commentId),
+                    cancellationToken))
+                .ReturnsAsync(Result.Ok(Unit.Value));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                    },
+                },
+            };
+
+            var result = await controller.Delete(commentId, cancellationToken);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(Unit.Value, okResult.Value);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task Delete_WhenCommentDoesNotExist_ShouldReturnNotFound()
+        {
+            const int commentId = 404;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var error = new CommentNotFoundError(commentId);
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<DeleteCommentCommand>(command => command.Id == commentId),
+                    cancellationToken))
+                .ReturnsAsync(Result.Fail<Unit>(error));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                    },
+                },
+            };
+
+            var result = await controller.Delete(commentId, cancellationToken);
+
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var reasons = Assert.IsAssignableFrom<IEnumerable<IReason>>(notFoundResult.Value);
+            Assert.Contains(reasons, reason => reason.Message == error.Message);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public void Delete_ShouldHaveExpectedEndpointMetadata()
+        {
+            MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.Delete));
+
+            Assert.NotNull(method);
+            var httpDeleteAttribute = method.GetCustomAttribute<HttpDeleteAttribute>();
+            var authorizeAttribute = method.GetCustomAttribute<AuthorizeRoles>();
+            var responseTypes = method.GetCustomAttributes<ProducesResponseTypeAttribute>().ToList();
+
+            Assert.NotNull(httpDeleteAttribute);
+            Assert.Equal("{id:int}", httpDeleteAttribute.Template);
+            Assert.NotNull(authorizeAttribute);
+            Assert.Equal(
+                "MainAdministrator,Admin,Moderator",
+                authorizeAttribute.Roles);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status200OK);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status400BadRequest);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status401Unauthorized);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status403Forbidden);
+            Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status404NotFound);
+        }
+
         [Fact]
         public async Task GetById_ShouldSendQueryWithCancellationTokenAndReturnOk()
         {
@@ -67,7 +161,7 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Equal("{id:int}", httpGetAttribute.Template);
             Assert.NotNull(authorizeAttribute);
             Assert.Equal(
-                "MainAdministrator,Administrator,Moderator",
+                "MainAdministrator,Admin,Moderator",
                 authorizeAttribute.Roles);
         }
     }
