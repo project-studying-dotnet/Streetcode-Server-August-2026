@@ -255,15 +255,12 @@ public sealed class CreateSourceHandler
                 new Error(duplicateImageErrorMessage));
         }
 
-        string blobStorageName = _blobService.SaveFileInStorage(
+        string createdBlobName = _blobService.SaveFileInStorage(
             grayscaleImage.BaseFormat!,
             newCategoryTitle,
             grayscaleImage.Extension!);
 
         var imageEntity = _mapper.Map<ImageEntity>(grayscaleImage);
-
-        string createdBlobName =
-            $"{blobStorageName}.{grayscaleImage.Extension}";
 
         imageEntity.BlobName = createdBlobName;
 
