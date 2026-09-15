@@ -490,7 +490,7 @@ public class CreateSourceHandlerTests
                 grayscaleImage.BaseFormat!,
                 categoryTitle,
                 grayscaleImage.Extension!))
-            .Returns("grayscale-image");
+            .Returns("grayscale-image.png");
 
         _mapperMock
             .Setup(mapper => mapper.Map<ImageEntity>(grayscaleImage))
@@ -680,7 +680,7 @@ public class CreateSourceHandlerTests
                 grayscaleImage.BaseFormat!,
                 categoryTitle,
                 grayscaleImage.Extension!))
-            .Returns("grayscale-image");
+            .Returns("grayscale-image.png");
 
         _mapperMock
             .Setup(mapper => mapper.Map<ImageEntity>(grayscaleImage))
@@ -772,7 +772,7 @@ public class CreateSourceHandlerTests
                 grayscaleImage.BaseFormat!,
                 categoryTitle,
                 grayscaleImage.Extension!))
-            .Returns("grayscale-image");
+            .Returns("grayscale-image.png");
 
         _mapperMock
             .Setup(mapper => mapper.Map<ImageEntity>(grayscaleImage))

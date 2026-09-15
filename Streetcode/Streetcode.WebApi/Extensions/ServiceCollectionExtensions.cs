@@ -1,10 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Azure.Storage.Blobs;
 using FluentValidation;
 using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -32,6 +34,7 @@ using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
 using Streetcode.WebApi.ExceptionHandlers;
+using Streetcode.WebApi.Service;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -43,7 +46,7 @@ public static class ServiceCollectionExtensions
     }
 
     [ExcludeFromCodeCoverage(Justification = "DI composition-root wiring; not meaningfully unit-testable")]
-    public static void AddCustomServices(this IServiceCollection services)
+    public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddRepositoryServices();
         services.AddFeatureManagement();
@@ -57,7 +60,38 @@ public static class ServiceCollectionExtensions
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        services.AddScoped<IBlobService, BlobService>();
+        var blobProvider = configuration.GetValue<string>("Blob:Provider");
+
+        if (string.Equals(blobProvider, "Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHostedService<AzureBlobInitializerHostedService>();
+
+            var blobOptions = configuration.GetSection("Blob").Get<BlobEnvironmentVariables>()
+                ?? throw new InvalidOperationException("Blob configuration section is missing.");
+
+            if(string.IsNullOrWhiteSpace(blobOptions.Azure?.ConnectionString) ||
+                string.IsNullOrWhiteSpace(blobOptions.Azure?.ContainerName))
+            {
+                throw new InvalidOperationException("Azure Blob Storage requires both ConnectionString and ContainerName to be configured.");
+            }
+
+            services.AddSingleton(sp =>
+            {
+                var azureOptions = sp.GetRequiredService<IOptions<BlobEnvironmentVariables>>().Value.Azure;
+                return new BlobContainerClient(azureOptions.ConnectionString, azureOptions.ContainerName);
+            });
+
+            services.AddScoped<IBlobService, AzureBlobService>();
+        }
+        else if (string.Equals(blobProvider, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IBlobService, LocalBlobService>();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Invalid Blob:Provider value '{blobProvider}'. Supported values are 'Azure' or 'Local'.");
+        }
+
         services.AddScoped<ILoggerService, LoggerService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPaymentService, PaymentService>();
