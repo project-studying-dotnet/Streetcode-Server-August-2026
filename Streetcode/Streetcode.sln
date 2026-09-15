@@ -17,6 +17,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Streetcode.XIntegrationTest
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DbUpdate", "DbUpdate\DbUpdate.csproj", "{525A61D2-EA8D-40B1-B47A-5C8B3F9FD629}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Streetcode.ApiGateway", "Streetcode.ApiGateway\Streetcode.ApiGateway.csproj", "{ACE24716-24BE-4543-8C1B-F170B5D469FB}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{95E863CE-C3B4-4DBC-8C15-957E63BA45B6}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -54,6 +56,10 @@ Global
 		{525A61D2-EA8D-40B1-B47A-5C8B3F9FD629}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{525A61D2-EA8D-40B1-B47A-5C8B3F9FD629}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{525A61D2-EA8D-40B1-B47A-5C8B3F9FD629}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACE24716-24BE-4543-8C1B-F170B5D469FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACE24716-24BE-4543-8C1B-F170B5D469FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACE24716-24BE-4543-8C1B-F170B5D469FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACE24716-24BE-4543-8C1B-F170B5D469FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
