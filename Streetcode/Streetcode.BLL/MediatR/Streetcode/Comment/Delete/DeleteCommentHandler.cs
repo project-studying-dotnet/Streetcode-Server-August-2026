@@ -30,9 +30,9 @@ public class DeleteCommentHandler : IRequestHandler<DeleteCommentCommand, Result
 
         if (comment is null)
         {
-            string errorMessage = $"Cannot find a comment with corresponding id: {request.Id}";
-            _logger.LogError(request, errorMessage);
-            return Result.Fail<Unit>(new Error(errorMessage));
+            var error = new CommentNotFoundError(request.Id);
+            _logger.LogError(request, error.Message);
+            return Result.Fail<Unit>(error);
         }
 
         var replies = await GetRepliesDepthFirstAsync(comment.Id, cancellationToken);

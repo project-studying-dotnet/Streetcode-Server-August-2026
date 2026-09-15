@@ -55,6 +55,42 @@ namespace Streetcode.XUnitTest.Controllers
         }
 
         [Fact]
+        public async Task Delete_WhenCommentDoesNotExist_ShouldReturnNotFound()
+        {
+            const int commentId = 404;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var error = new CommentNotFoundError(commentId);
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<DeleteCommentCommand>(command => command.Id == commentId),
+                    cancellationToken))
+                .ReturnsAsync(Result.Fail<Unit>(error));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                    },
+                },
+            };
+
+            var result = await controller.Delete(commentId, cancellationToken);
+
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var reasons = Assert.IsAssignableFrom<IEnumerable<IReason>>(notFoundResult.Value);
+            Assert.Contains(reasons, reason => reason.Message == error.Message);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
         public void Delete_ShouldHaveExpectedEndpointMetadata()
         {
             MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.Delete));

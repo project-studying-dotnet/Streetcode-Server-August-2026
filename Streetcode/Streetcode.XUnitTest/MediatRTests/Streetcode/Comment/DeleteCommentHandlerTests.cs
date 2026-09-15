@@ -136,7 +136,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            var error = Assert.IsType<CommentNotFoundError>(result.Errors.Single());
+            Assert.Equal(expectedMessage, error.Message);
             this.loggerMock.Verify(
                 logger => logger.LogError(command, expectedMessage),
                 Times.Once());

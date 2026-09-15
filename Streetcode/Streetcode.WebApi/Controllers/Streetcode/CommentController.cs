@@ -22,9 +22,13 @@ public class CommentController : BaseApiController
         [FromRoute] int id,
         CancellationToken cancellationToken)
     {
-        return HandleResult(await Mediator.Send(
+        var result = await Mediator.Send(
             new DeleteCommentCommand(id),
-            cancellationToken));
+            cancellationToken);
+
+        return result.Errors.Any(error => error is CommentNotFoundError)
+            ? NotFound(result.Reasons)
+            : HandleResult(result);
     }
 
     [AuthorizeRoles(
