@@ -541,6 +541,42 @@ public sealed class AuthControllerIntegrationTests
     }
 
     [Fact]
+    public async Task Logout_WhenRevocationFails_ShouldReturnInternalServerError()
+    {
+        await using var factory = CreateFactory(services =>
+            services.AddScoped<
+                IRefreshTokenService,
+                FailingRefreshTokenService>());
+
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = "refresh-token"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.InternalServerError,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Logout failed", problemDetails.Title);
+        Assert.Equal(
+            "An unexpected error occurred while processing the logout request",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status500InternalServerError,
+            problemDetails.Status);
+    }
+
+    [Fact]
     public async Task Logout_WhenCalledTwice_ShouldReturnNoContentAndMakeRefreshUnauthorized()
     {
         await using var factory = CreateFactory();
@@ -631,7 +667,9 @@ public sealed class AuthControllerIntegrationTests
             string refreshToken,
             CancellationToken cancellationToken)
         {
-            throw new NotSupportedException();
+            return Task.FromResult(Result.Fail(
+                new Error("Refresh token revocation failed")
+                    .WithMetadata("Code", "RefreshToken.RevocationFailed")));
         }
     }
 }

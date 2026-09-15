@@ -41,4 +41,38 @@ public sealed class LogoutCommandHandlerTests
                 cancellationToken),
             Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenServiceFails_ShouldReturnFailure()
+    {
+        const string refreshToken = "refresh-token";
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = cancellationTokenSource.Token;
+        var expectedResult = Result.Fail(
+            new Error("Refresh token revocation failed"));
+
+        _refreshTokenServiceMock
+            .Setup(service => service.RevokeFamilyAsync(
+                refreshToken,
+                cancellationToken))
+            .ReturnsAsync(expectedResult);
+
+        var handler = new LogoutCommandHandler(
+            _refreshTokenServiceMock.Object);
+
+        var command = new LogoutCommand(refreshToken);
+
+        var result = await handler.Handle(
+            command,
+            cancellationToken);
+
+        Assert.Same(expectedResult, result);
+
+        _refreshTokenServiceMock.Verify(
+            service => service.RevokeFamilyAsync(
+                refreshToken,
+                cancellationToken),
+            Times.Once);
+    }
 }
