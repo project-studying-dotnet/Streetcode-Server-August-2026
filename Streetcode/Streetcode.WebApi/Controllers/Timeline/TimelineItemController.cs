@@ -33,7 +33,7 @@ public class TimelineItemController : BaseApiController
 
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator,
+        UserRole.Admin,
         UserRole.Moderator)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] TimelineItemCreateUpdateDto timelineItem)
@@ -43,7 +43,7 @@ public class TimelineItemController : BaseApiController
 
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator,
+        UserRole.Admin,
         UserRole.Moderator)]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] TimelineItemCreateUpdateDto timelineItem)
@@ -53,7 +53,7 @@ public class TimelineItemController : BaseApiController
 
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator)]
+        UserRole.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
