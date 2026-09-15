@@ -93,17 +93,24 @@ public class AzureBlobService : IBlobService
 
     public async Task CleanBlobStorage()
     {
-        var blobNames = _containerClient.GetBlobs().Select(b => b.Name).ToList();
+        var safetyThreshold = DateTimeOffset.UtcNow.AddHours(-1);
+
+        var blobsPageable = _containerClient.GetBlobs(BlobTraits.None, BlobStates.None, null, default);
+        var blobNames = (blobsPageable ?? Enumerable.Empty<BlobItem>())
+            .Where(b => b.Properties == null || b.Properties.LastModified == null || b.Properties.LastModified < safetyThreshold)
+            .Select(b => b.Name)
+            .ToList();
 
         var existingImages = await _repositoryWrapper.ImageRepository.GetAllAsync();
         var existingAudios = await _repositoryWrapper.AudioRepository.GetAllAsync();
 
-        List<string> existingMedia = new();
+        var existingMedia = new HashSet<string>(
+            existingImages.Where(img => img.BlobName != null).Select(img => img.BlobName!)
+                .Concat(existingAudios.Where(a => a.BlobName != null).Select(a => a.BlobName!)),
+            StringComparer.OrdinalIgnoreCase);
 
-        existingMedia.AddRange(existingImages.Select(img => img.BlobName));
-        existingMedia.AddRange(existingAudios.Select(a => a.BlobName));
+        var filesToRemove = blobNames.Where(name => !existingMedia.Contains(name)).ToList();
 
-        var filesToRemove = blobNames.Except(existingMedia).ToList();
         foreach (var file in filesToRemove)
         {
             DeleteFileInStorage(file);

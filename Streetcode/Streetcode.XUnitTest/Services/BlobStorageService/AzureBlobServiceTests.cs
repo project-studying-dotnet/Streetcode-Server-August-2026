@@ -31,6 +31,42 @@ public class AzureBlobServiceTests
     }
 
     [Fact]
+    public async Task CleanBlobStorage_DoesNotDeleteRecentOrphanBlobs_DueToRaceConditionBuffer()
+    {
+        var recentOrphanBlob = BlobsModelFactory.BlobItem(
+            name: "recent_orphan.png",
+            properties: BlobsModelFactory.BlobItemProperties(
+                accessTierInferred: true,
+                lastModified: DateTimeOffset.UtcNow.AddMinutes(-10)));
+
+        _containerClientMock
+            .Setup(c => c.GetBlobs(
+                It.IsAny<BlobTraits>(),
+                It.IsAny<BlobStates>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(new TestPageable<BlobItem>(new[] { recentOrphanBlob }));
+
+        _repositoryWrapperMock
+            .Setup(r => r.ImageRepository.GetAllAsync(null, null))
+            .ReturnsAsync(new List<Image>());
+        _repositoryWrapperMock
+            .Setup(r => r.AudioRepository.GetAllAsync(null, null))
+            .ReturnsAsync(new List<Audio>());
+
+        var recentBlobClientMock = new Mock<BlobClient>();
+        _containerClientMock
+            .Setup(c => c.GetBlobClient("recent_orphan.png"))
+            .Returns(recentBlobClientMock.Object);
+
+        await _service.CleanBlobStorage();
+
+        recentBlobClientMock.Verify(
+            c => c.DeleteIfExists(It.IsAny<DeleteSnapshotsOption>(), It.IsAny<BlobRequestConditions>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public void DeleteFileInStorage_CallsDeleteIfExistsOnCorrectBlob()
     {
         var blobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/myblob.png"), new BlobClientOptions());
@@ -229,13 +265,24 @@ public class AzureBlobServiceTests
     [Fact]
     public async Task CleanBlobStorage_DeletesOnlyBlobsNotPresentInDatabase()
     {
+        var oldDate = DateTimeOffset.UtcNow.AddDays(-2);
+
         var blobItems = new List<BlobItem>
         {
-            BlobsModelFactory.BlobItem(name: "used.png"),
-            BlobsModelFactory.BlobItem(name: "orphan.png"),
+            BlobsModelFactory.BlobItem(
+                name: "used.png",
+                properties: BlobsModelFactory.BlobItemProperties(accessTierInferred: true, lastModified: oldDate)),
+            BlobsModelFactory.BlobItem(
+                name: "orphan.png",
+                properties: BlobsModelFactory.BlobItemProperties(accessTierInferred: true, lastModified: oldDate)),
         };
+
         _containerClientMock
-            .Setup(c => c.GetBlobs())
+            .Setup(c => c.GetBlobs(
+                It.IsAny<BlobTraits>(),
+                It.IsAny<BlobStates>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
             .Returns(new TestPageable<BlobItem>(blobItems));
 
         _repositoryWrapperMock
@@ -247,6 +294,7 @@ public class AzureBlobServiceTests
 
         var usedBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/used.png"), new BlobClientOptions());
         var orphanBlobClientMock = new Mock<BlobClient>(new Uri("https://test.blob.core.windows.net/container/orphan.png"), new BlobClientOptions());
+
         _containerClientMock.Setup(c => c.GetBlobClient("used.png")).Returns(usedBlobClientMock.Object);
         _containerClientMock.Setup(c => c.GetBlobClient("orphan.png")).Returns(orphanBlobClientMock.Object);
 
