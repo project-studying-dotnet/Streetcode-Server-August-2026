@@ -63,6 +63,9 @@ services:
       STREETCODE_IDENTITY_Kafka__BootstrapServers: "kafka:19092"
       STREETCODE_IDENTITY_Kafka__Topics__UserAccessChangedV1: "${KAFKA_USER_ACCESS_CHANGED_TOPIC:-identity.user-access-changed.v1}"
       STREETCODE_IDENTITY_Jwt__SecretKey: ${STREETCODE_IDENTITY_JWT_SECRET_KEY}
+      STREETCODE_IDENTITY_IdentitySeed__Enabled: "${IDENTITY_SEED_ENABLED:-false}"
+      STREETCODE_IDENTITY_IdentitySeed__AdminEmail: "${IDENTITY_ADMIN_EMAIL:-}"
+      STREETCODE_IDENTITY_IdentitySeed__AdminPassword: "${IDENTITY_ADMIN_PASSWORD:-}"
 
     ports:
       - "${IDENTITY_API_PORT:-5001}:8080"
