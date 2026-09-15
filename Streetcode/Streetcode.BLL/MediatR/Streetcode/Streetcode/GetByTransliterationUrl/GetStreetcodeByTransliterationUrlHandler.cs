@@ -35,7 +35,8 @@ public class GetStreetcodeByTransliterationUrlHandler : IRequestHandler<GetStree
             async (ct) =>
             {
                 var streetcode = await _repository.StreetcodeRepository.GetFirstOrDefaultAsync(
-                    predicate: st => st.TransliterationUrl != null && st.TransliterationUrl.ToLower() == normalizedUrl);
+                    predicate: st => st.TransliterationUrl != null &&
+                     st.TransliterationUrl.ToLower().Equals(normalizedUrl));
 
                 if (streetcode is null)
                 {
