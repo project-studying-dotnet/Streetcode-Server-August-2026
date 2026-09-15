@@ -109,7 +109,7 @@ public class UpdateStreetcodeHandlerTests
             Index = oldIndex,
             TransliterationUrl = oldUrl,
             Status = StreetcodeStatus.Published,
-            Tags = new List<Tag>()
+            Tags = new List<Tag>(),
         };
 
         SetupExistingStreetcode(existingStreetcode);
@@ -118,11 +118,13 @@ public class UpdateStreetcodeHandlerTests
         updateStreetcodeDTO.Index = newIndex;
         updateStreetcodeDTO.TransliterationUrl = newUrl;
 
-        _mapperMock.Setup(m => m.Map(updateStreetcodeDTO, existingStreetcode)).Callback(() =>
-        {
-            existingStreetcode.Index = newIndex;
-            existingStreetcode.TransliterationUrl = newUrl;
-        });
+        _mapperMock
+            .Setup(m => m.Map(It.IsAny<UpdateStreetcodeDTO>(), It.IsAny<StreetcodeEntity>()))
+            .Callback<object, object>((src, dest) =>
+            {
+                existingStreetcode.Index = newIndex;
+                existingStreetcode.TransliterationUrl = newUrl;
+            });
 
         var expectedKeys = new HashSet<string>
         {
@@ -131,7 +133,7 @@ public class UpdateStreetcodeHandlerTests
             $"streetcode:index:{oldIndex}",
             $"streetcode:index:{newIndex}",
             $"streetcode:url:{oldUrl}",
-            $"streetcode:url:{newUrl}"
+            $"streetcode:url:{newUrl}",
         };
 
         var command = new UpdateStreetcodeCommand(id, updateStreetcodeDTO);
