@@ -12,6 +12,7 @@ namespace Streetcode.XUnitTest.Controllers
     using Microsoft.Extensions.DependencyInjection;
     using Moq;
     using Streetcode.BLL.DTO.Streetcode.Comments;
+    using Streetcode.BLL.MediatR.Streetcode.Comment.GetAll;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.WebApi.Attributes;
     using Streetcode.WebApi.Controllers.Streetcode;
@@ -19,6 +20,65 @@ namespace Streetcode.XUnitTest.Controllers
 
     public class CommentControllerTests
     {
+        [Fact]
+        public async Task GetAll_ShouldSendQueryWithCancellationTokenAndReturnOk()
+        {
+            var request = new GetCommentsToReviewRequestDto
+            {
+                Page = 2,
+                Amount = 20,
+            };
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var response = new GetCommentsToReviewResponseDto
+            {
+                Pages = 3,
+            };
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<GetCommentsToReviewQuery>(query => query.Request == request),
+                    cancellationToken))
+                .ReturnsAsync(Result.Ok(response));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                    },
+                },
+            };
+
+            var result = await controller.GetAll(request, cancellationToken);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Same(response, okResult.Value);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public void GetAll_ShouldHaveExpectedRouteAndReviewRoles()
+        {
+            MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.GetAll));
+
+            Assert.NotNull(method);
+            var httpGetAttribute = method.GetCustomAttribute<HttpGetAttribute>();
+            var authorizeAttribute = method.GetCustomAttribute<AuthorizeRoles>();
+
+            Assert.NotNull(httpGetAttribute);
+            Assert.Null(httpGetAttribute.Template);
+            Assert.NotNull(authorizeAttribute);
+            Assert.Equal(
+                "MainAdministrator,Administrator,Moderator",
+                authorizeAttribute.Roles);
+        }
+
         [Fact]
         public async Task GetById_ShouldSendQueryWithCancellationTokenAndReturnOk()
         {
