@@ -215,6 +215,7 @@ public sealed class IdentityDataSeederIntegrationTests
         var services = new ServiceCollection();
 
         services.AddLogging();
+        services.AddAuthentication();
         services.AddInfrastructure(_fixture.ConnectionString);
         services.AddIdentitySeeding(configuration);
 

@@ -267,6 +267,21 @@ public sealed class RefreshTokenServiceIntegrationTests : IDisposable
     }
 
     [Fact]
+    public async Task RevokeFamilyAsync_WhenTokenDoesNotExist_ShouldReturnSuccess()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+
+        var service = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var result = await service.RevokeFamilyAsync(
+            $"unknown-{Guid.NewGuid():N}",
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
     public async Task RotateAsync_WhenConcurrentRotationWins_ShouldNotRevokeWinnerReplacement()
     {
         await using var setupScope = _serviceProvider.CreateAsyncScope();

@@ -25,10 +25,14 @@ public sealed class IdentityWebApplicationFactory
     private static readonly object EnvironmentVariableLock = new();
 
     private readonly string _connectionString;
+    private readonly Action<IServiceCollection>? _configureServices;
 
-    public IdentityWebApplicationFactory(string connectionString)
+    public IdentityWebApplicationFactory(
+        string connectionString,
+        Action<IServiceCollection>? configureServices = null)
     {
         _connectionString = connectionString;
+        _configureServices = configureServices;
     }
 
     public new HttpClient CreateClient()
@@ -86,6 +90,8 @@ public sealed class IdentityWebApplicationFactory
             RemoveHostedService<OutboxPublisherBackgroundService>(services);
 
             RemoveHostedService<RefreshTokenCleanupBackgroundService>(services);
+
+            _configureServices?.Invoke(services);
         });
     }
 

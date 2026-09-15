@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Streetcode.Identity.Application;
 using Streetcode.Identity.Infrastructure;
+using Streetcode.Identity.Infrastructure.Identity;
 using Streetcode.Identity.Infrastructure.Identity.Seeding;
 using Streetcode.Identity.Infrastructure.Messaging.Kafka;
 using Streetcode.Identity.Infrastructure.Persistence;
@@ -37,6 +38,8 @@ builder.Services
     .AddExceptionHandler<ValidationExceptionHandler>();
 
 var app = builder.Build();
+
+_ = app.Services.GetRequiredService<DummyPasswordHash>();
 
 app.UseExceptionHandler();
 

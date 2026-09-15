@@ -34,6 +34,15 @@ public class RegisterUserCommandHandlerTests
             return Task.FromResult(_resultToReturn);
         }
 
+        public Task<Result<UserTokenData>> AuthenticateAsync(
+            string email,
+            string password,
+            CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException(
+                "Registration tests do not authenticate users.");
+        }
+
         public Task<Result<UserTokenData>> GetUserTokenDataAsync(
             Guid userId,
             CancellationToken cancellationToken)
