@@ -4,6 +4,7 @@ using MediatR;
 using Streetcode.BLL.DTO.AdditionalContent.Tag;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.DTO.Streetcode;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Create;
 using Streetcode.DAL.Entities.AdditionalContent;
@@ -167,18 +168,19 @@ public class UpdateStreetcodeHandler : IRequestHandler<UpdateStreetcodeCommand, 
             var newNormalizedUrl = streetcode.TransliterationUrl?.ToLowerInvariant() ?? string.Empty;
 
             var cacheKeys = new HashSet<string>
-                {
-                    $"streetcode:id:{streetcode.Id}",
-                    $"streetcode:short:{streetcode.Id}",
-                    $"streetcode:index:{oldIndex}",
-                    $"streetcode:index:{streetcode.Index}",
-                    $"streetcode:url:{oldNormalizedUrl}",
-                    $"streetcode:url:{newNormalizedUrl}"
-                };
+            {
+                $"streetcode:id:{streetcode.Id}",
+                $"streetcode:short:{streetcode.Id}",
+                $"streetcode:index:{oldIndex}",
+                $"streetcode:index:{streetcode.Index}",
+                $"streetcode:url:{oldNormalizedUrl}",
+                $"streetcode:url:{newNormalizedUrl}"
+            };
 
-            await _cacheService.RemoveAsync(cacheKeys, cancellationToken);
+            await _cacheService.RemoveAsync(cacheKeys, CancellationToken.None);
 
             var dbo = _mapper.Map<StreetcodeDTO>(streetcode);
+
             return Result.Ok(dbo);
         }
         catch (Exception ex)
