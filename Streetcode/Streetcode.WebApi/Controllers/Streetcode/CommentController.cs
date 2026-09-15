@@ -10,7 +10,7 @@ public class CommentController : BaseApiController
 {
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator,
+        UserRole.Admin,
         UserRole.Moderator)]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -29,7 +29,7 @@ public class CommentController : BaseApiController
 
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator,
+        UserRole.Admin,
         UserRole.Moderator)]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(

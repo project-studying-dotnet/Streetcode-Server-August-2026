@@ -68,7 +68,7 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Equal("{id:int}", httpDeleteAttribute.Template);
             Assert.NotNull(authorizeAttribute);
             Assert.Equal(
-                "MainAdministrator,Administrator,Moderator",
+                "MainAdministrator,Admin,Moderator",
                 authorizeAttribute.Roles);
             Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status200OK);
             Assert.Contains(responseTypes, attribute => attribute.StatusCode == StatusCodes.Status400BadRequest);
@@ -125,7 +125,7 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Equal("{id:int}", httpGetAttribute.Template);
             Assert.NotNull(authorizeAttribute);
             Assert.Equal(
-                "MainAdministrator,Administrator,Moderator",
+                "MainAdministrator,Admin,Moderator",
                 authorizeAttribute.Roles);
         }
     }
