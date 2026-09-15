@@ -5,8 +5,10 @@
 namespace Streetcode.XUnitTest.Controllers
 {
     using System.Reflection;
+    using System.Security.Claims;
     using FluentResults;
     using MediatR;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.DependencyInjection;
@@ -24,13 +26,14 @@ namespace Streetcode.XUnitTest.Controllers
         public async Task Update_ShouldSendCommandAndReturnOk()
         {
             const int commentId = 15;
+            var authorId = Guid.NewGuid();
             var dto = new UpdateCommentDto { Text = "Updated comment" };
             var expectedDto = new CommentDto { Id = commentId, Text = dto.Text };
             var mediatorMock = new Mock<IMediator>();
             mediatorMock
                 .Setup(mediator => mediator.Send(
                     It.Is<UpdateCommentCommand>(command =>
-                        command.Id == commentId && command.Comment == dto),
+                        command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Result.Ok(expectedDto));
 
@@ -44,6 +47,8 @@ namespace Streetcode.XUnitTest.Controllers
                     HttpContext = new DefaultHttpContext
                     {
                         RequestServices = serviceProvider,
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                            [new Claim(ClaimTypes.NameIdentifier, authorId.ToString())])),
                     },
                 },
             };
@@ -53,6 +58,22 @@ namespace Streetcode.XUnitTest.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Same(expectedDto, okResult.Value);
             mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task Update_WhenUserIdClaimIsMissing_ShouldReturnUnauthorized()
+        {
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext(),
+                },
+            };
+
+            var result = await controller.Update(15, new UpdateCommentDto { Text = "Updated comment" });
+
+            Assert.IsType<UnauthorizedResult>(result);
         }
 
         [Fact]
@@ -97,9 +118,11 @@ namespace Streetcode.XUnitTest.Controllers
 
             Assert.NotNull(method);
             var httpPutAttribute = method.GetCustomAttribute<HttpPutAttribute>();
+            var authorizeAttribute = method.GetCustomAttribute<AuthorizeAttribute>();
 
             Assert.NotNull(httpPutAttribute);
             Assert.Equal("{id:int}", httpPutAttribute.Template);
+            Assert.NotNull(authorizeAttribute);
         }
 
         [Fact]

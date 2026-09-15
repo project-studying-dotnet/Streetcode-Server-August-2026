@@ -34,6 +34,14 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
             return Result.Fail<CommentDto>(new Error(errorMsg));
         }
 
+        if (comment.AuthorId != request.AuthorId)
+        {
+            var errorMsg =
+                $"You do not have permission to update comment with id: {request.Id}";
+            _loggerService.LogError(request, errorMsg);
+            return Result.Fail<CommentDto>(new Error(errorMsg));
+        }
+
         comment.Text = request.Comment.Text.Trim();
         comment.UpdatedAt = DateTimeOffset.UtcNow;
 

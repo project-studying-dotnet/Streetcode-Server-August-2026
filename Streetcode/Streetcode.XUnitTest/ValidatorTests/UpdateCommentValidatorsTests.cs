@@ -7,8 +7,8 @@ namespace Streetcode.XUnitTest.ValidatorTests
     using Streetcode.BLL.DTO.Streetcode.Comments;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Validators;
-    using CommentEntity = Streetcode.DAL.Entities.Streetcode.Comment;
     using Xunit;
+    using CommentEntity = Streetcode.DAL.Entities.Streetcode.Comment;
 
     public class UpdateCommentValidatorsTests
     {
@@ -45,7 +45,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCommand_WhenCommandIsValid_ShouldBeValid()
         {
             var validator = new UpdateCommentCommandValidator(new UpdateCommentDtoValidator());
-            var result = validator.Validate(new UpdateCommentCommand(1, new UpdateCommentDto { Text = "Updated comment" }));
+            var result = validator.Validate(new UpdateCommentCommand(1, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" }));
 
             Assert.True(result.IsValid);
         }
@@ -54,7 +54,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCommand_WhenIdOrCommentIsInvalid_ShouldIncludeErrors()
         {
             var validator = new UpdateCommentCommandValidator(new UpdateCommentDtoValidator());
-            var result = validator.Validate(new UpdateCommentCommand(0, new UpdateCommentDto { Text = " " }));
+            var result = validator.Validate(new UpdateCommentCommand(0, Guid.NewGuid(), new UpdateCommentDto { Text = " " }));
 
             Assert.Contains(result.Errors, error => error.PropertyName == nameof(UpdateCommentCommand.Id));
             Assert.Contains(result.Errors, error => error.PropertyName.EndsWith(nameof(UpdateCommentDto.Text)));
@@ -64,7 +64,7 @@ namespace Streetcode.XUnitTest.ValidatorTests
         public void ValidateCommand_WhenCommentIsNull_ShouldBeInvalid()
         {
             var validator = new UpdateCommentCommandValidator(new UpdateCommentDtoValidator());
-            var result = validator.Validate(new UpdateCommentCommand(1, null!));
+            var result = validator.Validate(new UpdateCommentCommand(1, Guid.NewGuid(), null!));
 
             Assert.Contains(result.Errors, error => error.PropertyName == nameof(UpdateCommentCommand.Comment));
         }

@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
@@ -9,10 +11,17 @@ namespace Streetcode.WebApi.Controllers.Streetcode;
 
 public class CommentController : BaseApiController
 {
+    [Authorize]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCommentDto updateCommentDto)
     {
-        return HandleResult(await Mediator.Send(new UpdateCommentCommand(id, updateCommentDto)));
+        var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdValue, out var authorId))
+        {
+            return Unauthorized();
+        }
+
+        return HandleResult(await Mediator.Send(new UpdateCommentCommand(id, authorId, updateCommentDto)));
     }
 
     [AuthorizeRoles(

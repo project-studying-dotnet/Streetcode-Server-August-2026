@@ -32,10 +32,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenCommentExists_ShouldUpdateTrimmedTextAndReturnDto()
         {
-            var command = new UpdateCommentCommand(15, new UpdateCommentDto { Text = "  Updated comment  " });
-            var comment = new CommentEntity { Id = command.Id, Text = "Old comment" };
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "  Updated comment  " });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment" };
             var expectedDto = new CommentDto { Id = command.Id, Text = "Updated comment" };
-            this.SetupComment(comment);
+            this.SetupComment(command.Id, comment);
             this.mapperMock
                 .Setup(mapper => mapper.Map<CommentDto>(comment))
                 .Returns(expectedDto);
@@ -60,9 +60,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenCommentDoesNotExist_ShouldReturnFailureAndNotSave()
         {
-            var command = new UpdateCommentCommand(15, new UpdateCommentDto { Text = "Updated comment" });
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
             const string expectedMessage = "Cannot find comment with id: 15";
-            this.SetupComment(null);
+            this.SetupComment(command.Id, null);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
@@ -77,10 +77,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenSavingFails_ShouldReturnFailureAndLogError()
         {
-            var command = new UpdateCommentCommand(15, new UpdateCommentDto { Text = "Updated comment" });
-            var comment = new CommentEntity { Id = command.Id, Text = "Old comment" };
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment" };
             const string expectedMessage = "Failed to update comment with id: 15";
-            this.SetupComment(comment);
+            this.SetupComment(command.Id, comment);
             this.repositoryWrapperMock
                 .Setup(wrapper => wrapper.SaveChangesAsync())
                 .ReturnsAsync(0);
@@ -96,17 +96,41 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             this.mapperMock.VerifyNoOtherCalls();
         }
 
+        [Fact]
+        public async Task Handle_WhenCommentBelongsToAnotherUser_ShouldReturnFailureAndNotSave()
+        {
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = Guid.NewGuid(), Text = "Old comment" };
+            const string expectedMessage = "You do not have permission to update comment with id: 15";
+            this.SetupComment(command.Id, comment);
+
+            var result = await this.CreateHandler().Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            Assert.Equal("Old comment", comment.Text);
+            Assert.Null(comment.UpdatedAt);
+            this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
+            this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
+            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.mapperMock.VerifyNoOtherCalls();
+        }
+
         private UpdateCommentHandler CreateHandler() =>
             new (
                 this.repositoryWrapperMock.Object,
                 this.mapperMock.Object,
                 this.loggerMock.Object);
 
-        private void SetupComment(CommentEntity? comment)
+        private void SetupComment(int expectedId, CommentEntity? comment)
         {
+            var expectedComment = comment ?? new CommentEntity { Id = expectedId };
+            var decoyComment = new CommentEntity { Id = expectedId + 1 };
             this.commentRepositoryMock
                 .Setup(repository => repository.GetFirstOrDefaultAsync(
-                    It.IsAny<Expression<Func<CommentEntity, bool>>>(),
+                    It.Is<Expression<Func<CommentEntity, bool>>>(predicate =>
+                        predicate.Compile().Invoke(expectedComment)
+                        && !predicate.Compile().Invoke(decoyComment)),
                     null))
                 .ReturnsAsync(comment);
         }
