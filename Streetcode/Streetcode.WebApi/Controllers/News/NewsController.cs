@@ -10,7 +10,6 @@ using Streetcode.BLL.MediatR.Newss.GetNewsAndLinksByUrl;
 using Streetcode.BLL.MediatR.Newss.SortedByDateTime;
 using Streetcode.BLL.MediatR.Newss.Update;
 using Streetcode.DAL.Enums;
-using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.News;
 
@@ -46,21 +45,21 @@ public class NewsController : BaseApiController
         return HandleResult(await Mediator.Send(new GetNewsAndLinksByUrlQuery(url)));
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPost]
     public async Task<IActionResult> Create(NewsDTO news)
     {
         return HandleResult(await Mediator.Send(new CreateNewsCommand(news)));
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPut]
     public async Task<IActionResult> Update(NewsDTO news)
     {
         return HandleResult(await Mediator.Send(new UpdateNewsCommand(news)));
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
