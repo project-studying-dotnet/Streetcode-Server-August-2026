@@ -67,7 +67,7 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Equal("{id:int}", httpGetAttribute.Template);
             Assert.NotNull(authorizeAttribute);
             Assert.Equal(
-                "MainAdministrator,Administrator,Moderator",
+                "MainAdministrator,Admin,Moderator",
                 authorizeAttribute.Roles);
         }
     }
