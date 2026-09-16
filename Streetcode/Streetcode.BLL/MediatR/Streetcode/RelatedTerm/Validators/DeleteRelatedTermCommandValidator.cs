@@ -17,5 +17,9 @@ public sealed class DeleteRelatedTermCommandValidator
             .MustNotExceedLength(
                 RelatedTermEntity.WordMaxLength,
                 "Related term word");
+
+        RuleFor(command => command.termId)
+            .GreaterThan(0)
+            .WithMessage("Term id must be greater than zero.");
     }
 }
