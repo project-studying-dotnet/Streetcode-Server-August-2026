@@ -1,53 +1,90 @@
-using AutoMapper;
+﻿using AutoMapper;
 using FluentResults;
 using MediatR;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Text;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
-using Streetcode.BLL.Constants;
 
-namespace Streetcode.BLL.MediatR.Streetcode.Text.Create;
+using Entity = Streetcode.DAL.Entities.Streetcode.TextContent.Text;
 
-public class CreateTextHandler : IRequestHandler<CreateTextCommand, Result<TextDTO>>
+namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
 {
-    private readonly IMapper _mapper;
-    private readonly IRepositoryWrapper _repositoryWrapper;
-    private readonly ILoggerService _logger;
-
-    public CreateTextHandler(
-        IRepositoryWrapper repositoryWrapper,
-        IMapper mapper,
-        ILoggerService logger)
+    public class CreateTextHandler : IRequestHandler<CreateTextCommand, Result<TextDTO>>
     {
-        _repositoryWrapper = repositoryWrapper;
-        _mapper = mapper;
-        _logger = logger;
-    }
+        private readonly IRepositoryWrapper _repository;
+        private readonly IMapper _mapper;
+        private readonly ILoggerService _logger;
 
-    public async Task<Result<TextDTO>> Handle(
-        CreateTextCommand request,
-        CancellationToken cancellationToken)
-    {
-        var text = _mapper.Map<DAL.Entities.Streetcode.TextContent.Text>(request.Text);
-
-        if (text.AdditionalText == TextConstants.DefaultAdditionalText)
+        public CreateTextHandler(IRepositoryWrapper repository, IMapper mapper, ILoggerService logger)
         {
-            text.AdditionalText = null;
+            _repository = repository;
+            _mapper = mapper;
+            _logger = logger;
         }
 
-        text.StreetcodeId = request.StreetcodeId;
-
-        await _repositoryWrapper.TextRepository.CreateAsync(text);
-
-        var resultIsSuccess = await _repositoryWrapper.SaveChangesAsync() > 0;
-
-        if (!resultIsSuccess)
+        public async Task<Result<TextDTO>> Handle(CreateTextCommand request, CancellationToken cancellationToken)
         {
-            const string errorMsg = "Failed to create a text";
-            _logger.LogError(request, errorMsg);
-            return Result.Fail(new Error(errorMsg));
-        }
+            try
+            {
+                var streetcodeExists = await _repository.StreetcodeRepository
+                    .GetFirstOrDefaultAsync(sc => sc.Id == request.TextCreateDto.StreetcodeId);
 
-        return Result.Ok(_mapper.Map<TextDTO>(text));
+                if (streetcodeExists is null)
+                {
+                    const string errorMsg = "Cannot create text: streetcode with the given id does not exist.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+
+                var existingText = await _repository.TextRepository
+                    .GetFirstOrDefaultAsync(t => t.StreetcodeId == request.TextCreateDto.StreetcodeId);
+
+                if (existingText is not null)
+                {
+                    const string errorMsg = "Cannot create text: streetcode with the given id already has a text.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+
+                var text = _mapper.Map<Entity>(request.TextCreateDto);
+
+                if (text is null)
+                {
+                    const string errorMsg = "Cannot create new text.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+
+                var createdText = await _repository.TextRepository.CreateAsync(text);
+
+                var isSuccessResult = await _repository.SaveChangesAsync() > 0;
+
+                if (!isSuccessResult)
+                {
+                    const string errorMsg = "Cannot save changes in the database after text creation.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+
+                var createdTextDTO = _mapper.Map<TextDTO>(createdText);
+
+                if (createdTextDTO != null)
+                {
+                    return Result.Ok(createdTextDTO);
+                }
+                else
+                {
+                    const string errorMsg = "Cannot map entity.";
+                    _logger.LogError(request, errorMsg);
+                    return Result.Fail(new Error(errorMsg));
+                }
+            }
+            catch (Exception ex)
+            {
+                var detailedMessage = ex.InnerException?.Message ?? ex.Message;
+                _logger.LogError(request, detailedMessage);
+                return Result.Fail("An error occurred while saving the text during creation.");
+            }
+        }
     }
 }

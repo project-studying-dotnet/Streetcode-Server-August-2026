@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.DAL.Entities.AdditionalContent;
 using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
@@ -27,12 +28,18 @@ namespace Streetcode.WebApi.Extensions
         {
             using (var scope = app.Services.CreateScope())
             {
-                Directory.CreateDirectory(app.Configuration.GetValue<string>("Blob:BlobStorePath"));
                 var dbContext = scope.ServiceProvider.GetRequiredService<StreetcodeDbContext>();
-                var blobOptions = app.Services.GetRequiredService<IOptions<BlobEnvironmentVariables>>();
+
+                var blobService = scope.ServiceProvider.GetRequiredService<IBlobService>();
+
+                var provider = app.Configuration.GetValue<string>("Blob:Provider");
                 string blobPath = app.Configuration.GetValue<string>("Blob:BlobStorePath");
-                var repo = new RepositoryWrapper(dbContext);
-                var blobService = new BlobService(blobOptions, repo);
+
+                if (string.Equals(provider, "Local", StringComparison.OrdinalIgnoreCase))
+                {
+                    Directory.CreateDirectory(blobPath);
+                }
+
                 string initialDataImagePath = "../Streetcode.DAL/InitialData/images.json";
                 string initialDataAudioPath = "../Streetcode.DAL/InitialData/audios.json";
                 if (!dbContext.Images.Any())
@@ -44,20 +51,12 @@ namespace Streetcode.WebApi.Extensions
 
                     foreach (var img in imgfromJson)
                     {
-                        string filePath = Path.Combine(blobPath, img.BlobName);
-                        if (!File.Exists(filePath))
-                        {
-                            blobService.SaveFileInStorageBase64(img.Base64, img.BlobName.Split('.')[0], img.BlobName.Split('.')[1]);
-                        }
+                        blobService.SaveFileInStorageBase64(img.Base64, img.BlobName.Split('.')[0], img.BlobName.Split('.')[1]);
                     }
 
                     foreach (var audio in audiosfromJson)
                     {
-                        string filePath = Path.Combine(blobPath, audio.BlobName);
-                        if (!File.Exists(filePath))
-                        {
-                            blobService.SaveFileInStorageBase64(audio.Base64, audio.BlobName.Split('.')[0], audio.BlobName.Split('.')[1]);
-                        }
+                        blobService.SaveFileInStorageBase64(audio.Base64, audio.BlobName.Split('.')[0], audio.BlobName.Split('.')[1]);
                     }
 
                     dbContext.Images.AddRange(imgfromJson);

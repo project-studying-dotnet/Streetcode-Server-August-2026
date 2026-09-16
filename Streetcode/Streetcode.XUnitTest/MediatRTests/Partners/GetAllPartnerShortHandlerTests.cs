@@ -5,6 +5,7 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Partners.GetAllPartnerShort;
 using Streetcode.DAL.Entities.Partners;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Partners.GetAllPartnerShort;
@@ -21,7 +22,9 @@ public class GetAllPartnerShortHandlerTests
         var partners = new List<Partner> { new() { Id = 1 } };
         var partnersDto = new List<PartnerShortDTO> { new() { Id = 1 } };
 
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(null, null)).ReturnsAsync(partners);
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetAllPartnerShortSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(partners);
         _mapperMock.Setup(m => m.Map<IEnumerable<PartnerShortDTO>>(partners)).Returns(partnersDto);
 
         var handler = new GetAllPartnerShortHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
@@ -38,7 +41,9 @@ public class GetAllPartnerShortHandlerTests
         var emptyPartners = new List<Partner>();
         var emptyPartnersDto = new List<PartnerShortDTO>();
 
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(null, null)).ReturnsAsync(emptyPartners);
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetAllPartnerShortSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(emptyPartners);
         _mapperMock.Setup(m => m.Map<IEnumerable<PartnerShortDTO>>(emptyPartners)).Returns(emptyPartnersDto);
 
         var handler = new GetAllPartnerShortHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
@@ -52,7 +57,9 @@ public class GetAllPartnerShortHandlerTests
     [Fact]
     public async Task Handle_ReturnsFailedResult_AndLogsError_WhenPartnersAreNull()
     {
-        _repositoryMock.Setup(r => r.PartnersRepository.GetAllAsync(null, null)).ReturnsAsync((IEnumerable<Partner>)null!);
+        _repositoryMock.Setup(r => r.PartnersRepository
+            .ListAsync(It.IsAny<GetAllPartnerShortSpecification>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((List<Partner>)null!);
 
         var handler = new GetAllPartnerShortHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllPartnersShortQuery();

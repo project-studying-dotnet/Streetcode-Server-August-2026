@@ -7,20 +7,21 @@ namespace Streetcode.DAL.Entities.Streetcode.TextContent;
 public class Text
 {
     public const int TextContentMaxLength = 15000;
+    public const int TitleMaxLength = 300;
+    public const int AdditionalTextMaxLength = 500;
 
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(50)]
+    [MaxLength(TitleMaxLength)]
     public string? Title { get; set; }
 
     [Required]
     [MaxLength(25000)]
     public string? TextContent { get; set; }
-
-    [MaxLength(200)]
+    [MaxLength(AdditionalTextMaxLength)]
     public string? AdditionalText { get; set; }
 
     [Required]
