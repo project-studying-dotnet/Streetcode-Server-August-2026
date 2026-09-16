@@ -14,6 +14,7 @@ namespace Streetcode.XUnitTest.Controllers
     using Microsoft.Extensions.DependencyInjection;
     using Moq;
     using Streetcode.BLL.DTO.Streetcode.Comments;
+    using Streetcode.BLL.MediatR.ResultVariations;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
     using Streetcode.WebApi.Attributes;
@@ -27,14 +28,16 @@ namespace Streetcode.XUnitTest.Controllers
         {
             const int commentId = 15;
             var authorId = Guid.NewGuid();
-            var dto = new UpdateCommentDto { Text = "Updated comment" };
+            var dto = new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } };
             var expectedDto = new CommentDto { Id = commentId, Text = dto.Text };
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
             var mediatorMock = new Mock<IMediator>();
             mediatorMock
                 .Setup(mediator => mediator.Send(
                     It.Is<UpdateCommentCommand>(command =>
                         command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
-                    It.IsAny<CancellationToken>()))
+                    cancellationToken))
                 .ReturnsAsync(Result.Ok(expectedDto));
 
             using var serviceProvider = new ServiceCollection()
@@ -53,7 +56,7 @@ namespace Streetcode.XUnitTest.Controllers
                 },
             };
 
-            var result = await controller.Update(commentId, dto);
+            var result = await controller.Update(commentId, dto, cancellationToken);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Same(expectedDto, okResult.Value);
@@ -71,9 +74,62 @@ namespace Streetcode.XUnitTest.Controllers
                 },
             };
 
-            var result = await controller.Update(15, new UpdateCommentDto { Text = "Updated comment" });
+            var result = await controller.Update(
+                15,
+                new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } },
+                CancellationToken.None);
 
             Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Theory]
+        [InlineData("NotFound", typeof(Microsoft.AspNetCore.Mvc.NotFoundResult), 404)]
+        [InlineData("Forbidden", typeof(StatusCodeResult), 403)]
+        [InlineData("Conflict", typeof(Microsoft.AspNetCore.Mvc.ConflictResult), 409)]
+        public async Task Update_WhenHandlerReturnsStatusResult_ShouldReturnExpectedHttpStatus(
+            string resultName,
+            Type actionResultType,
+            int expectedStatusCode)
+        {
+            const int commentId = 15;
+            var authorId = Guid.NewGuid();
+            var dto = new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } };
+            var mediatorMock = new Mock<IMediator>();
+            Result<CommentDto> handlerResult = resultName switch
+            {
+                "NotFound" => new NotFoundResult<CommentDto>(new Error("Not found")),
+                "Forbidden" => new ForbiddenResult<CommentDto>(new Error("Forbidden")),
+                "Conflict" => new ConflictResult<CommentDto>(new Error("Conflict")),
+                _ => throw new ArgumentOutOfRangeException(nameof(resultName)),
+            };
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<UpdateCommentCommand>(command =>
+                        command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(handlerResult);
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                            [new Claim(ClaimTypes.NameIdentifier, authorId.ToString())])),
+                    },
+                },
+            };
+
+            var result = await controller.Update(commentId, dto, CancellationToken.None);
+
+            Assert.IsType(actionResultType, result);
+            var statusCodeResult = Assert.IsAssignableFrom<StatusCodeResult>(result);
+            Assert.Equal(expectedStatusCode, statusCodeResult.StatusCode);
+            mediatorMock.VerifyAll();
         }
 
         [Fact]

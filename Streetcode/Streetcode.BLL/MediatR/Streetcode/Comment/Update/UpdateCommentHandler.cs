@@ -1,8 +1,10 @@
 using AutoMapper;
 using FluentResults;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.MediatR.ResultVariations;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Comment.Update;
@@ -31,7 +33,7 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
             var errorMsg =
                 $"Cannot find comment with id: {request.Id}";
             _loggerService.LogError(request, errorMsg);
-            return Result.Fail<CommentDto>(new Error(errorMsg));
+            return new NotFoundResult<CommentDto>(new Error(errorMsg));
         }
 
         if (comment.AuthorId != request.AuthorId)
@@ -39,14 +41,31 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
             var errorMsg =
                 $"You do not have permission to update comment with id: {request.Id}";
             _loggerService.LogError(request, errorMsg);
-            return Result.Fail<CommentDto>(new Error(errorMsg));
+            return new ForbiddenResult<CommentDto>(new Error(errorMsg));
+        }
+
+        if (!request.Comment.RowVersion.SequenceEqual(comment.RowVersion))
+        {
+            var errorMsg = $"Comment with id: {request.Id} was updated by another user.";
+            _loggerService.LogError(request, errorMsg);
+            return new ConflictResult<CommentDto>(new Error(errorMsg));
         }
 
         comment.Text = request.Comment.Text.Trim();
         comment.UpdatedAt = DateTimeOffset.UtcNow;
 
         _repositoryWrapper.CommentRepository.Update(comment);
-        bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+        bool isSaved;
+        try
+        {
+            isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            var errorMsg = $"Comment with id: {request.Id} was updated by another user.";
+            _loggerService.LogError(request, errorMsg);
+            return new ConflictResult<CommentDto>(new Error(errorMsg));
+        }
 
         if (!isSaved)
         {

@@ -77,6 +77,7 @@ public class StreetcodeDbContextModelTests
 
         var textProperty = entityType.FindProperty(nameof(Comment.Text));
         var updatedAtProperty = entityType.FindProperty(nameof(Comment.UpdatedAt));
+        var rowVersionProperty = entityType.FindProperty(nameof(Comment.RowVersion));
 
         var parentCommentIdProperty = entityType.FindProperty(nameof(Comment.ParentCommentId));
 
@@ -85,6 +86,11 @@ public class StreetcodeDbContextModelTests
         Assert.Equal(Comment.TextMaxLength, textProperty.GetMaxLength());
         Assert.NotNull(updatedAtProperty);
         Assert.True(updatedAtProperty.IsNullable);
+        Assert.NotNull(rowVersionProperty);
+        Assert.True(rowVersionProperty.IsConcurrencyToken);
+        Assert.Equal(
+            Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.OnAddOrUpdate,
+            rowVersionProperty.ValueGenerated);
         Assert.NotNull(parentCommentIdProperty);
         Assert.True(parentCommentIdProperty.IsNullable);
 

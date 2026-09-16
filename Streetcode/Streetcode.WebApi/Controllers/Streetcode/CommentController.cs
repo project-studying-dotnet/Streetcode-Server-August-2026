@@ -13,7 +13,10 @@ public class CommentController : BaseApiController
 {
     [Authorize]
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateCommentDto updateCommentDto)
+    public async Task<IActionResult> Update(
+        [FromRoute] int id,
+        [FromBody] UpdateCommentDto updateCommentDto,
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdValue, out var authorId))
@@ -21,7 +24,9 @@ public class CommentController : BaseApiController
             return Unauthorized();
         }
 
-        return HandleResult(await Mediator.Send(new UpdateCommentCommand(id, authorId, updateCommentDto)));
+        return HandleResult(await Mediator.Send(
+            new UpdateCommentCommand(id, authorId, updateCommentDto),
+            cancellationToken));
     }
 
     [AuthorizeRoles(

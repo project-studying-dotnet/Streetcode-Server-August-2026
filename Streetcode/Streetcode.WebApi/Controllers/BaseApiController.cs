@@ -27,6 +27,12 @@ public class BaseApiController : ControllerBase
                 NotFound("Found result matching null") : Ok(result.Value);
         }
 
-        return BadRequest(result.Reasons);
+        return result switch
+        {
+            NotFoundResult<T> => NotFound(),
+            ForbiddenResult<T> => StatusCode(StatusCodes.Status403Forbidden),
+            ConflictResult<T> => Conflict(),
+            _ => BadRequest(result.Reasons),
+        };
     }
 }

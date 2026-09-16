@@ -9,8 +9,10 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
     using global::Streetcode.BLL.DTO.Streetcode.Comments;
     using global::Streetcode.BLL.Interfaces.Logging;
     using global::Streetcode.BLL.MediatR.Streetcode.Comment.Update;
+    using global::Streetcode.BLL.MediatR.ResultVariations;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
+    using Microsoft.EntityFrameworkCore;
     using Moq;
     using Xunit;
     using CommentEntity = global::Streetcode.DAL.Entities.Streetcode.Comment;
@@ -32,8 +34,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenCommentExists_ShouldUpdateTrimmedTextAndReturnDto()
         {
-            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "  Updated comment  " });
-            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment" };
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "  Updated comment  ", RowVersion = new byte[] { 1 } });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment", RowVersion = new byte[] { 1 } };
             var expectedDto = new CommentDto { Id = command.Id, Text = "Updated comment" };
             this.SetupComment(command.Id, comment);
             this.mapperMock
@@ -60,13 +62,14 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenCommentDoesNotExist_ShouldReturnFailureAndNotSave()
         {
-            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
             const string expectedMessage = "Cannot find comment with id: 15";
             this.SetupComment(command.Id, null);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
+            Assert.IsType<NotFoundResult<CommentDto>>(result);
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
@@ -77,8 +80,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenSavingFails_ShouldReturnFailureAndLogError()
         {
-            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
-            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment" };
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment", RowVersion = new byte[] { 1 } };
             const string expectedMessage = "Failed to update comment with id: 15";
             this.SetupComment(command.Id, comment);
             this.repositoryWrapperMock
@@ -99,20 +102,60 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         [Fact]
         public async Task Handle_WhenCommentBelongsToAnotherUser_ShouldReturnFailureAndNotSave()
         {
-            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment" });
-            var comment = new CommentEntity { Id = command.Id, AuthorId = Guid.NewGuid(), Text = "Old comment" };
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = Guid.NewGuid(), Text = "Old comment", RowVersion = new byte[] { 1 } };
             const string expectedMessage = "You do not have permission to update comment with id: 15";
             this.SetupComment(command.Id, comment);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
+            Assert.IsType<ForbiddenResult<CommentDto>>(result);
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             Assert.Equal("Old comment", comment.Text);
             Assert.Null(comment.UpdatedAt);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
             this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.mapperMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task Handle_WhenCommentVersionIsOutdated_ShouldReturnConflictAndNotSave()
+        {
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment", RowVersion = new byte[] { 2 } };
+            const string expectedMessage = "Comment with id: 15 was updated by another user.";
+            this.SetupComment(command.Id, comment);
+
+            var result = await this.CreateHandler().Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.IsType<ConflictResult<CommentDto>>(result);
+            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
+            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
+        }
+
+        [Fact]
+        public async Task Handle_WhenConcurrentSaveOccurs_ShouldReturnConflict()
+        {
+            var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
+            var comment = new CommentEntity { Id = command.Id, AuthorId = command.AuthorId, Text = "Old comment", RowVersion = new byte[] { 1 } };
+            const string expectedMessage = "Comment with id: 15 was updated by another user.";
+            this.SetupComment(command.Id, comment);
+            this.repositoryWrapperMock
+                .Setup(wrapper => wrapper.SaveChangesAsync())
+                .ThrowsAsync(new DbUpdateConcurrencyException());
+
+            var result = await this.CreateHandler().Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.IsType<ConflictResult<CommentDto>>(result);
+            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            this.commentRepositoryMock.Verify(repository => repository.Update(comment), Times.Once());
+            this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.mapperMock.VerifyNoOtherCalls();
         }
 

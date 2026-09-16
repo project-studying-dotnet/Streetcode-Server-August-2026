@@ -11,8 +11,12 @@ public sealed class UpdateCommentDtoValidator
     public UpdateCommentDtoValidator()
     {
         RuleFor(comment => comment.Text)
-            .Must(text => !string.IsNullOrWhiteSpace(text))
+            .NotEmpty()
             .WithMessage("Comment text is required.")
             .MustNotExceedLength(CommentEntity.TextMaxLength, "Comment text");
+
+        RuleFor(comment => comment.RowVersion)
+            .NotEmpty()
+            .WithMessage("Comment version is required.");
     }
 }

@@ -18,6 +18,8 @@ public class Comment
 
     public DateTimeOffset? UpdatedAt { get; set; }
 
+    public byte[] RowVersion { get; set; } = null!;
+
     public StreetcodeContent Streetcode { get; set; } = null!;
 
     public Comment? ParentComment { get; set; }
