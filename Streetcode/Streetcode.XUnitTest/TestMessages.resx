@@ -51,7 +51,7 @@
   <data name="CannotFindCoordinatesByStreetcodeId" xml:space="preserve"><value>Cannot find a coordinates by a streetcode id: {0}</value></data>
   <data name="CannotFindCoordinatesByStreetcodeIdBecauseStreetcodeDoesNotExist" xml:space="preserve"><value>Cannot find a coordinates by a streetcode id: {0}, because such streetcode doesn`t exist</value></data>
   <data name="CannotFindCoordinateWithCorrespondingCategoryId" xml:space="preserve"><value>Cannot find a coordinate with corresponding categoryId: {0}</value></data>
-  <data name="CannotFindRelatedTerm" xml:space="preserve"><value>Cannot find a related term: {0}</value></data>
+  <data name="CannotFindRelatedTerm" xml:space="preserve"><value>Cannot find a related term: {0} for term with id: {1}</value></data>
   <data name="CannotFindSubtitleWithCorrespondingId" xml:space="preserve"><value>Cannot find a subtitle with corresponding id: {0}</value></data>
   <data name="CannotFindTagWithCorrespondingId" xml:space="preserve"><value>Cannot find a Tag with corresponding id: {0}</value></data>
   <data name="CannotFindTimelineItemWithCorrespondingId" xml:space="preserve"><value>Cannot find a timeline item with corresponding id: {0}</value></data>

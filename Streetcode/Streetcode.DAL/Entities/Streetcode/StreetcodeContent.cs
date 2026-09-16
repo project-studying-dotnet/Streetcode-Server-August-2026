@@ -21,6 +21,11 @@ namespace Streetcode.DAL.Entities.Streetcode;
 [Index(nameof(Index), IsUnique = true)]
 public class StreetcodeContent
 {
+    public const int TitleMaxLength = 100;
+    public const int TransliterationUrlMaxLength = 150;
+    public const int ShortDescriptionMaxLength = 33;
+    public const int TeaserMaxLength = 650;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
@@ -28,7 +33,7 @@ public class StreetcodeContent
     [Required]
     public int Index { get; set; }
 
-    [MaxLength(650)]
+    [MaxLength(TeaserMaxLength)]
     public string? Teaser { get; set; }
 
     [Required]
@@ -41,10 +46,14 @@ public class StreetcodeContent
     public StreetcodeStatus Status { get; set; }
 
     [Required]
-    [MaxLength(100)]
+    [MaxLength(TitleMaxLength)]
     public string? Title { get; set; }
+
+    [MaxLength(ShortDescriptionMaxLength)]
+    public string? ShortDescription { get; set; }
+
     [Required]
-    [MaxLength(150)]
+    [MaxLength(TransliterationUrlMaxLength)]
     public string? TransliterationUrl { get; set; }
 
     public int ViewCount { get; set; }

@@ -7,6 +7,8 @@ namespace Streetcode.DAL.Entities.Partners;
 [Table("partner_source_links", Schema = "partners")]
 public class PartnerSourceLink
 {
+    public const int TargetUrlMaxLength = 255;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
@@ -15,7 +17,7 @@ public class PartnerSourceLink
     public LogoType LogoType { get; set; }
 
     [Required]
-    [MaxLength(255)]
+    [MaxLength(TargetUrlMaxLength)]
     public string? TargetUrl { get; set; }
 
     [Required]

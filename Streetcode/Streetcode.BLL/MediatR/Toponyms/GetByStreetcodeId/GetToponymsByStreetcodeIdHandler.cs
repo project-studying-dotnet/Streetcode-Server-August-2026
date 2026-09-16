@@ -31,7 +31,7 @@ public class GetToponymsByStreetcodeIdHandler : IRequestHandler<GetToponymsByStr
                 include: scl => scl
                     .Include(sc => sc.Coordinate));
 
-        if (toponyms is null)
+        if (toponyms is null || !toponyms.Any())
         {
             string errorMsg = $"Cannot find any toponym by the streetcode id: {request.StreetcodeId}";
             _logger.LogError(request, errorMsg);

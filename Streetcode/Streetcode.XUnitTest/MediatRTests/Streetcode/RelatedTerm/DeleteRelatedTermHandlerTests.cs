@@ -35,8 +35,8 @@ public class DeleteRelatedTermHandlerTests
     [Fact]
     public async Task Handle_WhenRelatedTermDoesNotExist_ShouldReturnFailure()
     {
-        var command = new DeleteRelatedTermCommand("Missing");
-        var expectedError = string.Format(TestMessages.CannotFindRelatedTerm, command.word);
+        var command = new DeleteRelatedTermCommand("Missing", 5);
+        var expectedError = string.Format(TestMessages.CannotFindRelatedTerm, command.word, command.termId);
 
         _relatedTermRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
@@ -68,7 +68,7 @@ public class DeleteRelatedTermHandlerTests
     [Fact]
     public async Task Handle_WhenSavingFails_ShouldReturnFailure()
     {
-        var command = new DeleteRelatedTermCommand("Test");
+        var command = new DeleteRelatedTermCommand("Test", 5);
         var relatedTerm = CreateRelatedTermEntity();
         var relatedTermDto = CreateRelatedTermDto();
         var expectedError = TestMessages.FailedToDeleteRelatedTerm;
@@ -97,7 +97,7 @@ public class DeleteRelatedTermHandlerTests
     [Fact]
     public async Task Handle_WhenOutputMappingFails_ShouldReturnFailure()
     {
-        var command = new DeleteRelatedTermCommand("Test");
+        var command = new DeleteRelatedTermCommand("Test", 5);
         var relatedTerm = CreateRelatedTermEntity();
         var expectedError = TestMessages.FailedToDeleteRelatedTerm;
 
@@ -119,7 +119,7 @@ public class DeleteRelatedTermHandlerTests
     [Fact]
     public async Task Handle_WhenDeletionSucceeds_ShouldReturnDeletedRelatedTerm()
     {
-        var command = new DeleteRelatedTermCommand("tEsT");
+        var command = new DeleteRelatedTermCommand("tEsT", 5);
         var relatedTerm = CreateRelatedTermEntity();
         var expectedDto = CreateRelatedTermDto();
 
@@ -133,7 +133,8 @@ public class DeleteRelatedTermHandlerTests
             repository => repository.GetFirstOrDefaultAsync(
                 It.Is<Expression<Func<RelatedTermEntity, bool>>>(predicate =>
                     predicate.Compile()(relatedTerm) &&
-                    !predicate.Compile()(new RelatedTermEntity { Word = "Other" })),
+                    !predicate.Compile()(new RelatedTermEntity { Word = "Other", TermId = command.termId }) &&
+                    !predicate.Compile()(new RelatedTermEntity { Word = relatedTerm.Word, TermId = 10 })),
                 It.IsAny<Func<
                     IQueryable<RelatedTermEntity>,
                     IIncludableQueryable<RelatedTermEntity, object>>?>()),

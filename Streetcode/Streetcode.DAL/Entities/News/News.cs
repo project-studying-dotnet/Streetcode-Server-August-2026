@@ -9,16 +9,19 @@ namespace Streetcode.DAL.Entities.News
     [Index(nameof(URL), IsUnique = true)]
     public class News
     {
+        public const int TitleMaxLength = 150;
+        public const int UrlMaxLength = 100;
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
-        [MaxLength(150)]
+        [MaxLength(TitleMaxLength)]
         public string Title { get; set; }
         [Required]
         public string Text { get; set; }
         [Required]
-        [MaxLength(100)]
+        [MaxLength(UrlMaxLength)]
         public string URL { get; set; }
         public int? ImageId { get; set; }
         public Image? Image { get; set; }
