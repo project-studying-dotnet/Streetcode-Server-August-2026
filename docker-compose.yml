@@ -25,6 +25,20 @@ services:
       retries: 15
       start_period: 20s
 
+  redis:
+    image: redis:7-alpine
+    container_name: streetcode-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:3.33.0
     container_name: azurite
@@ -44,7 +58,6 @@ services:
       retries: 5
       start_period: 5s
 
-
   api:
     container_name: streetcode-api
     restart: unless-stopped
@@ -59,6 +72,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Local
       ASPNETCORE_URLS: "http://+:5000"
       STREETCODE_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DB_NAME:?DB_NAME is required, copy .env.example to .env};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      STREETCODE_ConnectionStrings__Redis: "redis:6379"
       STREETCODE_Blob__BlobStoreKey: "${STREETCODE_Blob__BlobStoreKey:?STREETCODE_Blob__BlobStoreKey is required, copy .env.example to .env}"
       STREETCODE_Blob__Provider: "${BLOB_PROVIDER:-Azure}"
       STREETCODE_Blob__Azure__ContainerName: "${BLOB_CONTAINER_NAME:-streetcode-blobs}"
@@ -69,9 +83,12 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       azurite:
         condition: service_healthy
 
 volumes:
   sqlserver-data:
+  redis-data:
   azurite-data:

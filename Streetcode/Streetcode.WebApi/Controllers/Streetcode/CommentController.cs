@@ -9,7 +9,7 @@ public class CommentController : BaseApiController
 {
     [AuthorizeRoles(
         UserRole.MainAdministrator,
-        UserRole.Administrator,
+        UserRole.Admin,
         UserRole.Moderator)]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(
