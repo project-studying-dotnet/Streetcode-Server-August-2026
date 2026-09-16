@@ -64,6 +64,8 @@ public sealed class ValidationExceptionHandler : IExceptionHandler
             problemDetails,
             cancellationToken);
 
+        httpContext.Response.ContentType = "application/problem+json";
+
         return true;
     }
 }
