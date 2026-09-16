@@ -1,37 +1,48 @@
 using FluentResults;
 using MediatR;
 using Streetcode.BLL.Interfaces.Email;
-using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.DAL.Entities.AdditionalContent.Email;
+using Streetcode.Email.Contracts.Events;
 
-namespace Streetcode.BLL.MediatR.Email
+namespace Streetcode.BLL.MediatR.Email;
+
+public sealed class SendEmailHandler
+    : IRequestHandler<SendEmailCommand, Result<Guid>>
 {
-    public class SendEmailHandler : IRequestHandler<SendEmailCommand, Result<Unit>>
+    private const string FeedbackTemplate = "feedback.v1";
+    private const string SenderEmailKey = "From";
+    private const string ContentKey = "Content";
+    private readonly IEmailRequestPublisher _emailRequestPublisher;
+
+    public SendEmailHandler(
+        IEmailRequestPublisher emailRequestPublisher)
     {
-        private readonly IEmailService _emailService;
-        private readonly ILoggerService _logger;
+        ArgumentNullException.ThrowIfNull(emailRequestPublisher);
+        _emailRequestPublisher = emailRequestPublisher;
+    }
 
-        public SendEmailHandler(IEmailService emailService, ILoggerService logger)
-        {
-            _emailService = emailService;
-            _logger = logger;
-        }
+    public async Task<Result<Guid>> Handle(
+        SendEmailCommand request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
 
-        public async Task<Result<Unit>> Handle(SendEmailCommand request, CancellationToken cancellationToken)
-        {
-            var message = new Message(new string[] { "streetcodeua@gmail.com" }, request.Email.From, "FeedBack", request.Email.Content);
-            bool isResultSuccess = await _emailService.SendEmailAsync(message);
-
-            if(isResultSuccess)
+        var messageId = Guid.NewGuid();
+        var emailRequested = new EmailRequestedV1(
+            messageId,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            FeedbackTemplate,
+            null,
+            new Dictionary<string, string>
             {
-                return Result.Ok(Unit.Value);
-            }
-            else
-            {
-                const string errorMsg = $"Failed to send email message";
-                _logger.LogError(request, errorMsg);
-                return Result.Fail(new Error(errorMsg));
-            }
-        }
+                [SenderEmailKey] = request.Email.From,
+                [ContentKey] = request.Email.Content,
+            });
+
+        await _emailRequestPublisher.PublishAsync(
+            emailRequested,
+            cancellationToken);
+
+        return Result.Ok(messageId);
     }
 }

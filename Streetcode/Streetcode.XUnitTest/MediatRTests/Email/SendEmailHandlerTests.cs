@@ -1,71 +1,94 @@
-﻿using Moq;
+using Moq;
 using Streetcode.BLL.DTO.Email;
 using Streetcode.BLL.Interfaces.Email;
-using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Email;
-using Streetcode.DAL.Entities.AdditionalContent.Email;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using Streetcode.Email.Contracts.Events;
 using Xunit;
-namespace Streetcode.XUnitTest.MediatRTests.Email
+
+namespace Streetcode.XUnitTest.MediatRTests.Email;
+
+public class SendEmailHandlerTests
 {
-    public class SendEmailHandlerTests
+    private readonly Mock<IEmailRequestPublisher> _publisherMock = new();
+
+    [Fact]
+    public async Task Handle_ValidEmail_PublishesFeedbackContract()
     {
-        private readonly Mock<IEmailService> _emailServiceMock;
-        private readonly Mock<ILoggerService> _loggerMock;
-        private readonly SendEmailHandler _handler;
-
-        public SendEmailHandlerTests()
+        var email = new EmailDTO
         {
-            _emailServiceMock = new Mock<IEmailService>();
-            _loggerMock = new Mock<ILoggerService>();
-            _handler = new SendEmailHandler(_emailServiceMock.Object, _loggerMock.Object);
-        }
+            From = "loki@example.com",
+            Content = "Some test info",
+        };
+        var cancellationToken = new CancellationTokenSource().Token;
+        EmailRequestedV1? publishedRequest = null;
+        var before = DateTimeOffset.UtcNow;
 
-        [Fact]
-        public async Task Handle_WhenEmailServiceReturnsTrue_ShouldReturnSuccess()
+        _publisherMock
+            .Setup(publisher => publisher.PublishAsync(
+                It.IsAny<EmailRequestedV1>(),
+                cancellationToken))
+            .Callback<EmailRequestedV1, CancellationToken>(
+                (request, _) => publishedRequest = request)
+            .Returns(Task.CompletedTask);
+
+        var handler = new SendEmailHandler(_publisherMock.Object);
+        var result = await handler.Handle(
+            new SendEmailCommand(email),
+            cancellationToken);
+        var after = DateTimeOffset.UtcNow;
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(publishedRequest);
+        Assert.NotEqual(Guid.Empty, publishedRequest!.MessageId);
+        Assert.Equal(publishedRequest.MessageId, result.Value);
+        Assert.NotEqual(Guid.Empty, publishedRequest.CorrelationId);
+        Assert.NotEqual(
+            publishedRequest.MessageId,
+            publishedRequest.CorrelationId);
+        Assert.InRange(
+            publishedRequest.RequestedAtUtc,
+            before,
+            after);
+        Assert.Equal("feedback.v1", publishedRequest.Template);
+        Assert.Null(publishedRequest.Recipient);
+        Assert.Equal(2, publishedRequest.TemplateData.Count);
+        Assert.Equal(email.From, publishedRequest.TemplateData["From"]);
+        Assert.Equal(
+            email.Content,
+            publishedRequest.TemplateData["Content"]);
+
+        _publisherMock.Verify(
+            publisher => publisher.PublishAsync(
+                It.IsAny<EmailRequestedV1>(),
+                cancellationToken),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_PublisherFails_PropagatesFailure()
+    {
+        var expectedException = new InvalidOperationException(
+            "Kafka unavailable.");
+        var email = new EmailDTO
         {
-            var emailDTO = new EmailDTO { From = "loki@example.com", Content = "Some test info" };
-            var sendEmailCommand = new SendEmailCommand(emailDTO);
+            From = "loki@example.com",
+            Content = "Some test info",
+        };
 
-            _emailServiceMock.Setup(service => service.SendEmailAsync(It.Is<Message>(m =>
-                    m.To.Single().Address == "streetcodeua@gmail.com" &&
-                    m.From == emailDTO.From &&
-                    m.Subject == "FeedBack" &&
-                    m.Content == emailDTO.Content
-                 )))
-                .ReturnsAsync(true);
+        _publisherMock
+            .Setup(publisher => publisher.PublishAsync(
+                It.IsAny<EmailRequestedV1>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(expectedException);
 
-            var result = await _handler.Handle(sendEmailCommand, CancellationToken.None);
+        var handler = new SendEmailHandler(_publisherMock.Object);
 
-            Assert.True(result.IsSuccess);
-            _loggerMock.Verify(logger => logger.LogError(It.IsAny<SendEmailCommand>(), It.IsAny<string>())
-            , Times.Never());
-        }
+        var actualException = await Assert.ThrowsAsync<
+            InvalidOperationException>(
+            () => handler.Handle(
+                new SendEmailCommand(email),
+                CancellationToken.None));
 
-        [Fact]
-        public async Task Handle_WhenEmailServiceReturnsFalse_ShouldReturnFailure()
-        {
-            var emailDTO = new EmailDTO { From = "loki@example.com", Content = "Some test info" };
-            var sendEmailCommand = new SendEmailCommand(emailDTO);
-
-            _emailServiceMock.Setup(service => service.SendEmailAsync(It.Is<Message>(m =>
-                    m.To.Single().Address == "streetcodeua@gmail.com" &&
-                    m.From == emailDTO.From &&
-                    m.Subject == "FeedBack" &&
-                    m.Content == emailDTO.Content
-                 )))
-                .ReturnsAsync(false);
-
-            var result = await _handler.Handle(sendEmailCommand, CancellationToken.None);
-
-            Assert.True(result.IsFailed);
-
-            Assert.Equal(1 , result.Errors.Count());
-
-            _loggerMock.Verify(logger => logger.LogError(sendEmailCommand, It.Is<string>(s => !string.IsNullOrEmpty(s)))
-            , Times.Once());
-        }
+        Assert.Same(expectedException, actualException);
     }
 }

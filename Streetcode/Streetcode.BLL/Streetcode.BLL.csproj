@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Streetcode.DAL\Streetcode.DAL.csproj" />
+    <ProjectReference Include="..\..\Streetcode.Email\src\Streetcode.Email.Contracts\Streetcode.Email.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Mapping\Analytics\" />
