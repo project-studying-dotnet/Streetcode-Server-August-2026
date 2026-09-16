@@ -9,6 +9,7 @@ using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Media.Art.GetByStreetcodeId;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Entities.Streetcode;
+using StreetcodeArtEntity = Streetcode.DAL.Entities.Streetcode.StreetcodeArt;
 using Xunit;
 
 namespace Streetcode.XUnitTest.MediatRTests.Media.Art;
@@ -38,7 +39,7 @@ public class GetArtsByStreetcodeIdHandlerTests
                 },
                 StreetcodeArts =
                 [
-                    new StreetcodeArt
+                    new StreetcodeArtEntity
                     {
                         StreetcodeId = streetcodeId
                     },
@@ -53,9 +54,9 @@ public class GetArtsByStreetcodeIdHandlerTests
         var nonMatchingArt = new DAL.Entities.Media.Images.Art
         {
             Id = 2,
-            StreetcodeArts = new List<StreetcodeArt>
+            StreetcodeArts = new List<StreetcodeArtEntity>
             {
-                new StreetcodeArt
+                new StreetcodeArtEntity
                 {
                     StreetcodeId = 999,
                 },
