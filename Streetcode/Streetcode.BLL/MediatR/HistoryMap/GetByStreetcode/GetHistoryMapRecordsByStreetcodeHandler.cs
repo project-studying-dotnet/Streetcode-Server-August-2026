@@ -32,7 +32,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.GetByStreetcode
 
             if (streetcode is null)
             {
-                string errorMessage = $"Cannot find streetcodewith id: {request.streetcodeId}";
+                string errorMessage = $"Cannot find streetcode with id: {request.streetcodeId}";
                 _logger.LogError(request, errorMessage);
                 return Result.Fail<IEnumerable<HistoryMapRecordDTO>>(new Error(errorMessage));
             }
