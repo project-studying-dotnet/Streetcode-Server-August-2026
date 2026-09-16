@@ -574,17 +574,17 @@ public class RepositoryWrapper : IRepositoryWrapper
     }
 
     public IHistoryMapRecordRepository HistoryMapRecordRepository
-{
-    get
     {
-        if (_historyMapRecordRepository is null)
+        get
         {
-            _historyMapRecordRepository = new HistoryMapRecordRepository(_streetcodeDbContext);
-        }
+            if (_historyMapRecordRepository is null)
+            {
+                _historyMapRecordRepository = new HistoryMapRecordRepository(_streetcodeDbContext);
+            }
 
-        return _historyMapRecordRepository;
+            return _historyMapRecordRepository;
+        }
     }
-}
 
     public int SaveChanges()
     {
