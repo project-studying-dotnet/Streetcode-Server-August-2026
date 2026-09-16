@@ -6,6 +6,7 @@ using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
@@ -35,6 +36,7 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
 using Streetcode.WebApi.ExceptionHandlers;
 using Streetcode.WebApi.Service;
+using Streetcode.WebApi.Identity;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -117,6 +119,23 @@ public static class ServiceCollectionExtensions
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schema: "entity_framework");
             });
         });
+
+        services.AddDbContext<RegistrationDbContext>(options =>
+            options.UseSqlServer(connectionString, opt =>
+            {
+                opt.EnableRetryOnFailure();
+                opt.MigrationsHistoryTable("__IdentityMigrationsHistory", schema: "entity_framework");
+            }));
+        services.AddIdentityCore<RegistrationUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.Password.RequiredLength = 8;
+            })
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<RegistrationDbContext>();
+        services.AddAuthentication(IdentityConstants.ApplicationScheme)
+            .AddIdentityCookies();
+        services.AddAuthorization();
 
         services.AddHangfire(config =>
         {
