@@ -4,8 +4,15 @@ using Streetcode.WebApi.Identity;
 
 namespace Streetcode.WebApi.Controllers.Users;
 
-public class RegistrationController(UserManager<RegistrationUser> userManager) : BaseApiController
+public class RegistrationController : BaseApiController
 {
+    private readonly UserManager<RegistrationUser> _userManager;
+
+    public RegistrationController(UserManager<RegistrationUser> userManager)
+    {
+        _userManager = userManager;
+    }
+
     [HttpPost]
     public async Task<IActionResult> Register(RegisterRequest request)
     {
@@ -24,16 +31,16 @@ public class RegistrationController(UserManager<RegistrationUser> userManager) :
             Surname = request.Surname.Trim(),
         };
 
-        var result = await userManager.CreateAsync(user, request.Password);
+        var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
         {
             return BadRequest(result.Errors.Select(error => error.Description));
         }
 
-        var roleResult = await userManager.AddToRoleAsync(user, "User");
+        var roleResult = await _userManager.AddToRoleAsync(user, "User");
         if (!roleResult.Succeeded)
         {
-            await userManager.DeleteAsync(user);
+            await _userManager.DeleteAsync(user);
             return StatusCode(500, "Could not assign the user role.");
         }
 

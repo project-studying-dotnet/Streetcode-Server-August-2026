@@ -105,7 +105,8 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
         var connectionString = configuration.GetRequiredConnectionString();
-        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>()
+            ?? throw new InvalidOperationException("Email configuration is missing.");
         services.AddSingleton(emailConfig);
 
         services.AddRedisCaching(configuration);
@@ -144,12 +145,15 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>();
+        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>() ?? new CorsConfiguration();
+        var allowedOrigins = corsConfig.AllowedOrigins
+            .Where(origin => !string.IsNullOrWhiteSpace(origin) && origin != "*")
+            .ToArray();
         services.AddCors(opt =>
         {
             opt.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin()
+                policy.WithOrigins(allowedOrigins)
                       .AllowAnyHeader()
                       .AllowAnyMethod();
             });
@@ -204,9 +208,9 @@ public static class ServiceCollectionExtensions
 
     public class CorsConfiguration
     {
-        public List<string> AllowedOrigins { get; set; }
-        public List<string> AllowedHeaders { get; set; }
-        public List<string> AllowedMethods { get; set; }
+        public List<string> AllowedOrigins { get; set; } = new();
+        public List<string> AllowedHeaders { get; set; } = new();
+        public List<string> AllowedMethods { get; set; } = new();
         public int PreflightMaxAge { get; set; }
     }
 }
