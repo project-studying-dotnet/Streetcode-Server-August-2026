@@ -1,4 +1,4 @@
-    using FluentResults;
+using FluentResults;
 using Moq;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.MediatR.Streetcode.Text.GetParsed;
