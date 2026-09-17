@@ -14,6 +14,85 @@ public class KafkaEmailRequestPublisherTests
     private const string Topic = "configured.email.topic";
 
     [Fact]
+    public void Constructor_NullProducer_ThrowsArgumentNullException()
+    {
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => new KafkaEmailRequestPublisher(
+                null!,
+                CreateOptions(),
+                new RecordingLogger<KafkaEmailRequestPublisher>()));
+
+        Assert.Equal("producer", exception.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_NullOptions_ThrowsArgumentNullException()
+    {
+        var producerMock = new Mock<IProducer<string, string>>();
+
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => new KafkaEmailRequestPublisher(
+                producerMock.Object,
+                null!,
+                new RecordingLogger<KafkaEmailRequestPublisher>()));
+
+        Assert.Equal("options", exception.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        var producerMock = new Mock<IProducer<string, string>>();
+
+        var exception = Assert.Throws<ArgumentNullException>(
+            () => new KafkaEmailRequestPublisher(
+                producerMock.Object,
+                CreateOptions(),
+                null!));
+
+        Assert.Equal("logger", exception.ParamName);
+    }
+
+    [Fact]
+    public async Task PublishAsync_NullEmailRequested_ThrowsAndDoesNotProduce()
+    {
+        var producerMock = new Mock<IProducer<string, string>>();
+        var publisher = CreatePublisher(
+            producerMock.Object,
+            new RecordingLogger<KafkaEmailRequestPublisher>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentNullException>(
+            () => publisher.PublishAsync(null!, CancellationToken.None));
+
+        Assert.Equal("emailRequested", exception.ParamName);
+        VerifyProducerWasNotCalled(producerMock);
+    }
+
+    [Fact]
+    public async Task PublishAsync_EmptyMessageId_ThrowsAndDoesNotProduce()
+    {
+        var emailRequested = new EmailRequestedV1(
+            Guid.Empty,
+            Guid.NewGuid(),
+            DateTimeOffset.UtcNow,
+            "feedback.v1",
+            null,
+            new Dictionary<string, string>());
+        var producerMock = new Mock<IProducer<string, string>>();
+        var publisher = CreatePublisher(
+            producerMock.Object,
+            new RecordingLogger<KafkaEmailRequestPublisher>());
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => publisher.PublishAsync(
+                emailRequested,
+                CancellationToken.None));
+
+        Assert.Equal("emailRequested", exception.ParamName);
+        VerifyProducerWasNotCalled(producerMock);
+    }
+
+    [Fact]
     public async Task PublishAsync_Persisted_PublishesContractWithoutPiiLog()
     {
         const string sender = "private-sender@example.com";
@@ -165,12 +244,28 @@ public class KafkaEmailRequestPublisherTests
     {
         return new KafkaEmailRequestPublisher(
             producer,
-            Options.Create(new EmailKafkaOptions
-            {
-                BootstrapServers = "localhost:9092",
-                Topic = Topic,
-            }),
+            CreateOptions(),
             logger);
+    }
+
+    private static IOptions<EmailKafkaOptions> CreateOptions()
+    {
+        return Options.Create(new EmailKafkaOptions
+        {
+            BootstrapServers = "localhost:9092",
+            Topic = Topic,
+        });
+    }
+
+    private static void VerifyProducerWasNotCalled(
+        Mock<IProducer<string, string>> producerMock)
+    {
+        producerMock.Verify(
+            producer => producer.ProduceAsync(
+                It.IsAny<string>(),
+                It.IsAny<Message<string, string>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     private static EmailRequestedV1 CreateEmailRequested(
