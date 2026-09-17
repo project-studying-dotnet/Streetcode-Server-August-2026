@@ -26,13 +26,16 @@ public sealed class IdentityWebApplicationFactory
 
     private readonly string _connectionString;
     private readonly Action<IServiceCollection>? _configureServices;
+    private readonly string _environment;
 
     public IdentityWebApplicationFactory(
         string connectionString,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        string environment = "Testing")
     {
         _connectionString = connectionString;
         _configureServices = configureServices;
+        _environment = environment;
     }
 
     public new HttpClient CreateClient()
@@ -83,7 +86,7 @@ public sealed class IdentityWebApplicationFactory
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
+        builder.UseEnvironment(_environment);
 
         builder.ConfigureServices(services =>
         {
