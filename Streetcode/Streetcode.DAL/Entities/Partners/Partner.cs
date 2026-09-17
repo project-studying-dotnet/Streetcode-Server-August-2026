@@ -8,12 +8,17 @@ namespace Streetcode.DAL.Entities.Partners;
 [Table("partners", Schema = "partners")]
 public class Partner
 {
+    public const int TitleMaxLength = 255;
+    public const int TargetUrlMaxLength = 255;
+    public const int UrlTitleMaxLength = 255;
+    public const int DescriptionMaxLength = 600;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(255)]
+    [MaxLength(TitleMaxLength)]
     public string Title { get; set; }
 
     [Required]
@@ -25,12 +30,12 @@ public class Partner
     [Required]
     public bool IsVisibleEverywhere { get; set; }
 
-    [MaxLength(255)]
+    [MaxLength(TargetUrlMaxLength)]
     public string? TargetUrl { get; set; }
 
-    [MaxLength(255)]
+    [MaxLength(UrlTitleMaxLength)]
     public string? UrlTitle { get; set; }
-    [MaxLength(600)]
+    [MaxLength(DescriptionMaxLength)]
     public string? Description { get; set; }
 
     public Image? Logo { get; set; }

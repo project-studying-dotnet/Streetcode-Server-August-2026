@@ -6,6 +6,7 @@ using Streetcode.BLL.DTO.AdditionalContent.Subtitles;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Partners;
 
 namespace Streetcode.BLL.MediatR.Partners.GetByStreetcodeId;
 
@@ -34,10 +35,9 @@ public class GetPartnersByStreetcodeIdHandler : IRequestHandler<GetPartnersByStr
             return Result.Fail(new Error(errorMsg));
         }
 
+        var specification = new GetPartnersByStreetcodeIdSpecification(streetcode.Id);
         var partners = await _repositoryWrapper.PartnersRepository
-            .GetAllAsync(
-                predicate: p => p.Streetcodes.Any(sc => sc.Id == streetcode.Id) || p.IsVisibleEverywhere,
-                include: p => p.Include(pl => pl.PartnerSourceLinks));
+            .ListAsync(specification, cancellationToken);
 
         if (partners is null)
         {
