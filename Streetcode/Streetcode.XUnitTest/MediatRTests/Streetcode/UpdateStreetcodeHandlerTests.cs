@@ -4,11 +4,13 @@ using Repositories.Interfaces;
 using Streetcode.BLL.DTO.AdditionalContent.Tag;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.DTO.Streetcode.Update;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Update;
 using Streetcode.DAL.Entities.AdditionalContent;
 using Streetcode.DAL.Entities.Media;
 using Streetcode.DAL.Entities.Media.Images;
+using Streetcode.DAL.Entities.Streetcode;
 using Streetcode.DAL.Entities.Streetcode.Types;
 using Streetcode.DAL.Enums;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
@@ -25,6 +27,7 @@ public class UpdateStreetcodeHandlerTests
     private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
+    private readonly Mock<ICacheService> _cacheServiceMock = new();
     private readonly Mock<IStreetcodeRepository> _streetcodeRepositoryMock = new();
     private readonly Mock<ITagRepository> _tagRepositoryMock = new();
     private readonly Mock<IStreetcodeImageRepository> _streetcodeImageRepositoryMock = new();
@@ -83,7 +86,68 @@ public class UpdateStreetcodeHandlerTests
             .Setup(m => m.Map<StreetcodeDTO>(It.IsAny<StreetcodeEntity>()))
             .Returns(new StreetcodeDTO { Id = 1, Title = "Test Streetcode" });
 
-        _handler = new UpdateStreetcodeHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
+        _handler = new UpdateStreetcodeHandler(
+            _repositoryMock.Object,
+            _mapperMock.Object,
+            _loggerMock.Object,
+            _cacheServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task Handle_SuccessfulUpdate_InvalidatesExpectedOldAndNewCacheKeys()
+    {
+        // Arrange
+        const int id = 12;
+        const int oldIndex = 5;
+        const int newIndex = 6;
+        const string oldUrl = "old-url";
+        const string newUrl = "new-url";
+
+        var existingStreetcode = new PersonStreetcode
+        {
+            Id = id,
+            Index = oldIndex,
+            TransliterationUrl = oldUrl,
+            Status = StreetcodeStatus.Published,
+            Tags = new List<Tag>(),
+        };
+
+        SetupExistingStreetcode(existingStreetcode);
+
+        var updateStreetcodeDTO = UpdateStreetcodeBuildDto(StreetcodeType.Person, null, null);
+        updateStreetcodeDTO.Index = newIndex;
+        updateStreetcodeDTO.TransliterationUrl = newUrl;
+
+        _mapperMock
+            .Setup(m => m.Map(It.IsAny<UpdateStreetcodeDTO>(), It.IsAny<StreetcodeEntity>()))
+            .Callback<object, object>((src, dest) =>
+            {
+                existingStreetcode.Index = newIndex;
+                existingStreetcode.TransliterationUrl = newUrl;
+            });
+
+        var expectedKeys = new HashSet<string>
+        {
+            $"streetcode:id:{id}",
+            $"streetcode:short:{id}",
+            $"streetcode:index:{oldIndex}",
+            $"streetcode:index:{newIndex}",
+            $"streetcode:url:{oldUrl}",
+            $"streetcode:url:{newUrl}",
+        };
+
+        var command = new UpdateStreetcodeCommand(id, updateStreetcodeDTO);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess, string.Join(", ", result.Errors.Select(e => e.Message)));
+        _cacheServiceMock.Verify(
+            c => c.RemoveAsync(
+                It.Is<IEnumerable<string>>(keys => new HashSet<string>(keys).SetEquals(expectedKeys)),
+                CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]

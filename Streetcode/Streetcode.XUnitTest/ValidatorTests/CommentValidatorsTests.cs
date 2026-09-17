@@ -4,12 +4,28 @@
 
 namespace Streetcode.XUnitTest.ValidatorTests
 {
+    using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Validators;
     using Xunit;
 
     public class CommentValidatorsTests
     {
+        [Theory]
+        [InlineData(1, true)]
+        [InlineData(0, false)]
+        [InlineData(-1, false)]
+        public void DeleteCommentCommandValidator_ShouldRequirePositiveId(
+            int id,
+            bool expectedIsValid)
+        {
+            var validator = new DeleteCommentCommandValidator();
+
+            var result = validator.Validate(new DeleteCommentCommand(id));
+
+            Assert.Equal(expectedIsValid, result.IsValid);
+        }
+
         [Theory]
         [InlineData(1, true)]
         [InlineData(0, false)]
