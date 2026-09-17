@@ -45,26 +45,22 @@ app.UseExceptionHandler();
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
-    if (app.Environment.IsDevelopment())
-    {
-        var dbContext = scope.ServiceProvider
-            .GetRequiredService<StreetcodeIdentityDbContext>();
-
-        await dbContext.Database.MigrateAsync();
-    }
+    var dbContext = scope.ServiceProvider
+        .GetRequiredService<StreetcodeIdentityDbContext>();
 
     var identityDataSeeder = scope.ServiceProvider
         .GetRequiredService<IdentityDataSeeder>();
 
     try
     {
+        await dbContext.Database.MigrateAsync();
         await identityDataSeeder.SeedAsync();
     }
     catch (Exception exception)
     {
         app.Logger.LogCritical(
             exception,
-            "Identity data seeding failed. Application startup is aborted");
+            "Identity database initialization failed. Application startup is aborted");
 
         throw;
     }
