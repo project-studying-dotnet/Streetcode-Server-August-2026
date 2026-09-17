@@ -14,7 +14,6 @@ namespace Streetcode.XUnitTest.Controllers
     using Microsoft.Extensions.DependencyInjection;
     using Moq;
     using Streetcode.BLL.DTO.Streetcode.Comments;
-    using Streetcode.BLL.MediatR.ResultVariations;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
@@ -84,23 +83,22 @@ namespace Streetcode.XUnitTest.Controllers
         }
 
         [Theory]
-        [InlineData("NotFound", typeof(Microsoft.AspNetCore.Mvc.NotFoundResult), 404)]
-        [InlineData("Forbidden", typeof(StatusCodeResult), 403)]
-        [InlineData("Conflict", typeof(Microsoft.AspNetCore.Mvc.ConflictResult), 409)]
+        [InlineData("NotFound", 404)]
+        [InlineData("Forbidden", 403)]
+        [InlineData("Conflict", 409)]
         public async Task Update_WhenHandlerReturnsStatusResult_ShouldReturnExpectedHttpStatus(
             string resultName,
-            Type actionResultType,
             int expectedStatusCode)
         {
             const int commentId = 15;
             var authorId = Guid.NewGuid();
             var dto = new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } };
             var mediatorMock = new Mock<IMediator>();
-            Result<CommentDto> handlerResult = resultName switch
+            Error handlerError = resultName switch
             {
-                "NotFound" => new NotFoundResult<CommentDto>(new Error("Not found")),
-                "Forbidden" => new ForbiddenResult<CommentDto>(new Error("Forbidden")),
-                "Conflict" => new ConflictResult<CommentDto>(new Error("Conflict")),
+                "NotFound" => new CommentNotFoundError(commentId),
+                "Forbidden" => new CommentForbiddenError(commentId),
+                "Conflict" => new CommentConflictError(commentId),
                 _ => throw new ArgumentOutOfRangeException(nameof(resultName)),
             };
             mediatorMock
@@ -108,7 +106,7 @@ namespace Streetcode.XUnitTest.Controllers
                     It.Is<UpdateCommentCommand>(command =>
                         command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
                     It.IsAny<CancellationToken>()))
-                .ReturnsAsync(handlerResult);
+                .ReturnsAsync(Result.Fail<CommentDto>(handlerError));
 
             using var serviceProvider = new ServiceCollection()
                 .AddSingleton(mediatorMock.Object)
@@ -128,9 +126,10 @@ namespace Streetcode.XUnitTest.Controllers
 
             var result = await controller.Update(commentId, dto, CancellationToken.None);
 
-            Assert.IsType(actionResultType, result);
-            var statusCodeResult = Assert.IsAssignableFrom<StatusCodeResult>(result);
-            Assert.Equal(expectedStatusCode, statusCodeResult.StatusCode);
+            var objectResult = Assert.IsAssignableFrom<ObjectResult>(result);
+            Assert.Equal(expectedStatusCode, objectResult.StatusCode);
+            var reasons = Assert.IsAssignableFrom<IEnumerable<IReason>>(objectResult.Value);
+            Assert.Contains(reasons, reason => reason.Message == handlerError.Message);
             mediatorMock.VerifyAll();
         }
 

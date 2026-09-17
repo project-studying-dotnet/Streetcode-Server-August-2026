@@ -8,8 +8,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
     using AutoMapper;
     using global::Streetcode.BLL.DTO.Streetcode.Comments;
     using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using global::Streetcode.BLL.MediatR.Streetcode.Comment.Update;
-    using global::Streetcode.BLL.MediatR.ResultVariations;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
     using Microsoft.EntityFrameworkCore;
@@ -63,13 +63,13 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
         public async Task Handle_WhenCommentDoesNotExist_ShouldReturnFailureAndNotSave()
         {
             var command = new UpdateCommentCommand(15, Guid.NewGuid(), new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } });
-            const string expectedMessage = "Cannot find comment with id: 15";
+            const string expectedMessage = "Cannot find a comment with corresponding id: 15";
             this.SetupComment(command.Id, null);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.IsType<NotFoundResult<CommentDto>>(result);
+            Assert.IsType<CommentNotFoundError>(result.Errors.Single());
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
@@ -110,7 +110,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.IsType<ForbiddenResult<CommentDto>>(result);
+            Assert.IsType<CommentForbiddenError>(result.Errors.Single());
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             Assert.Equal("Old comment", comment.Text);
             Assert.Null(comment.UpdatedAt);
@@ -131,7 +131,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.IsType<ConflictResult<CommentDto>>(result);
+            Assert.IsType<CommentConflictError>(result.Errors.Single());
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
             this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
@@ -152,7 +152,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.IsType<ConflictResult<CommentDto>>(result);
+            Assert.IsType<CommentConflictError>(result.Errors.Single());
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.commentRepositoryMock.Verify(repository => repository.Update(comment), Times.Once());
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());

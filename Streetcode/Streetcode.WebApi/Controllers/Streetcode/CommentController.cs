@@ -48,9 +48,7 @@ public class CommentController : BaseApiController
             new DeleteCommentCommand(id),
             cancellationToken);
 
-        return result.Errors.Any(error => error is CommentNotFoundError)
-            ? NotFound(result.Reasons)
-            : HandleResult(result);
+        return HandleResult(result);
     }
 
     [AuthorizeRoles(

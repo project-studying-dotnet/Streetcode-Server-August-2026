@@ -4,7 +4,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.Interfaces.Logging;
-using Streetcode.BLL.MediatR.ResultVariations;
+using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Comment.Update;
@@ -30,25 +30,23 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
 
         if (comment is null)
         {
-            var errorMsg =
-                $"Cannot find comment with id: {request.Id}";
-            _loggerService.LogError(request, errorMsg);
-            return new NotFoundResult<CommentDto>(new Error(errorMsg));
+            var error = new CommentNotFoundError(request.Id);
+            _loggerService.LogError(request, error.Message);
+            return Result.Fail<CommentDto>(error);
         }
 
         if (comment.AuthorId != request.AuthorId)
         {
-            var errorMsg =
-                $"You do not have permission to update comment with id: {request.Id}";
-            _loggerService.LogError(request, errorMsg);
-            return new ForbiddenResult<CommentDto>(new Error(errorMsg));
+            var error = new CommentForbiddenError(request.Id);
+            _loggerService.LogError(request, error.Message);
+            return Result.Fail<CommentDto>(error);
         }
 
         if (!request.Comment.RowVersion.SequenceEqual(comment.RowVersion))
         {
-            var errorMsg = $"Comment with id: {request.Id} was updated by another user.";
-            _loggerService.LogError(request, errorMsg);
-            return new ConflictResult<CommentDto>(new Error(errorMsg));
+            var error = new CommentConflictError(request.Id);
+            _loggerService.LogError(request, error.Message);
+            return Result.Fail<CommentDto>(error);
         }
 
         comment.Text = request.Comment.Text.Trim();
@@ -62,9 +60,9 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
         }
         catch (DbUpdateConcurrencyException)
         {
-            var errorMsg = $"Comment with id: {request.Id} was updated by another user.";
-            _loggerService.LogError(request, errorMsg);
-            return new ConflictResult<CommentDto>(new Error(errorMsg));
+            var error = new CommentConflictError(request.Id);
+            _loggerService.LogError(request, error.Message);
+            return Result.Fail<CommentDto>(error);
         }
 
         if (!isSaved)
