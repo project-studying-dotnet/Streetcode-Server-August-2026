@@ -5,6 +5,7 @@ using Streetcode.BLL.DTO.AdditionalContent.Tag;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.DTO.Streetcode.Create;
 using Streetcode.BLL.DTO.Streetcode.Update;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Create;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.DeleteSoft;
@@ -28,6 +29,7 @@ public class DeleteSoftStreetcodeHandlerTests
     private readonly Mock<IRepositoryWrapper> _repositoryMock = new();
     private readonly Mock<ILoggerService> _loggerMock = new();
     private readonly Mock<IStreetcodeRepository> _streetcodeRepositoryMock = new();
+    private readonly Mock<ICacheService> _cacheServiceMock = new();
     private readonly DeleteSoftStreetcodeHandler _handler;
 
     public DeleteSoftStreetcodeHandlerTests()
@@ -40,14 +42,23 @@ public class DeleteSoftStreetcodeHandlerTests
             .Setup(wrapper => wrapper.SaveChangesAsync())
             .ReturnsAsync(1);
 
-        _handler = new DeleteSoftStreetcodeHandler(_repositoryMock.Object, _loggerMock.Object);
+        _handler = new DeleteSoftStreetcodeHandler(
+            _repositoryMock.Object,
+            _loggerMock.Object,
+            _cacheServiceMock.Object);
     }
 
     [Fact]
     public async Task Handle_SoftDeletesStreetcode_WhenStreetcodeExists()
     {
         var existingStreetcodeId = 1;
-        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Status = StreetcodeStatus.Published };
+        var existingStreetcode = new PersonStreetcode
+        {
+            Id = existingStreetcodeId,
+            Index = 1,
+            TransliterationUrl = "test-url",
+            Status = StreetcodeStatus.Published
+        };
 
         _streetcodeRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
@@ -60,6 +71,9 @@ public class DeleteSoftStreetcodeHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(StreetcodeStatus.Deleted, existingStreetcode.Status);
         _streetcodeRepositoryMock.Verify(repo => repo.Update(existingStreetcode), Times.Once);
+        _cacheServiceMock.Verify(
+            c => c.RemoveAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -76,13 +90,22 @@ public class DeleteSoftStreetcodeHandlerTests
         var command = new DeleteSoftStreetcodeCommand(existingStreetcodeId);
 
         await Assert.ThrowsAsync<ArgumentNullException>(() => _handler.Handle(command, CancellationToken.None));
+        _cacheServiceMock.Verify(
+            c => c.RemoveAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
     public async Task Handle_ReturnsFailedResult_WhenSaveChangesFails()
     {
         var existingStreetcodeId = 1;
-        var existingStreetcode = new PersonStreetcode { Id = existingStreetcodeId, Status = StreetcodeStatus.Published };
+        var existingStreetcode = new PersonStreetcode
+        {
+            Id = existingStreetcodeId,
+            Index = 1,
+            TransliterationUrl = "test-url",
+            Status = StreetcodeStatus.Published
+        };
 
         _streetcodeRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
@@ -99,5 +122,8 @@ public class DeleteSoftStreetcodeHandlerTests
         Assert.False(result.IsSuccess);
         Assert.Equal("Failed to change status of streetcode to deleted", result.Errors.First().Message);
         _streetcodeRepositoryMock.Verify(repo => repo.Update(existingStreetcode), Times.Once);
+        _cacheServiceMock.Verify(
+            c => c.RemoveAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }
