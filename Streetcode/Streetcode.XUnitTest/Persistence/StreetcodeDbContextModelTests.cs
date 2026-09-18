@@ -1,105 +1,116 @@
-using Microsoft.EntityFrameworkCore;
-using Streetcode.DAL.Entities.Partners;
-using Streetcode.DAL.Entities.Streetcode;
-using Streetcode.DAL.Persistence;
-using Xunit;
+// <copyright file="StreetcodeDbContextModelTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
-namespace Streetcode.XUnitTest.Persistence;
-
-public class StreetcodeDbContextModelTests
+namespace Streetcode.XUnitTest.Persistence
 {
-    [Fact]
-    public void Model_WhenBuilt_ShouldConfigureRelatedFigureDeleteBehaviors()
+    using Microsoft.EntityFrameworkCore;
+    using Streetcode.DAL.Entities.Partners;
+    using Streetcode.DAL.Entities.Streetcode;
+    using Streetcode.DAL.Persistence;
+    using Xunit;
+
+    public class StreetcodeDbContextModelTests
     {
-        var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-            .UseSqlServer(
-                "Server=.;Database=Test;")
-            .Options;
+        [Fact]
+        public void Model_WhenBuilt_ShouldConfigureRelatedFigureDeleteBehaviors()
+        {
+            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseSqlServer(
+                    "Server=.;Database=Test;")
+                .Options;
 
-        using var context = new StreetcodeDbContext(options);
+            using var context = new StreetcodeDbContext(options);
 
-        var entityType = context.Model.FindEntityType(typeof(RelatedFigure));
+            var entityType = context.Model.FindEntityType(typeof(RelatedFigure));
 
-        Assert.NotNull(entityType);
+            Assert.NotNull(entityType);
 
-        var foreignKeys = entityType.GetForeignKeys();
+            var foreignKeys = entityType.GetForeignKeys();
 
-        var observerForeignKey = foreignKeys.Single(
-            foreignKey => foreignKey.Properties.Any(
-                property => property.Name == nameof(RelatedFigure.ObserverId)));
+            var observerForeignKey = foreignKeys.Single(
+                foreignKey => foreignKey.Properties.Any(
+                    property => property.Name == nameof(RelatedFigure.ObserverId)));
 
-        var targetForeignKey = foreignKeys.Single(
-            foreignKey => foreignKey.Properties.Any(
-                property => property.Name == nameof(RelatedFigure.TargetId)));
+            var targetForeignKey = foreignKeys.Single(
+                foreignKey => foreignKey.Properties.Any(
+                    property => property.Name == nameof(RelatedFigure.TargetId)));
 
-        Assert.Equal(DeleteBehavior.Restrict, observerForeignKey.DeleteBehavior);
-        Assert.Equal(DeleteBehavior.Cascade, targetForeignKey.DeleteBehavior);
-    }
+            Assert.Equal(DeleteBehavior.Restrict, observerForeignKey.DeleteBehavior);
+            Assert.Equal(DeleteBehavior.Cascade, targetForeignKey.DeleteBehavior);
+        }
 
-    [Fact]
-    public void Model_WhenBuilt_ShouldConfigurePartnerDefaultValueAsBooleanFalse()
-    {
-        var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-            .UseSqlServer(
-                "Server=.;Database=Test;")
-            .Options;
+        [Fact]
+        public void Model_WhenBuilt_ShouldConfigurePartnerDefaultValueAsBooleanFalse()
+        {
+            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseSqlServer(
+                    "Server=.;Database=Test;")
+                .Options;
 
-        using var context = new StreetcodeDbContext(options);
+            using var context = new StreetcodeDbContext(options);
 
-        var entityType = context.Model.FindEntityType(typeof(Partner));
+            var entityType = context.Model.FindEntityType(typeof(Partner));
 
-        Assert.NotNull(entityType);
+            Assert.NotNull(entityType);
 
-        var property = entityType.FindProperty(nameof(Partner.IsKeyPartner));
+            var property = entityType.FindProperty(nameof(Partner.IsKeyPartner));
 
-        Assert.NotNull(property);
+            Assert.NotNull(property);
 
-        var defaultValue = Assert.IsType<bool>(property.GetDefaultValue());
+            var defaultValue = Assert.IsType<bool>(property.GetDefaultValue());
 
-        Assert.False(defaultValue);
-    }
+            Assert.False(defaultValue);
+        }
 
-    [Fact]
-    public void Model_WhenBuilt_ShouldConfigureCommentStorage()
-    {
-        var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
-            .UseSqlServer(
-                "Server=.;Database=Test;")
-            .Options;
+        [Fact]
+        public void Model_WhenBuilt_ShouldConfigureCommentStorage()
+        {
+            var options = new DbContextOptionsBuilder<StreetcodeDbContext>()
+                .UseSqlServer(
+                    "Server=.;Database=Test;")
+                .Options;
 
-        using var context = new StreetcodeDbContext(options);
+            using var context = new StreetcodeDbContext(options);
 
-        var entityType = context.Model.FindEntityType(typeof(Comment));
+            var entityType = context.Model.FindEntityType(typeof(Comment));
 
-        Assert.NotNull(entityType);
-        Assert.Equal("comments", entityType.GetTableName());
-        Assert.Equal("streetcode", entityType.GetSchema());
+            Assert.NotNull(entityType);
+            Assert.Equal("comments", entityType.GetTableName());
+            Assert.Equal("streetcode", entityType.GetSchema());
 
-        var textProperty = entityType.FindProperty(nameof(Comment.Text));
-        var updatedAtProperty = entityType.FindProperty(nameof(Comment.UpdatedAt));
+            var textProperty = entityType.FindProperty(nameof(Comment.Text));
+            var updatedAtProperty = entityType.FindProperty(nameof(Comment.UpdatedAt));
+            var rowVersionProperty = entityType.FindProperty(nameof(Comment.RowVersion));
 
-        var parentCommentIdProperty = entityType.FindProperty(nameof(Comment.ParentCommentId));
+            var parentCommentIdProperty = entityType.FindProperty(nameof(Comment.ParentCommentId));
 
-        Assert.NotNull(textProperty);
-        Assert.False(textProperty.IsNullable);
-        Assert.Equal(Comment.TextMaxLength, textProperty.GetMaxLength());
-        Assert.NotNull(updatedAtProperty);
-        Assert.True(updatedAtProperty.IsNullable);
-        Assert.NotNull(parentCommentIdProperty);
-        Assert.True(parentCommentIdProperty.IsNullable);
+            Assert.NotNull(textProperty);
+            Assert.False(textProperty.IsNullable);
+            Assert.Equal(Comment.TextMaxLength, textProperty.GetMaxLength());
+            Assert.NotNull(updatedAtProperty);
+            Assert.True(updatedAtProperty.IsNullable);
+            Assert.NotNull(rowVersionProperty);
+            Assert.True(rowVersionProperty.IsConcurrencyToken);
+            Assert.Equal(
+                Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.OnAddOrUpdate,
+                rowVersionProperty.ValueGenerated);
+            Assert.NotNull(parentCommentIdProperty);
+            Assert.True(parentCommentIdProperty.IsNullable);
 
-        var streetcodeForeignKey = entityType.GetForeignKeys().Single(
-            foreignKey => foreignKey.Properties.Any(
-                property => property.Name == nameof(Comment.StreetcodeId)));
+            var streetcodeForeignKey = entityType.GetForeignKeys().Single(
+                foreignKey => foreignKey.Properties.Any(
+                    property => property.Name == nameof(Comment.StreetcodeId)));
 
-        Assert.Equal(typeof(StreetcodeContent), streetcodeForeignKey.PrincipalEntityType.ClrType);
-        Assert.Equal(DeleteBehavior.Cascade, streetcodeForeignKey.DeleteBehavior);
+            Assert.Equal(typeof(StreetcodeContent), streetcodeForeignKey.PrincipalEntityType.ClrType);
+            Assert.Equal(DeleteBehavior.Cascade, streetcodeForeignKey.DeleteBehavior);
 
-        var parentCommentForeignKey = entityType.GetForeignKeys().Single(
-            foreignKey => foreignKey.Properties.Any(
-                property => property.Name == nameof(Comment.ParentCommentId)));
+            var parentCommentForeignKey = entityType.GetForeignKeys().Single(
+                foreignKey => foreignKey.Properties.Any(
+                    property => property.Name == nameof(Comment.ParentCommentId)));
 
-        Assert.Equal(typeof(Comment), parentCommentForeignKey.PrincipalEntityType.ClrType);
-        Assert.Equal(DeleteBehavior.Restrict, parentCommentForeignKey.DeleteBehavior);
+            Assert.Equal(typeof(Comment), parentCommentForeignKey.PrincipalEntityType.ClrType);
+            Assert.Equal(DeleteBehavior.Restrict, parentCommentForeignKey.DeleteBehavior);
+        }
     }
 }

@@ -5,8 +5,10 @@
 namespace Streetcode.XUnitTest.Controllers
 {
     using System.Reflection;
+    using System.Security.Claims;
     using FluentResults;
     using MediatR;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +16,123 @@ namespace Streetcode.XUnitTest.Controllers
     using Streetcode.BLL.DTO.Streetcode.Comments;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
+    using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
     using Streetcode.WebApi.Attributes;
     using Streetcode.WebApi.Controllers.Streetcode;
     using Xunit;
 
     public class CommentControllerTests
     {
+        [Fact]
+        public async Task Update_ShouldSendCommandAndReturnOk()
+        {
+            const int commentId = 15;
+            var authorId = Guid.NewGuid();
+            var dto = new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } };
+            var expectedDto = new CommentDto { Id = commentId, Text = dto.Text };
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<UpdateCommentCommand>(command =>
+                        command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
+                    cancellationToken))
+                .ReturnsAsync(Result.Ok(expectedDto));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                            [new Claim(ClaimTypes.NameIdentifier, authorId.ToString())])),
+                    },
+                },
+            };
+
+            var result = await controller.Update(commentId, dto, cancellationToken);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Same(expectedDto, okResult.Value);
+            mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task Update_WhenUserIdClaimIsMissing_ShouldReturnUnauthorized()
+        {
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext(),
+                },
+            };
+
+            var result = await controller.Update(
+                15,
+                new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } },
+                CancellationToken.None);
+
+            Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Theory]
+        [InlineData("NotFound", 404)]
+        [InlineData("Forbidden", 403)]
+        [InlineData("Conflict", 409)]
+        public async Task Update_WhenHandlerReturnsStatusResult_ShouldReturnExpectedHttpStatus(
+            string resultName,
+            int expectedStatusCode)
+        {
+            const int commentId = 15;
+            var authorId = Guid.NewGuid();
+            var dto = new UpdateCommentDto { Text = "Updated comment", RowVersion = new byte[] { 1 } };
+            var mediatorMock = new Mock<IMediator>();
+            Error handlerError = resultName switch
+            {
+                "NotFound" => new CommentNotFoundError(commentId),
+                "Forbidden" => new CommentForbiddenError(commentId),
+                "Conflict" => new CommentConflictError(commentId),
+                _ => throw new ArgumentOutOfRangeException(nameof(resultName)),
+            };
+            mediatorMock
+                .Setup(mediator => mediator.Send(
+                    It.Is<UpdateCommentCommand>(command =>
+                        command.Id == commentId && command.AuthorId == authorId && command.Comment == dto),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(Result.Fail<CommentDto>(handlerError));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        RequestServices = serviceProvider,
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                            [new Claim(ClaimTypes.NameIdentifier, authorId.ToString())])),
+                    },
+                },
+            };
+
+            var result = await controller.Update(commentId, dto, CancellationToken.None);
+
+            var objectResult = Assert.IsAssignableFrom<ObjectResult>(result);
+            Assert.Equal(expectedStatusCode, objectResult.StatusCode);
+            var reasons = Assert.IsAssignableFrom<IEnumerable<IReason>>(objectResult.Value);
+            Assert.Contains(reasons, reason => reason.Message == handlerError.Message);
+            mediatorMock.VerifyAll();
+        }
+
         [Fact]
         public async Task Delete_ShouldSendCommandWithCancellationTokenAndReturnOk()
         {
@@ -146,6 +259,20 @@ namespace Streetcode.XUnitTest.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Same(dto, okResult.Value);
             mediatorMock.VerifyAll();
+        }
+
+        [Fact]
+        public void Update_ShouldHaveExpectedRoute()
+        {
+            MethodInfo? method = typeof(CommentController).GetMethod(nameof(CommentController.Update));
+
+            Assert.NotNull(method);
+            var httpPutAttribute = method.GetCustomAttribute<HttpPutAttribute>();
+            var authorizeAttribute = method.GetCustomAttribute<AuthorizeAttribute>();
+
+            Assert.NotNull(httpPutAttribute);
+            Assert.Equal("{id:int}", httpPutAttribute.Template);
+            Assert.NotNull(authorizeAttribute);
         }
 
         [Fact]
