@@ -111,6 +111,15 @@ The upstream addresses are configured in `Streetcode.Gateway/appsettings.json`.
 Set `ReverseProxy__Clusters__streetcode__Destinations__api__Address` and
 `ReverseProxy__Clusters__identity__Destinations__identity-api__Address` to
 override them in another environment.
+The Identity API listens on port 8080 inside Docker; port 5001 is its host
+mapping. The gateway handles CORS for browser requests and removes CORS response
+headers from the Streetcode API to avoid duplicate values.
+
+Run the gateway integration tests with:
+
+```bash
+dotnet test Streetcode.Gateway.Tests/Streetcode.Gateway.Tests.csproj
+```
 
 When both services are running, the application is available at:
 
