@@ -354,3 +354,6 @@ secrets.json
 *.pfx
 *.env
 .idea/**/secrets
+
+# Web parsing runtime data
+/Streetcode/Streetcode.WebApi/Data/WebParsing/
