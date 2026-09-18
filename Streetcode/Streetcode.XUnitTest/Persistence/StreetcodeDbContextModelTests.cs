@@ -94,6 +94,8 @@ public class StreetcodeDbContextModelTests
 
         Assert.Equal(typeof(StreetcodeContent), streetcodeForeignKey.PrincipalEntityType.ClrType);
         Assert.Equal(DeleteBehavior.Cascade, streetcodeForeignKey.DeleteBehavior);
+        Assert.Equal(nameof(StreetcodeContent.Comments),
+            streetcodeForeignKey.PrincipalToDependent?.Name);
 
         var parentCommentForeignKey = entityType.GetForeignKeys().Single(
             foreignKey => foreignKey.Properties.Any(
