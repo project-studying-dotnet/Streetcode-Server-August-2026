@@ -40,7 +40,7 @@ namespace Streetcode.XUnitTest.Controllers
                     It.Is<CancellationToken>(token => token == cancellationToken)))
                 .ReturnsAsync(Result.Ok(expectedDto));
 
-            var controller = this.CreateController(mediatorMock.Object, authorId);
+            var controller = CreateController(mediatorMock.Object, authorId);
 
             var result = await controller.CreateReply(parentCommentId, dto, cancellationToken);
 
@@ -80,7 +80,7 @@ namespace Streetcode.XUnitTest.Controllers
                     It.Is<CreateReplyCommand>(command => command.ParentCommentId == parentCommentId),
                     CancellationToken.None))
                 .ReturnsAsync(Result.Fail<CommentDto>(new CommentNotFoundError(parentCommentId)));
-            var controller = this.CreateController(mediatorMock.Object, authorId);
+            var controller = CreateController(mediatorMock.Object, authorId);
 
             var result = await controller.CreateReply(parentCommentId, dto, CancellationToken.None);
 
@@ -111,7 +111,7 @@ namespace Streetcode.XUnitTest.Controllers
             Assert.Contains(StatusCodes.Status404NotFound, responseStatusCodes);
         }
 
-        private CommentController CreateController(IMediator mediator, Guid authorId)
+        private static CommentController CreateController(IMediator mediator, Guid authorId)
         {
             var serviceProvider = new ServiceCollection()
                 .AddSingleton(mediator)

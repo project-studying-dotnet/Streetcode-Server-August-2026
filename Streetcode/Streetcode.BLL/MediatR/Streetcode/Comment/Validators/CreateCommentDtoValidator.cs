@@ -10,7 +10,7 @@ public sealed class CreateCommentDtoValidator : AbstractValidator<CreateCommentD
     public CreateCommentDtoValidator()
     {
         RuleFor(comment => comment.Text)
-            .Must(text => !string.IsNullOrWhiteSpace(text))
+            .NotEmpty()
             .WithMessage("Comment text is required.")
             .MustNotExceedLength(CommentEntity.TextMaxLength, "Comment text");
     }

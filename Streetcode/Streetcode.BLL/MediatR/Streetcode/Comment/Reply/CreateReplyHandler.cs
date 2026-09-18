@@ -5,6 +5,7 @@ using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Specifications.Streetcode.Comment;
 using CommentEntity = Streetcode.DAL.Entities.Streetcode.Comment;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Comment.Reply;
@@ -29,8 +30,10 @@ public class CreateReplyHandler : IRequestHandler<CreateReplyCommand, Result<Com
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var parentComment = await _repositoryWrapper.CommentRepository.GetFirstOrDefaultAsync(
-            predicate: comment => comment.Id == request.ParentCommentId);
+        var specification = new GetCommentByIdSpecification(request.ParentCommentId);
+        var parentComment = await _repositoryWrapper.CommentRepository.GetBySpecAsync(
+            specification,
+            cancellationToken);
 
         if (parentComment is null)
         {
@@ -56,10 +59,10 @@ public class CreateReplyHandler : IRequestHandler<CreateReplyCommand, Result<Com
             CreatedAt = DateTimeOffset.UtcNow,
         };
 
-        await _repositoryWrapper.CommentRepository.CreateAsync(reply);
+        _repositoryWrapper.CommentRepository.Create(reply);
 
         cancellationToken.ThrowIfCancellationRequested();
-        bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+        bool isSaved = await _repositoryWrapper.SaveChangesAsync(cancellationToken) > 0;
 
         if (!isSaved)
         {
