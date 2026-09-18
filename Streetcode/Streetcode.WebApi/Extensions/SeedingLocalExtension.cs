@@ -1415,32 +1415,6 @@ namespace Streetcode.WebApi.Extensions
 
                     await dbContext.SaveChangesAsync();
                 }
-
-                if (!dbContext.Comments.Any())
-                {
-                    var streetcode = dbContext.Streetcodes.FirstOrDefault();
-                    if (streetcode is not null)
-                    {
-                        var authorId = Guid.Parse("8a17208f-d84b-42c0-bcbe-3331d3196f17");
-                        var comment = new Comment
-                        {
-                            StreetcodeId = streetcode.Id,
-                            AuthorId = authorId,
-                            Text = "Дякую за цю історію!",
-                            CreatedAt = new DateTimeOffset(2026, 9, 14, 10, 0, 0, TimeSpan.Zero),
-                        };
-                        comment.Replies.Add(new Comment
-                        {
-                            StreetcodeId = streetcode.Id,
-                            AuthorId = authorId,
-                            Text = "Раді, що вона вам сподобалася.",
-                            CreatedAt = new DateTimeOffset(2026, 9, 14, 11, 0, 0, TimeSpan.Zero),
-                        });
-
-                        dbContext.Comments.Add(comment);
-                        await dbContext.SaveChangesAsync();
-                    }
-                }
             }
         }
     }

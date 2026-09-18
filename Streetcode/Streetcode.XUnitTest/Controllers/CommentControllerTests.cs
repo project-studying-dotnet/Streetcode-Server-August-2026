@@ -29,7 +29,7 @@ namespace Streetcode.XUnitTest.Controllers
             var cancellationToken = cancellationTokenSource.Token;
             var comments = new List<CommentWithRepliesDto>
             {
-                new() { Id = 1, StreetcodeId = streetcodeId },
+                new () { Id = 1, StreetcodeId = streetcodeId },
             };
             var mediatorMock = new Mock<IMediator>();
             mediatorMock.Setup(mediator => mediator.Send(
@@ -52,9 +52,10 @@ namespace Streetcode.XUnitTest.Controllers
 
             Assert.Same(comments, Assert.IsType<OkObjectResult>(result).Value);
             mediatorMock.VerifyAll();
-            var route = typeof(CommentController)
-                .GetMethod(nameof(CommentController.GetByStreetcodeId))!
-                .GetCustomAttribute<HttpGetAttribute>();
+            var method = typeof(CommentController)
+                .GetMethod(nameof(CommentController.GetByStreetcodeId));
+            Assert.NotNull(method);
+            var route = method.GetCustomAttribute<HttpGetAttribute>();
             Assert.Equal("{streetcodeId:int}", route?.Template);
         }
 
