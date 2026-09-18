@@ -8,4 +8,5 @@ RUN dotnet publish Streetcode.Gateway/Streetcode.Gateway.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
+USER $APP_UID
 ENTRYPOINT ["dotnet", "Streetcode.Gateway.dll"]
