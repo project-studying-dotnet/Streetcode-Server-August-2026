@@ -40,7 +40,7 @@ services:
       retries: 5
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    image: mcr.microsoft.com/azure-storage/azurite:latest
     container_name: azurite
     command: "azurite --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --tableHost 0.0.0.0 --tablePort 10002"
     ports:
@@ -71,12 +71,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Local
       ASPNETCORE_URLS: "http://+:5000"
-      STREETCODE_ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=${DB_NAME:?DB_NAME is required, copy .env.example to .env};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      STREETCODE_ConnectionStrings__DefaultConnection: "Server=172.18.0.1,1433;Database=${DB_NAME:?DB_NAME is required, copy .env.example to .env};User Id=${DB_USER:?DB_USER is required, copy .env.example to .env};Password=${SA_PASSWORD:?SA_PASSWORD is required, copy .env.example to .env};TrustServerCertificate=True;MultipleActiveResultSets=True"
       STREETCODE_ConnectionStrings__Redis: "redis:6379"
       STREETCODE_Blob__BlobStoreKey: "${STREETCODE_Blob__BlobStoreKey:?STREETCODE_Blob__BlobStoreKey is required, copy .env.example to .env}"
       STREETCODE_Blob__Provider: "${BLOB_PROVIDER:-Azure}"
       STREETCODE_Blob__Azure__ContainerName: "${BLOB_CONTAINER_NAME:-streetcode-blobs}"
-      STREETCODE_Blob__Azure__ConnectionString: "${STREETCODE_Blob__Azure__ConnectionString:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}"
+      STREETCODE_Blob__Azure__ConnectionString: "${STREETCODE_Blob__Azure__ConnectionString:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://172.18.0.1:10000/devstoreaccount1;}"
     ports:
       - "${API_PORT:-5000}:5000"
 
