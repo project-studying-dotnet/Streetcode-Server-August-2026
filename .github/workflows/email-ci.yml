@@ -1,0 +1,41 @@
+name: Email Service CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+  pull_request:
+    branches:
+      - main
+      - dev
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  email-tests:
+    name: Build and test Email service
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore Email dependencies
+        run: dotnet restore ./Streetcode.Email/Streetcode.Email.sln
+
+      - name: Build Email service
+        run: dotnet build ./Streetcode.Email/Streetcode.Email.sln --configuration Release --no-restore
+
+      - name: Run Email tests
+        run: dotnet test ./Streetcode.Email/Streetcode.Email.sln --configuration Release --no-build --verbosity normal

@@ -119,14 +119,22 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>();
-        services.AddCors(opt =>
+        var corsConfig = configuration
+            .GetRequiredSection("CORS")
+            .Get<CorsConfiguration>()
+            ?? throw new InvalidOperationException(
+                "CORS configuration is missing.");
+
+        services.AddCors(options =>
         {
-            opt.AddDefaultPolicy(policy =>
+            options.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin()
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                policy
+                    .WithOrigins(corsConfig.AllowedOrigins.ToArray())
+                    .WithHeaders(corsConfig.AllowedHeaders.ToArray())
+                    .WithMethods(corsConfig.AllowedMethods.ToArray())
+                    .SetPreflightMaxAge(
+                        TimeSpan.FromSeconds(corsConfig.PreflightMaxAge));
             });
         });
 
@@ -179,9 +187,9 @@ public static class ServiceCollectionExtensions
 
     public class CorsConfiguration
     {
-        public List<string> AllowedOrigins { get; set; }
-        public List<string> AllowedHeaders { get; set; }
-        public List<string> AllowedMethods { get; set; }
-        public int PreflightMaxAge { get; set; }
+        public List<string> AllowedOrigins { get; set; } = new();
+        public List<string> AllowedHeaders { get; set; } = new();
+        public List<string> AllowedMethods { get; set; } = new();
+        public int PreflightMaxAge { get; set; } = 1;
     }
 }

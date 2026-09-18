@@ -1,7 +1,5 @@
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using Microsoft.EntityFrameworkCore;
-using Streetcode.Email.Infrastructure.Persistence;
 using Testcontainers.Kafka;
 using Testcontainers.MsSql;
 using DotNet.Testcontainers.Builders;
@@ -55,7 +53,6 @@ public sealed class EmailInfrastructureFixture : IAsyncLifetime
             _mailpitContainer.StartAsync());
 
         await CreateKafkaTopicsAsync();
-        await ApplyDatabaseMigrationsAsync();
     }
 
     public async Task DisposeAsync()
@@ -65,10 +62,11 @@ public sealed class EmailInfrastructureFixture : IAsyncLifetime
         await _sqlContainer.DisposeAsync();
     }
 
-    public EmailWebApplicationFactory CreateApplicationFactory()
+    public EmailWebApplicationFactory CreateApplicationFactory(
+        string? databaseConnectionString = null)
     {
         return new EmailWebApplicationFactory(
-            DatabaseConnectionString,
+            databaseConnectionString ?? DatabaseConnectionString,
             KafkaBootstrapServers,
             SmtpHost,
             SmtpPort);
@@ -99,19 +97,6 @@ public sealed class EmailInfrastructureFixture : IAsyncLifetime
                 ReplicationFactor = 1,
             },
         ]);
-    }
-
-    private async Task ApplyDatabaseMigrationsAsync()
-    {
-        var options =
-            new DbContextOptionsBuilder<EmailDbContext>()
-                .UseSqlServer(DatabaseConnectionString)
-                .Options;
-
-        await using var dbContext =
-            new EmailDbContext(options);
-
-        await dbContext.Database.MigrateAsync();
     }
 
     private readonly IContainer _mailpitContainer =

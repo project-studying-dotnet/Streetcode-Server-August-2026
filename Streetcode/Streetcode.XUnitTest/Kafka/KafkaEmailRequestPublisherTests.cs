@@ -3,6 +3,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Streetcode.BLL.Exceptions;
 using Streetcode.Email.Contracts.Events;
 using Streetcode.WebApi.Kafka;
 using Xunit;
@@ -172,7 +173,7 @@ public class KafkaEmailRequestPublisherTests
     }
 
     [Fact]
-    public async Task PublishAsync_NotPersisted_ThrowsInvalidOperationException()
+    public async Task PublishAsync_NotPersisted_ThrowsPublishingException()
     {
         var emailRequested = CreateEmailRequested();
         var producerMock = new Mock<IProducer<string, string>>();
@@ -194,7 +195,8 @@ public class KafkaEmailRequestPublisherTests
             producerMock.Object,
             new RecordingLogger<KafkaEmailRequestPublisher>());
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+        var exception = await Assert.ThrowsAsync<
+            EmailRequestPublishingException>(
             () => publisher.PublishAsync(
                 emailRequested,
                 CancellationToken.None));
@@ -202,6 +204,96 @@ public class KafkaEmailRequestPublisherTests
         Assert.Contains(
             PersistenceStatus.PossiblyPersisted.ToString(),
             exception.Message);
+    }
+
+    [Fact]
+    public async Task PublishAsync_KafkaException_WrapsOriginalException()
+    {
+        var emailRequested = CreateEmailRequested();
+        var kafkaException = new KafkaException(
+            new Error(
+                ErrorCode.BrokerNotAvailable,
+                "Kafka unavailable."));
+        var producerMock = new Mock<IProducer<string, string>>();
+
+        producerMock
+            .Setup(producer => producer.ProduceAsync(
+                It.IsAny<string>(),
+                It.IsAny<Message<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(kafkaException);
+
+        var publisher = CreatePublisher(
+            producerMock.Object,
+            new RecordingLogger<KafkaEmailRequestPublisher>());
+
+        var exception = await Assert.ThrowsAsync<
+            EmailRequestPublishingException>(
+            () => publisher.PublishAsync(
+                emailRequested,
+                CancellationToken.None));
+
+        Assert.Same(kafkaException, exception.InnerException);
+    }
+
+    [Fact]
+    public async Task PublishAsync_Canceled_DoesNotWrapCancellationException()
+    {
+        var emailRequested = CreateEmailRequested();
+        using var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+        var cancellationToken = cancellationTokenSource.Token;
+        var cancellationException = new OperationCanceledException(
+            cancellationToken);
+        var producerMock = new Mock<IProducer<string, string>>();
+
+        producerMock
+            .Setup(producer => producer.ProduceAsync(
+                It.IsAny<string>(),
+                It.IsAny<Message<string, string>>(),
+                cancellationToken))
+            .ThrowsAsync(cancellationException);
+
+        var publisher = CreatePublisher(
+            producerMock.Object,
+            new RecordingLogger<KafkaEmailRequestPublisher>());
+
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(
+            () => publisher.PublishAsync(
+                emailRequested,
+                cancellationToken));
+
+        Assert.Same(cancellationException, exception);
+    }
+
+    [Fact]
+    public async Task PublishAsync_InformationLoggingDisabled_DoesNotLog()
+    {
+        var emailRequested = CreateEmailRequested();
+        var producerMock = new Mock<IProducer<string, string>>();
+        var logger = new RecordingLogger<KafkaEmailRequestPublisher>(
+            isEnabled: false);
+
+        producerMock
+            .Setup(producer => producer.ProduceAsync(
+                It.IsAny<string>(),
+                It.IsAny<Message<string, string>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((
+                string topic,
+                Message<string, string> message,
+                CancellationToken _) => CreateDeliveryResult(
+                    topic,
+                    message,
+                    PersistenceStatus.Persisted));
+
+        var publisher = CreatePublisher(producerMock.Object, logger);
+
+        await publisher.PublishAsync(
+            emailRequested,
+            CancellationToken.None);
+
+        Assert.Empty(logger.Messages);
     }
 
     [Fact]
@@ -302,6 +394,13 @@ public class KafkaEmailRequestPublisherTests
 
     private sealed class RecordingLogger<T> : ILogger<T>
     {
+        private readonly bool _isEnabled;
+
+        public RecordingLogger(bool isEnabled = true)
+        {
+            _isEnabled = isEnabled;
+        }
+
         public List<string> Messages { get; } = [];
 
         public IDisposable? BeginScope<TState>(TState state)
@@ -312,7 +411,7 @@ public class KafkaEmailRequestPublisherTests
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            return true;
+            return _isEnabled;
         }
 
         public void Log<TState>(

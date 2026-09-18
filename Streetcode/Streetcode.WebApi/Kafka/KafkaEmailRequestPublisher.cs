@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.Extensions.Options;
+using Streetcode.BLL.Exceptions;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.Email.Contracts.Events;
+
 namespace Streetcode.WebApi.Kafka;
 
 public sealed class KafkaEmailRequestPublisher : IEmailRequestPublisher
@@ -43,23 +45,39 @@ public sealed class KafkaEmailRequestPublisher : IEmailRequestPublisher
             Key = emailRequested.MessageId.ToString("D"),
             Value = JsonSerializer.Serialize(emailRequested),
         };
-        var result = await _producer.ProduceAsync(
-            _options.Topic,
-            message,
-            cancellationToken);
+
+        DeliveryResult<string, string> result;
+
+        try
+        {
+            result = await _producer.ProduceAsync(
+                _options.Topic,
+                message,
+                cancellationToken);
+        }
+        catch (KafkaException exception)
+        {
+            throw new EmailRequestPublishingException(
+                "Failed to publish the email request to Kafka.",
+                exception);
+        }
 
         if (result.Status != PersistenceStatus.Persisted)
         {
-            throw new InvalidOperationException(
-                $"Kafka did not persist the email request. Status: {result.Status}.");
+            throw new EmailRequestPublishingException(
+                $"Kafka did not persist the email request. " +
+                $"Status: {result.Status}.");
         }
 
-        _logger.LogInformation(
-            "Email request {MessageId} was persisted to Kafka topic {Topic}, " +
-            "partition {Partition}, offset {Offset}.",
-            emailRequested.MessageId,
-            result.Topic,
-            result.Partition.Value,
-            result.Offset.Value);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Email request {MessageId} was persisted to Kafka topic {Topic}, " +
+                "partition {Partition}, offset {Offset}.",
+                emailRequested.MessageId,
+                result.Topic,
+                result.Partition.Value,
+                result.Offset.Value);
+        }
     }
 }

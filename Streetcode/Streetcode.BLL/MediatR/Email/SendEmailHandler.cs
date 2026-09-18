@@ -1,5 +1,7 @@
 using FluentResults;
 using MediatR;
+using Microsoft.Extensions.Logging;
+using Streetcode.BLL.Exceptions;
 using Streetcode.BLL.Interfaces.Email;
 using Streetcode.Email.Contracts.Events;
 
@@ -11,13 +13,19 @@ public sealed class SendEmailHandler
     private const string FeedbackTemplate = "feedback.v1";
     private const string SenderEmailKey = "From";
     private const string ContentKey = "Content";
+
     private readonly IEmailRequestPublisher _emailRequestPublisher;
+    private readonly ILogger<SendEmailHandler> _logger;
 
     public SendEmailHandler(
-        IEmailRequestPublisher emailRequestPublisher)
+        IEmailRequestPublisher emailRequestPublisher,
+        ILogger<SendEmailHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(emailRequestPublisher);
+        ArgumentNullException.ThrowIfNull(logger);
+
         _emailRequestPublisher = emailRequestPublisher;
+        _logger = logger;
     }
 
     public async Task<Result<Guid>> Handle(
@@ -39,9 +47,26 @@ public sealed class SendEmailHandler
                 [ContentKey] = request.Email.Content,
             });
 
-        await _emailRequestPublisher.PublishAsync(
-            emailRequested,
-            cancellationToken);
+        try
+        {
+            await _emailRequestPublisher.PublishAsync(
+                emailRequested,
+                cancellationToken);
+        }
+        catch (EmailRequestPublishingException exception)
+        {
+            const string errorMessage =
+                "Unable to accept the email request.";
+
+            _logger.LogError(
+                exception,
+                "Failed to publish email request {MessageId} " +
+                "with correlation {CorrelationId}.",
+                emailRequested.MessageId,
+                emailRequested.CorrelationId);
+
+            return Result.Fail<Guid>(errorMessage);
+        }
 
         return Result.Ok(messageId);
     }

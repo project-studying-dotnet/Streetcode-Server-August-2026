@@ -5,6 +5,7 @@ using Streetcode.Email.Infrastructure.EmailSending;
 using Streetcode.Email.Infrastructure.HealthChecks;
 using Streetcode.Email.Infrastructure.Kafka;
 using Streetcode.Email.Infrastructure.Persistence;
+using Streetcode.Email.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,8 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 
 var app = builder.Build();
+
+await app.ApplyDatabaseMigrationsAsync();
 
 // Configure the HTTP request pipeline.
 
