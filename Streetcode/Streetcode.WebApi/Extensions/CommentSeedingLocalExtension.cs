@@ -1,5 +1,5 @@
 using Streetcode.DAL.Entities.Streetcode;
-using Streetcode.DAL.Persistence;
+using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -8,21 +8,28 @@ public static class CommentSeedingLocalExtension
     public static async Task SeedCommentsAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<StreetcodeDbContext>();
+        var repositories = scope.ServiceProvider.GetRequiredService<IRepositoryWrapper>();
 
-        if (dbContext.Comments.Any())
+        await SeedCommentsAsync(repositories);
+    }
+
+    public static async Task SeedCommentsAsync(IRepositoryWrapper repositories)
+    {
+        var commentRepository = repositories.CommentRepository;
+
+        if (commentRepository.FindAll().Any())
         {
             return;
         }
 
-        var streetcode = dbContext.Streetcodes.FirstOrDefault();
+        var streetcode = repositories.StreetcodeRepository.FindAll().FirstOrDefault();
         if (streetcode is null)
         {
             return;
         }
 
-        dbContext.Comments.Add(CreateSampleComment(streetcode.Id));
-        await dbContext.SaveChangesAsync();
+        commentRepository.Create(CreateSampleComment(streetcode.Id));
+        await repositories.SaveChangesAsync();
     }
 
     public static Comment CreateSampleComment(int streetcodeId)
