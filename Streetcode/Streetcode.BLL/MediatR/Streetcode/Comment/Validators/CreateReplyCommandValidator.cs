@@ -12,6 +12,10 @@ public sealed class CreateReplyCommandValidator : AbstractValidator<CreateReplyC
         RuleFor(command => command.ParentCommentId)
             .MustBeValidId("Parent comment");
 
+        RuleFor(command => command.AuthorId)
+            .NotEmpty()
+            .WithMessage("Author ID is required.");
+
         RuleFor(command => command.Reply)
             .NotNull()
             .WithMessage("Reply is required.")

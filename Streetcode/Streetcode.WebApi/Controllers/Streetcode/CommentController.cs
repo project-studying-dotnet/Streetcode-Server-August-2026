@@ -14,9 +14,15 @@ public class CommentController : BaseApiController
 {
     [Authorize]
     [HttpPost("{parentCommentId:int}")]
+    [ProducesResponseType(typeof(CommentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateReply(
         [FromRoute] int parentCommentId,
-        [FromBody] CreateCommentDto createCommentDto)
+        [FromBody] CreateCommentDto createCommentDto,
+        CancellationToken cancellationToken)
     {
         var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(userIdValue, out var authorId))
@@ -24,8 +30,13 @@ public class CommentController : BaseApiController
             return Unauthorized();
         }
 
-        return HandleResult(await Mediator.Send(
-            new CreateReplyCommand(parentCommentId, authorId, createCommentDto)));
+        var result = await Mediator.Send(
+            new CreateReplyCommand(parentCommentId, authorId, createCommentDto),
+            cancellationToken);
+
+        return result.Errors.Any(error => error is CommentNotFoundError)
+            ? NotFound(result.Reasons)
+            : HandleResult(result);
     }
 
     [AuthorizeRoles(

@@ -3,6 +3,7 @@ using FluentResults;
 using MediatR;
 using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using CommentEntity = Streetcode.DAL.Entities.Streetcode.Comment;
 
@@ -26,12 +27,22 @@ public class CreateReplyHandler : IRequestHandler<CreateReplyCommand, Result<Com
 
     public async Task<Result<CommentDto>> Handle(CreateReplyCommand request, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var parentComment = await _repositoryWrapper.CommentRepository.GetFirstOrDefaultAsync(
             predicate: comment => comment.Id == request.ParentCommentId);
 
         if (parentComment is null)
         {
-            var errorMessage = $"Cannot find comment with id: {request.ParentCommentId}";
+            var error = new CommentNotFoundError(request.ParentCommentId);
+            _loggerService.LogError(request, error.Message);
+            return Result.Fail<CommentDto>(error);
+        }
+
+        if (parentComment.ParentCommentId.HasValue)
+        {
+            var errorMessage =
+                $"Cannot reply to comment with id: {request.ParentCommentId} because it is already a reply.";
             _loggerService.LogError(request, errorMessage);
             return Result.Fail<CommentDto>(new Error(errorMessage));
         }
@@ -46,6 +57,8 @@ public class CreateReplyHandler : IRequestHandler<CreateReplyCommand, Result<Com
         };
 
         await _repositoryWrapper.CommentRepository.CreateAsync(reply);
+
+        cancellationToken.ThrowIfCancellationRequested();
         bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
 
         if (!isSaved)

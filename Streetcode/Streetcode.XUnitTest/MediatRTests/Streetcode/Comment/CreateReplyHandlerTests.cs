@@ -8,6 +8,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
     using AutoMapper;
     using global::Streetcode.BLL.DTO.Streetcode.Comments;
     using global::Streetcode.BLL.Interfaces.Logging;
+    using global::Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using global::Streetcode.BLL.MediatR.Streetcode.Comment.Reply;
     using global::Streetcode.DAL.Repositories.Interfaces.Base;
     using global::Streetcode.DAL.Repositories.Interfaces.Streetcode;
@@ -77,15 +78,45 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 15,
                 Guid.NewGuid(),
                 new CreateCommentDto { Text = "Reply text" });
-            const string expectedMessage = "Cannot find comment with id: 15";
+            const string expectedMessage = "Cannot find a comment with corresponding id: 15";
             this.SetupParentComment(command.ParentCommentId, null);
+
+            var result = await this.CreateHandler().Handle(command, CancellationToken.None);
+
+            Assert.True(result.IsFailed);
+            Assert.IsType<CommentNotFoundError>(result.Errors.Single());
+            Assert.Equal(expectedMessage, result.Errors.Single().Message);
+            this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
+            this.commentRepositoryMock.Verify(repository => repository.CreateAsync(It.IsAny<CommentEntity>()), Times.Never());
+            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.mapperMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task Handle_WhenParentIsReply_ShouldReturnFailureAndNotSave()
+        {
+            var command = new CreateReplyCommand(
+                15,
+                Guid.NewGuid(),
+                new CreateCommentDto { Text = "Reply text" });
+            var parentReply = new CommentEntity
+            {
+                Id = command.ParentCommentId,
+                StreetcodeId = 20,
+                ParentCommentId = 10,
+            };
+            const string expectedMessage =
+                "Cannot reply to comment with id: 15 because it is already a reply.";
+            this.SetupParentComment(command.ParentCommentId, parentReply);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
-            this.commentRepositoryMock.Verify(repository => repository.CreateAsync(It.IsAny<CommentEntity>()), Times.Never());
+            this.commentRepositoryMock.Verify(
+                repository => repository.CreateAsync(It.IsAny<CommentEntity>()),
+                Times.Never());
             this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
             this.mapperMock.VerifyNoOtherCalls();
         }
@@ -120,6 +151,51 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 Times.Once());
             this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
             this.mapperMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task Handle_WhenCancellationIsRequestedBeforeQuery_ShouldThrow()
+        {
+            var command = new CreateReplyCommand(
+                15,
+                Guid.NewGuid(),
+                new CreateCommentDto { Text = "Reply text" });
+            using var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                this.CreateHandler().Handle(command, cancellationTokenSource.Token));
+
+            this.repositoryWrapperMock.VerifyGet(wrapper => wrapper.CommentRepository, Times.Never());
+            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.mapperMock.VerifyNoOtherCalls();
+            this.loggerMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task Handle_WhenCancelledAfterCreatingReply_ShouldNotSave()
+        {
+            var command = new CreateReplyCommand(
+                15,
+                Guid.NewGuid(),
+                new CreateCommentDto { Text = "Reply text" });
+            var parentComment = new CommentEntity { Id = command.ParentCommentId, StreetcodeId = 20 };
+            using var cancellationTokenSource = new CancellationTokenSource();
+            this.SetupParentComment(command.ParentCommentId, parentComment);
+            this.commentRepositoryMock
+                .Setup(repository => repository.CreateAsync(It.IsAny<CommentEntity>()))
+                .Callback(cancellationTokenSource.Cancel)
+                .ReturnsAsync((CommentEntity reply) => reply);
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() =>
+                this.CreateHandler().Handle(command, cancellationTokenSource.Token));
+
+            this.commentRepositoryMock.Verify(
+                repository => repository.CreateAsync(It.IsAny<CommentEntity>()),
+                Times.Once());
+            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.mapperMock.VerifyNoOtherCalls();
+            this.loggerMock.VerifyNoOtherCalls();
         }
 
         private CreateReplyHandler CreateHandler()

@@ -74,5 +74,17 @@ namespace Streetcode.XUnitTest.ValidatorTests
 
             Assert.Contains(result.Errors, error => error.PropertyName == nameof(CreateReplyCommand.Reply));
         }
+
+        [Fact]
+        public void CreateReplyCommandValidator_WhenAuthorIdIsEmpty_ShouldBeInvalid()
+        {
+            var validator = new CreateReplyCommandValidator(new CreateCommentDtoValidator());
+            var result = validator.Validate(new CreateReplyCommand(
+                1,
+                Guid.Empty,
+                new CreateCommentDto { Text = "Reply text" }));
+
+            Assert.Contains(result.Errors, error => error.PropertyName == nameof(CreateReplyCommand.AuthorId));
+        }
     }
 }
