@@ -18,7 +18,7 @@ public class AzureBlobService : IBlobService
 
     public AzureBlobService(
         BlobContainerClient blobServiceClient,
-        IRepositoryWrapper? repositoryWrapper = null)
+        IRepositoryWrapper repositoryWrapper)
     {
         _containerClient = blobServiceClient;
         _repositoryWrapper = repositoryWrapper;
@@ -50,7 +50,11 @@ public class AzureBlobService : IBlobService
         var hashBlobStorageName = BlobHelper.GetHashedFileName(name);
         byte[] imageBytes = Convert.FromBase64String(base64);
 
-        BlobClient client = _containerClient.GetBlobClient($"{hashBlobStorageName}.{extension}");
+        extension = BlobHelper.NormalizeExtension(extension);
+
+        var blobName = $"{hashBlobStorageName}.{extension}";
+
+        BlobClient client = _containerClient.GetBlobClient(blobName);
 
         var options = new BlobUploadOptions
         {
@@ -59,12 +63,14 @@ public class AzureBlobService : IBlobService
 
         client.Upload(new MemoryStream(imageBytes), options);
 
-        return hashBlobStorageName;
+        return blobName;
     }
 
     public void SaveFileInStorageBase64(string base64, string name, string extension)
     {
         byte[] imageBytes = Convert.FromBase64String(base64);
+
+        extension = BlobHelper.NormalizeExtension(extension);
 
         BlobClient client = _containerClient.GetBlobClient($"{name}.{extension}");
 
@@ -78,11 +84,11 @@ public class AzureBlobService : IBlobService
 
     public string UpdateFileInStorage(string previousBlobName, string base64Format, string newBlobName, string extension)
     {
+        string blobName = SaveFileInStorage(base64Format, newBlobName, extension);
+
         DeleteFileInStorage(previousBlobName);
 
-        string hashBlobStorageName = SaveFileInStorage(base64Format, newBlobName, extension);
-
-        return hashBlobStorageName;
+        return blobName;
     }
 
     public async Task CleanBlobStorage()
@@ -98,12 +104,13 @@ public class AzureBlobService : IBlobService
         var existingImages = await _repositoryWrapper.ImageRepository.GetAllAsync();
         var existingAudios = await _repositoryWrapper.AudioRepository.GetAllAsync();
 
-        List<string> existingMedia = new();
+        var existingMedia = new HashSet<string>(
+            existingImages.Where(img => img.BlobName != null).Select(img => img.BlobName!)
+                .Concat(existingAudios.Where(a => a.BlobName != null).Select(a => a.BlobName!)),
+            StringComparer.OrdinalIgnoreCase);
 
-        existingMedia.AddRange(existingImages.Select(img => img.BlobName));
-        existingMedia.AddRange(existingAudios.Select(a => a.BlobName));
+        var filesToRemove = blobNames.Where(name => !existingMedia.Contains(name)).ToList();
 
-        var filesToRemove = blobNames.Except(existingMedia).ToList();
         foreach (var file in filesToRemove)
         {
             DeleteFileInStorage(file);
@@ -126,11 +133,12 @@ public class AzureBlobService : IBlobService
         return downloadResult.Content.ToArray();
     }
 
-    private static string GetContentType(string extension) => extension.ToLower() switch
+    private static string GetContentType(string extension) => extension switch
     {
         "png" => "image/png",
         "jpg" or "jpeg" => "image/jpeg",
         "mp3" => "audio/mpeg",
+        "gif" => "image/gif",
         _ => "application/octet-stream",
     };
 }

@@ -54,6 +54,7 @@ public class Program
             wp => wp.ParseZipFileFromWebAsync(), TimeSpan.FromMinutes(1));
             RecurringJob.AddOrUpdate<WebParsingUtils>(
                 wp => wp.ParseZipFileFromWebAsync(), Cron.Monthly);
+            RecurringJob.RemoveIfExists("BlobService.CleanBlobStorage");
             RecurringJob.AddOrUpdate<IBlobService>(
                 b => b.CleanBlobStorage(), Cron.Monthly);
         }
