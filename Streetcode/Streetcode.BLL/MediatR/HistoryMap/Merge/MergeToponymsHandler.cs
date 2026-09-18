@@ -38,7 +38,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Merge
             var targetToponym = await _repositoryWrapper.ToponymRepository
                 .GetFirstOrDefaultAsync(predicate: x => x.Id == dto.TargetToponymId);
 
-            if (sourceToponym is null)
+            if (targetToponym is null)
             {
                 string errorMessage = $"Cannot find target toponym with id: {dto.TargetToponymId}";
                 _logger.LogError(request, errorMessage);

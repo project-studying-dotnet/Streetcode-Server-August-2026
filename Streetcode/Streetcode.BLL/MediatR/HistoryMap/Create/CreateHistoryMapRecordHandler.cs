@@ -70,7 +70,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Create
 
             if (!isSaved)
             {
-                string errorMessage = $"Failed to create hisotry map record.";
+                string errorMessage = $"Failed to create history map record.";
                 _logger.LogError(request, errorMessage);
                 return Result.Fail<HistoryMapRecordDTO>(new Error(errorMessage));
             }

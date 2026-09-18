@@ -49,6 +49,7 @@ public class LocalBlobService : IBlobService
         byte[] imageBytes = Convert.FromBase64String(base64);
 
         string hashBlobStorageName = BlobHelper.GetHashedFileName(name);
+        string normalizedExtension = BlobHelper.NormalizeExtension(extension);
 
         Directory.CreateDirectory(_blobPath);
 

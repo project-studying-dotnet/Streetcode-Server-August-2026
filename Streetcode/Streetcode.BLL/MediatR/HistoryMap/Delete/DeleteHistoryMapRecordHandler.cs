@@ -38,7 +38,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Delete
 
             if (!isSaved)
             {
-                string errorMessage = $"Failed to delete hisotry map record with id: {request.Id}";
+                string errorMessage = $"Failed to delete history map record with id: {request.Id}";
                 _logger.LogError(request, errorMessage);
                 return Result.Fail<Unit>(new Error(errorMessage));
             }
