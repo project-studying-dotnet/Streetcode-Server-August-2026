@@ -14,7 +14,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .IsRequired()
             .HasMaxLength(Comment.TextMaxLength);
         builder.HasOne(comment => comment.Streetcode)
-            .WithMany()
+            .WithMany(streetcode => streetcode.Comments)
             .HasForeignKey(comment => comment.StreetcodeId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(comment => comment.ParentComment)
