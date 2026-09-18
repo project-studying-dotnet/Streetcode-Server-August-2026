@@ -6,6 +6,7 @@ using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
@@ -35,6 +36,7 @@ using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
 using Streetcode.WebApi.ExceptionHandlers;
 using Streetcode.WebApi.Service;
+using Streetcode.WebApi.Identity;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -103,7 +105,8 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
         var connectionString = configuration.GetRequiredConnectionString();
-        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>()
+            ?? throw new InvalidOperationException("Email configuration is missing.");
         services.AddSingleton(emailConfig);
 
         services.AddRedisCaching(configuration);
@@ -118,6 +121,23 @@ public static class ServiceCollectionExtensions
             });
         });
 
+        services.AddDbContext<RegistrationDbContext>(options =>
+            options.UseSqlServer(connectionString, opt =>
+            {
+                opt.EnableRetryOnFailure();
+                opt.MigrationsHistoryTable("__IdentityMigrationsHistory", schema: "entity_framework");
+            }));
+        services.AddIdentityCore<RegistrationUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.Password.RequiredLength = 8;
+            })
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<RegistrationDbContext>();
+        services.AddAuthentication(IdentityConstants.ApplicationScheme)
+            .AddIdentityCookies();
+        services.AddAuthorization();
+
         services.AddHangfire(config =>
         {
             config.UseSqlServerStorage(connectionString);
@@ -125,12 +145,15 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>();
+        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>() ?? new CorsConfiguration();
+        var allowedOrigins = corsConfig.AllowedOrigins
+            .Where(origin => !string.IsNullOrWhiteSpace(origin) && origin != "*")
+            .ToArray();
         services.AddCors(opt =>
         {
             opt.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin()
+                policy.WithOrigins(allowedOrigins)
                       .AllowAnyHeader()
                       .AllowAnyMethod();
             });
@@ -185,9 +208,9 @@ public static class ServiceCollectionExtensions
 
     public class CorsConfiguration
     {
-        public List<string> AllowedOrigins { get; set; }
-        public List<string> AllowedHeaders { get; set; }
-        public List<string> AllowedMethods { get; set; }
+        public List<string> AllowedOrigins { get; set; } = new();
+        public List<string> AllowedHeaders { get; set; } = new();
+        public List<string> AllowedMethods { get; set; } = new();
         public int PreflightMaxAge { get; set; }
     }
 }
