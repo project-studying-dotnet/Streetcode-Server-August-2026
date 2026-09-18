@@ -120,6 +120,22 @@ services:
       kafka-init:
         condition: service_completed_successfully
 
+  gateway:
+    container_name: streetcode-gateway
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Streetcode.Gateway/Dockerfile
+    environment:
+      ASPNETCORE_HTTP_PORTS: "8080"
+      ReverseProxy__Clusters__streetcode__Destinations__api__Address: "http://api:5000/"
+      ReverseProxy__Clusters__identity__Destinations__identity-api__Address: "http://identity-api:8080/"
+    ports:
+      - "${GATEWAY_PORT:-5002}:8080"
+    depends_on:
+      - api
+      - identity-api
+
   kafka:
     image: apache/kafka:4.3.1
     hostname: kafka

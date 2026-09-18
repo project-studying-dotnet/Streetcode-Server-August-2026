@@ -93,6 +93,25 @@ docker compose up --build
 
 The SQL Server health check prevents the API from starting before the database is ready. On startup, the API applies the Entity Framework Core migrations automatically.
 
+### API Gateway
+
+Docker Compose also starts an API Gateway on `http://localhost:5002` (override with
+`GATEWAY_PORT`). It forwards `/api/auth/**` to the Identity API and every other
+`/api/**` request to the Streetcode API. The request path, method, query string,
+headers, and body are forwarded to the selected service. Check the gateway at
+`/health`.
+
+For a local run without Docker, start both APIs on ports 5000 and 5001, then run:
+
+```bash
+dotnet run --project Streetcode.Gateway/Streetcode.Gateway.csproj --urls http://localhost:5002
+```
+
+The upstream addresses are configured in `Streetcode.Gateway/appsettings.json`.
+Set `ReverseProxy__Clusters__streetcode__Destinations__api__Address` and
+`ReverseProxy__Clusters__identity__Destinations__identity-api__Address` to
+override them in another environment.
+
 When both services are running, the application is available at:
 
 | | |
