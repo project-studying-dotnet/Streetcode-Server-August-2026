@@ -1,0 +1,675 @@
+﻿using System.Net;
+using System.Net.Http.Json;
+using FluentResults;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Streetcode.Identity.Application.Abstractions.Security;
+using Streetcode.Identity.Application.Common.Authorization;
+using Streetcode.Identity.Application.Features.Authentication.Login;
+using Streetcode.Identity.Application.Features.Authentication.Refresh;
+using Streetcode.Identity.Application.Features.Registration;
+using Streetcode.Identity.Infrastructure.Identity;
+using Streetcode.Identity.Infrastructure.Persistence;
+using Streetcode.Identity.IntegrationTests.Fixtures;
+using Streetcode.Identity.WebApi.DTOs;
+using Xunit;
+
+namespace Streetcode.Identity.IntegrationTests.Controllers;
+
+[Collection(MsSqlCollection.Name)]
+public sealed class AuthControllerIntegrationTests
+{
+    private readonly MsSqlContainerFixture _fixture;
+
+    public AuthControllerIntegrationTests(MsSqlContainerFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    private IdentityWebApplicationFactory CreateFactory(
+        Action<IServiceCollection>? configureServices = null)
+    {
+        return new IdentityWebApplicationFactory(
+            _fixture.ConnectionString,
+            configureServices);
+    }
+
+    [Fact]
+    public async Task Register_WhenInputIsValid_ShouldReturnOk()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = $"httpuser-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501112233"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<RegisterUserResponse>();
+
+        Assert.NotNull(result);
+        Assert.Equal(request.Email, result.Email);
+        Assert.NotEqual(Guid.Empty, result.UserId);
+    }
+
+    [Fact]
+    public async Task Register_WhenAdminSeedingIsDisabledAndRolesDoNotExist_ShouldCreateRolesAndRegisterUser()
+    {
+        var connectionStringBuilder = new SqlConnectionStringBuilder(
+            _fixture.ConnectionString)
+        {
+            InitialCatalog = $"IdentityRegistration-{Guid.NewGuid():N}",
+        };
+
+        var dbContextOptions =
+            new DbContextOptionsBuilder<StreetcodeIdentityDbContext>()
+                .UseSqlServer(connectionStringBuilder.ConnectionString)
+                .Options;
+
+        await using var dbContext =
+            new StreetcodeIdentityDbContext(dbContextOptions);
+
+        await dbContext.Database.MigrateAsync();
+
+        Assert.False(await dbContext.Roles.AnyAsync());
+
+        await using var factory = new IdentityWebApplicationFactory(
+            connectionStringBuilder.ConnectionString);
+
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = $"disabled-seed-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501112233"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            request);
+
+        response.EnsureSuccessStatusCode();
+
+        dbContext.ChangeTracker.Clear();
+
+        Assert.True(await dbContext.Roles.AnyAsync(role =>
+            role.Name == RoleNames.User));
+
+        Assert.True(await dbContext.Roles.AnyAsync(role =>
+            role.Name == RoleNames.Admin));
+
+        var user = await dbContext.Users
+            .AsNoTracking()
+            .SingleAsync(applicationUser =>
+                applicationUser.Email == request.Email);
+
+        var assignedRole = await (
+            from userRole in dbContext.UserRoles
+            join role in dbContext.Roles
+                on userRole.RoleId equals role.Id
+            where userRole.UserId == user.Id
+            select role.Name)
+            .SingleAsync();
+
+        Assert.Equal(RoleNames.User, assignedRole);
+        Assert.Equal(1, await dbContext.Users.CountAsync());
+    }
+
+    [Fact]
+    public async Task Register_WhenInputIsInvalid_ShouldReturnBadRequest()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = "invalid-email",
+            Password = "123"
+        };
+
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_WhenEmailAlreadyExists_ShouldReturnBadRequestAndProblemDetails()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = $"duplicate-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380509998877"
+        };
+
+        var firstResponse = await client.PostAsJsonAsync("/api/auth/register", request);
+
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+
+        var response = await client.PostAsJsonAsync("/api/auth/register", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problemDetails = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Registration failed", problemDetails.Title);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenIsEmpty_ShouldReturnBadRequest()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = string.Empty,
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "One or more validation errors occurred.",
+            problemDetails.Title);
+        Assert.Contains(
+            nameof(RefreshSessionRequestDto.RefreshToken),
+            problemDetails.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenDoesNotExist_ShouldReturnUnauthorized()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = $"unknown-{Guid.NewGuid():N}"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "Refresh session failed",
+            problemDetails.Title);
+        Assert.Equal(
+            "The refresh token is invalid or inactive",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status401Unauthorized,
+            problemDetails.Status);
+    }
+
+    [Fact]
+    public async Task Refresh_WhenRefreshTokenIsValid_ShouldReturnOkAndRotateToken()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var registerRequest = new RegisterRequestDto
+        {
+            Email = $"refresh-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            registerRequest);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var registeredUser =
+            await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
+
+        Assert.NotNull(registeredUser);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var refreshTokenService = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var issueResult = await refreshTokenService.IssueAsync(
+            registeredUser.UserId,
+            CancellationToken.None);
+
+        Assert.True(issueResult.IsSuccess);
+
+        var originalRefreshToken = issueResult.Value.Token;
+        var request = new RefreshSessionRequestDto
+        {
+            RefreshToken = originalRefreshToken
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result =
+            await response.Content.ReadFromJsonAsync<RefreshSessionResponse>();
+
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
+        Assert.NotEqual(originalRefreshToken, result.RefreshToken);
+        Assert.True(result.AccessTokenExpiresAt > DateTimeOffset.UtcNow);
+        Assert.True(result.RefreshTokenExpiresAt > DateTimeOffset.UtcNow);
+    }
+
+    [Fact]
+    public async Task Login_WhenCredentialsAreValid_ShouldReturnOkWithTokens()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var email = $"login-http-{Guid.NewGuid():N}@example.com";
+        const string password = "StrongPassword123!";
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var userManager = scope.ServiceProvider
+                .GetRequiredService<UserManager<ApplicationUser>>();
+
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                UserName = email
+            };
+
+            var createResult = await userManager.CreateAsync(
+                user,
+                password);
+
+            Assert.True(
+                createResult.Succeeded,
+                string.Join(
+                    "; ",
+                    createResult.Errors.Select(error => error.Description)));
+        }
+
+        var request = new LoginRequestDto
+        {
+            Email = email,
+            Password = password
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result =
+            await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+        Assert.NotNull(result);
+        Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
+        Assert.True(result.AccessTokenExpiresAt > DateTimeOffset.UtcNow);
+        Assert.True(result.RefreshTokenExpiresAt > DateTimeOffset.UtcNow);
+    }
+
+    [Fact]
+    public async Task Login_WhenPasswordIsInvalid_ShouldReturnUnauthorized()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var email = $"login-invalid-password-{Guid.NewGuid():N}@example.com";
+        const string password = "StrongPassword123!";
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var userManager = scope.ServiceProvider
+                .GetRequiredService<UserManager<ApplicationUser>>();
+
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                Email = email,
+                UserName = email
+            };
+
+            var createResult = await userManager.CreateAsync(
+                user,
+                password);
+
+            Assert.True(
+                createResult.Succeeded,
+                string.Join(
+                    "; ",
+                    createResult.Errors.Select(error => error.Description)));
+        }
+
+        var request = new LoginRequestDto
+        {
+            Email = email,
+            Password = "WrongPassword123!"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Login failed", problemDetails.Title);
+        Assert.Equal(
+            "Invalid email or password",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status401Unauthorized,
+            problemDetails.Status);
+    }
+
+    [Fact]
+    public async Task Login_WhenRefreshTokenIssuingFails_ShouldReturnInternalServerError()
+    {
+        await using var factory = CreateFactory(services =>
+            services.AddScoped<
+                IRefreshTokenService,
+                FailingRefreshTokenService>());
+
+        using var client = factory.CreateClient();
+
+        var request = new RegisterRequestDto
+        {
+            Email = $"login-refresh-failure-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            request);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            new LoginRequestDto
+            {
+                Email = request.Email,
+                Password = request.Password
+            });
+
+        Assert.Equal(
+            HttpStatusCode.InternalServerError,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Login failed", problemDetails.Title);
+        Assert.Equal(
+            "An unexpected error occurred while processing the login request",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status500InternalServerError,
+            problemDetails.Status);
+    }
+
+    [Fact]
+    public async Task Login_WhenInputIsInvalid_ShouldReturnValidationProblem()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new LoginRequestDto
+        {
+            Email = "invalid-email",
+            Password = string.Empty
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/login",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content
+                .ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "One or more validation errors occurred.",
+            problemDetails.Title);
+        Assert.Contains(
+            nameof(LoginRequestDto.Email),
+            problemDetails.Errors.Keys);
+        Assert.Contains(
+            nameof(LoginRequestDto.Password),
+            problemDetails.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Logout_WhenRefreshTokenDoesNotExist_ShouldReturnNoContent()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = $"unknown-{Guid.NewGuid():N}"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            response.StatusCode);
+
+        Assert.Empty(
+            await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Logout_WhenRefreshTokenIsEmpty_ShouldReturnValidationProblem()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = string.Empty
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal(
+            "One or more validation errors occurred.",
+            problemDetails.Title);
+
+        Assert.Contains(
+            nameof(LogoutRequestDto.RefreshToken),
+            problemDetails.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Logout_WhenRevocationFails_ShouldReturnInternalServerError()
+    {
+        await using var factory = CreateFactory(services =>
+            services.AddScoped<
+                IRefreshTokenService,
+                FailingRefreshTokenService>());
+
+        using var client = factory.CreateClient();
+
+        var request = new LogoutRequestDto
+        {
+            RefreshToken = "refresh-token"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.InternalServerError,
+            response.StatusCode);
+
+        var problemDetails =
+            await response.Content.ReadFromJsonAsync<ProblemDetails>();
+
+        Assert.NotNull(problemDetails);
+        Assert.Equal("Logout failed", problemDetails.Title);
+        Assert.Equal(
+            "An unexpected error occurred while processing the logout request",
+            problemDetails.Detail);
+        Assert.Equal(
+            StatusCodes.Status500InternalServerError,
+            problemDetails.Status);
+    }
+
+    [Fact]
+    public async Task Logout_WhenCalledTwice_ShouldReturnNoContentAndMakeRefreshUnauthorized()
+    {
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var registerRequest = new RegisterRequestDto
+        {
+            Email = $"logout-{Guid.NewGuid():N}@example.com",
+            Password = "StrongPassword123!",
+            PhoneNumber = "+380501234567"
+        };
+
+        var registerResponse = await client.PostAsJsonAsync(
+            "/api/auth/register",
+            registerRequest);
+
+        registerResponse.EnsureSuccessStatusCode();
+
+        var registeredUser =
+            await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
+
+        Assert.NotNull(registeredUser);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var refreshTokenService = scope.ServiceProvider
+            .GetRequiredService<IRefreshTokenService>();
+
+        var issueResult = await refreshTokenService.IssueAsync(
+            registeredUser.UserId,
+            CancellationToken.None);
+
+        Assert.True(issueResult.IsSuccess);
+
+        var refreshToken = issueResult.Value.Token;
+        var logoutRequest = new LogoutRequestDto
+        {
+            RefreshToken = refreshToken
+        };
+
+        var firstLogoutResponse = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            logoutRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            firstLogoutResponse.StatusCode);
+
+        var secondLogoutResponse = await client.PostAsJsonAsync(
+            "/api/auth/logout",
+            logoutRequest);
+
+        Assert.Equal(
+            HttpStatusCode.NoContent,
+            secondLogoutResponse.StatusCode);
+
+        var refreshResponse = await client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new RefreshSessionRequestDto
+            {
+                RefreshToken = refreshToken
+            });
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            refreshResponse.StatusCode);
+    }
+
+    private sealed class FailingRefreshTokenService
+        : IRefreshTokenService
+    {
+        public Task<Result<RefreshTokenResult>> IssueAsync(
+            Guid userId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Result.Fail<RefreshTokenResult>(
+                new Error("Refresh token issuing failed")
+                    .WithMetadata("Code", "RefreshToken.InvalidUser")));
+        }
+
+        public Task<Result<RefreshTokenResult>> RotateAsync(
+            string refreshToken,
+            CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<Result> RevokeFamilyAsync(
+            string refreshToken,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Result.Fail(
+                new Error("Refresh token revocation failed")
+                    .WithMetadata("Code", "RefreshToken.RevocationFailed")));
+        }
+    }
+}
