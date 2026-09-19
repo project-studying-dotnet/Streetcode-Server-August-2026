@@ -7,8 +7,8 @@ using Streetcode.BLL.DTO.Media.Images;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.MediatR.Media.Art.GetByStreetcodeId;
-using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Entities.Streetcode;
+using Streetcode.DAL.Repositories.Interfaces.Base;
 using StreetcodeArtEntity = Streetcode.DAL.Entities.Streetcode.StreetcodeArt;
 using Xunit;
 
