@@ -10,8 +10,6 @@ public class GetPublishedStreetcodesByIdsSpecification : Specification<Streetcod
     {
         Query
             .Where(sc => sc.Status == StreetcodeStatus.Published && ids.Contains(sc.Id))
-            .Include(sc => sc.Tags)
-            .Include(sc => sc.Images)
-            .AsSplitQuery();
+            .Include(sc => sc.Tags);
     }
 }

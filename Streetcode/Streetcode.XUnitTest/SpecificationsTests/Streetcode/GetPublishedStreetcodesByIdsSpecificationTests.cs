@@ -57,7 +57,7 @@ public class GetPublishedStreetcodesByIdsSpecificationTests
     }
 
     [Fact]
-    public void Spec_IncludesTagsAndImages()
+    public void Spec_IncludesOnlyTags()
     {
         var spec = new GetPublishedStreetcodesByIdsSpecification(new[] { 1 });
 
@@ -65,16 +65,6 @@ public class GetPublishedStreetcodesByIdsSpecificationTests
             .Select(include => ((MemberExpression)include.LambdaExpression.Body).Member.Name)
             .ToList();
 
-        Assert.Equal(
-            new[] { nameof(StreetcodeContent.Tags), nameof(StreetcodeContent.Images) },
-            includedProperties);
-    }
-
-    [Fact]
-    public void Spec_LoadsTagsAndImagesWithSplitQuery()
-    {
-        var spec = new GetPublishedStreetcodesByIdsSpecification(new[] { 1 });
-
-        Assert.True(spec.AsSplitQuery);
+        Assert.Equal(new[] { nameof(StreetcodeContent.Tags) }, includedProperties);
     }
 }
