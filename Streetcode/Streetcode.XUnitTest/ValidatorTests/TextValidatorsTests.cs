@@ -25,8 +25,8 @@ namespace Streetcode.XUnitTest.ValidatorTests
             var validator = new CreateTextCommandValidator();
             var dto = CreateValidDto();
             dto.TextContent = new string('a', TextEntity.TextContentMaxLength);
-            dto.Title = new string('a', 300);
-            dto.AdditionalText = new string('a', 500);
+            dto.Title = new string('a', TextEntity.TitleMaxLength);
+            dto.AdditionalText = new string('a', TextEntity.AdditionalTextMaxLength);
             var command = new CreateTextCommand(dto);
 
             var result = validator.Validate(command);

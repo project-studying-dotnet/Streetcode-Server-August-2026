@@ -10,14 +10,6 @@ namespace Streetcode.DAL.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("""
-                UPDATE streetcode.texts
-                SET Title = LEFT(Title, 50),
-                    AdditionalText = LEFT(AdditionalText, 200)
-                WHERE LEN(Title) > 50
-                OR LEN(AdditionalText) > 200;
-                """);
-
             migrationBuilder.AlterColumn<string>(
                 name: "Title",
                 schema: "streetcode",
