@@ -34,7 +34,8 @@ public sealed class SendEmailHandler
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var messageId = request.Email.MessageId;
+        var messageId = request.Email.MessageId
+                        ?? Guid.NewGuid();
         var emailRequested = new EmailRequestedV1(
             messageId,
             Guid.NewGuid(),

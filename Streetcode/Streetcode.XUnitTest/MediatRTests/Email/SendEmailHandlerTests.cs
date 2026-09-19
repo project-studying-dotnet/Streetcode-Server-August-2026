@@ -37,11 +37,10 @@ public class SendEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ValidEmail_PublishesFeedbackContract()
+    public async Task Handle_WithoutClientMessageId_GeneratesIdAndPublishes()
     {
         var email = new EmailDTO
         {
-            MessageId = Guid.NewGuid(),
             From = "loki@example.com",
             Content = "Some test info",
         };
@@ -67,6 +66,7 @@ public class SendEmailHandlerTests
 
         Assert.True(result.IsSuccess);
         Assert.NotNull(publishedRequest);
+        Assert.NotEqual(Guid.Empty, result.Value);
         Assert.NotEqual(Guid.Empty, publishedRequest!.MessageId);
         Assert.Equal(publishedRequest.MessageId, result.Value);
         Assert.NotEqual(Guid.Empty, publishedRequest.CorrelationId);

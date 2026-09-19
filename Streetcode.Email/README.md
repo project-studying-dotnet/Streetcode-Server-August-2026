@@ -43,6 +43,24 @@ SMTP attempt also uses the same deterministic MIME `Message-Id` derived from
 `MessageId`, which improves traceability and allows an SMTP provider to
 deduplicate when it supports that behavior.
 
+### Recovering `DeliveryUncertain`
+
+There is intentionally no public recovery endpoint. An operator must recover
+an uncertain delivery under change control:
+
+1. Find the SMTP provider record by the deterministic MIME `Message-Id`
+   `<message-id>@email.streetcode`.
+2. If the provider confirms acceptance, change the delivery status from
+   `DeliveryUncertain` to `Sent`.
+3. If the provider confirms that the message was not accepted, atomically
+   change the status to `Pending` and set `IsJobScheduled` to `false`.
+4. Replay the original `EmailRequestedV1` event with the same Kafka key,
+   `MessageId`, correlation data, template, and template data. The consumer
+   will schedule a new Hangfire job.
+
+Do not replay while SMTP acceptance is unknown. Record every manual database
+change and keep a backup before recovery.
+
 ## Local development
 
 Docker Compose supplies SQL Server, Kafka, Kafka topics, Mailpit, and all
