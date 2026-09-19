@@ -59,10 +59,12 @@ public sealed class EmailDeadLetterPublisher
             },
         };
 
+        var sourceMessage = consumeResult.Message;
+
         var deadLetterMessage = new Message<string, string>
         {
-            Key = consumeResult.Message.Key,
-            Value = consumeResult.Message.Value,
+            Key = sourceMessage?.Key ?? string.Empty,
+            Value = sourceMessage?.Value ?? string.Empty,
             Headers = headers,
         };
 

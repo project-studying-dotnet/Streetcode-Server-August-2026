@@ -41,6 +41,7 @@ public class SendEmailHandlerTests
     {
         var email = new EmailDTO
         {
+            MessageId = Guid.NewGuid(),
             From = "loki@example.com",
             Content = "Some test info",
         };
@@ -92,6 +93,40 @@ public class SendEmailHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithClientMessageId_UsesItAsIdempotencyKey()
+    {
+        var messageId = Guid.NewGuid();
+        var email = new EmailDTO
+        {
+            MessageId = messageId,
+            From = "loki@example.com",
+            Content = "Some test info",
+        };
+        EmailRequestedV1? publishedRequest = null;
+
+        _publisherMock
+            .Setup(publisher => publisher.PublishAsync(
+                It.IsAny<EmailRequestedV1>(),
+                CancellationToken.None))
+            .Callback<EmailRequestedV1, CancellationToken>(
+                (request, _) => publishedRequest = request)
+            .Returns(Task.CompletedTask);
+
+        var handler = new SendEmailHandler(
+            _publisherMock.Object,
+            _loggerMock.Object);
+
+        var result = await handler.Handle(
+            new SendEmailCommand(email),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(messageId, result.Value);
+        Assert.NotNull(publishedRequest);
+        Assert.Equal(messageId, publishedRequest!.MessageId);
+    }
+
+    [Fact]
     public async Task Handle_PublisherFails_ReturnsFailure()
     {
         const string sender = "private-sender@example.com";
@@ -102,6 +137,7 @@ public class SendEmailHandlerTests
 
         var email = new EmailDTO
         {
+            MessageId = Guid.NewGuid(),
             From = sender,
             Content = content,
         };
@@ -141,6 +177,7 @@ public class SendEmailHandlerTests
     {
         var email = new EmailDTO
         {
+            MessageId = Guid.NewGuid(),
             From = "loki@example.com",
             Content = "Some test info",
         };

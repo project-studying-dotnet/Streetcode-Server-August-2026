@@ -53,6 +53,9 @@ public sealed class FeedbackEmailMessageFactory
 
         var message = new MimeMessage();
 
+        message.MessageId =
+            $"{delivery.MessageId:D}@email.streetcode";
+
         message.From.Add(
             MailboxAddress.Parse(_smtpOptions.SenderAddress));
 

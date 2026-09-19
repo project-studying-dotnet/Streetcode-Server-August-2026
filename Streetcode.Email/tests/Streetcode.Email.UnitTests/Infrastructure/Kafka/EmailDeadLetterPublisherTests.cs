@@ -122,6 +122,44 @@ public sealed class EmailDeadLetterPublisherTests
     }
 
     [Fact]
+    public async Task PublishAsync_WithNullMessage_PublishesSafeEmptyMessage()
+    {
+        var producer = new RecordingProducer();
+        var publisher = CreatePublisher(producer);
+        var consumeResult = CreateConsumeResult();
+        consumeResult.Message = null!;
+
+        await publisher.PublishAsync(
+            consumeResult,
+            "invalid_json",
+            CancellationToken.None);
+
+        var producedMessage = Assert.IsType<Message<string, string>>(
+            producer.ProducedMessage);
+        Assert.Equal(string.Empty, producedMessage.Key);
+        Assert.Equal(string.Empty, producedMessage.Value);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithNullValue_DoesNotPublishTombstone()
+    {
+        var producer = new RecordingProducer();
+        var publisher = CreatePublisher(producer);
+        var consumeResult = CreateConsumeResult();
+        consumeResult.Message.Value = null!;
+
+        await publisher.PublishAsync(
+            consumeResult,
+            "invalid_json",
+            CancellationToken.None);
+
+        var producedMessage = Assert.IsType<Message<string, string>>(
+            producer.ProducedMessage);
+        Assert.Equal(consumeResult.Message.Key, producedMessage.Key);
+        Assert.Equal(string.Empty, producedMessage.Value);
+    }
+
+    [Fact]
     public async Task PublishAsync_WhenDeliveryIsNotPersisted_ThrowsInvalidOperationException()
     {
         var producer = new RecordingProducer

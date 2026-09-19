@@ -110,7 +110,7 @@ public sealed class EmailRequestedConsumerTests
         repository.Verify(
             value => value.SaveChangesAsync(
                 It.IsAny<CancellationToken>()),
-            Times.Once);
+            Times.Exactly(2));
         scheduler.Verify(
             value => value.EnqueueAsync(
                 emailRequested.MessageId,
@@ -123,55 +123,165 @@ public sealed class EmailRequestedConsumerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenDlqPublishFails_DoesNotCommit()
+    public async Task ExecuteAsync_WhenKafkaCommitInitiallyFails_RetriesWithoutSecondJob()
     {
-        var consumeResult = CreateConsumeResult("invalid-json");
+        var emailRequested = CreateEmailRequested();
+        var consumeResult = CreateConsumeResult(
+            JsonSerializer.Serialize(emailRequested),
+            emailRequested.MessageId.ToString());
+        var commitObserved = CreateCompletionSource();
+        var consumeCalls = 0;
+        var commitCalls = 0;
         var kafkaConsumer = new Mock<IConsumer<string, string>>();
         kafkaConsumer
             .Setup(consumer => consumer.Consume(
                 It.IsAny<CancellationToken>()))
-            .Returns(consumeResult);
+            .Returns((CancellationToken cancellationToken) =>
+            {
+                if (Interlocked.Increment(ref consumeCalls) <= 2)
+                {
+                    return consumeResult;
+                }
+
+                cancellationToken.WaitHandle.WaitOne();
+                throw new OperationCanceledException(cancellationToken);
+            });
+        kafkaConsumer
+            .Setup(consumer => consumer.Commit(consumeResult))
+            .Callback(() =>
+            {
+                if (Interlocked.Increment(ref commitCalls) == 1)
+                {
+                    throw new KafkaException(
+                        new Error(ErrorCode.Local_AllBrokersDown));
+                }
+
+                commitObserved.TrySetResult(true);
+            });
+
+        EmailDelivery? storedDelivery = null;
+        var repository = new Mock<IEmailDeliveryRepository>();
+        repository
+            .Setup(value => value.GetByMessageIdAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()))
+            .Returns(() => Task.FromResult(storedDelivery));
+        repository
+            .Setup(value => value.AddAsync(
+                It.IsAny<EmailDelivery>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<EmailDelivery, CancellationToken>(
+                (delivery, _) => storedDelivery = delivery)
+            .Returns(Task.CompletedTask);
+        repository
+            .Setup(value => value.SaveChangesAsync(
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        var scheduler = new Mock<IEmailJobScheduler>();
+        scheduler
+            .Setup(value => value.EnqueueAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()))
+            .Returns(YieldOnceAsync);
+        using var services = CreateHandlerServices(
+            repository.Object,
+            scheduler.Object);
+        var deadLetterPublisher = new Mock<IEmailDeadLetterPublisher>();
+        var service = CreateConsumerService(
+            kafkaConsumer.Object,
+            deadLetterPublisher.Object,
+            services.GetRequiredService<IServiceScopeFactory>());
+
+        await RunUntilCommitAsync(service, commitObserved.Task);
+
+        Assert.NotNull(storedDelivery);
+        Assert.True(storedDelivery.IsJobScheduled);
+        scheduler.Verify(
+            value => value.EnqueueAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        kafkaConsumer.Verify(
+            consumer => consumer.Seek(
+                consumeResult.TopicPartitionOffset),
+            Times.Once);
+        kafkaConsumer.Verify(
+            consumer => consumer.Commit(consumeResult),
+            Times.Exactly(2));
+        deadLetterPublisher.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenDlqPublishInitiallyFails_SeeksAndRetriesBeforeCommit()
+    {
+        var calls = new List<string>();
+        var consumeResult = CreateConsumeResult("invalid-json");
+        var commitObserved = CreateCompletionSource();
+        var consumeCalls = 0;
+        var kafkaConsumer = new Mock<IConsumer<string, string>>();
+        kafkaConsumer
+            .Setup(consumer => consumer.Consume(
+                It.IsAny<CancellationToken>()))
+            .Returns((CancellationToken cancellationToken) =>
+            {
+                if (Interlocked.Increment(ref consumeCalls) <= 2)
+                {
+                    return consumeResult;
+                }
+
+                cancellationToken.WaitHandle.WaitOne();
+                throw new OperationCanceledException(cancellationToken);
+            });
+        kafkaConsumer
+            .Setup(consumer => consumer.Seek(
+                consumeResult.TopicPartitionOffset))
+            .Callback(() => calls.Add("seek"));
+        kafkaConsumer
+            .Setup(consumer => consumer.Commit(consumeResult))
+            .Callback(() =>
+            {
+                calls.Add("commit");
+                commitObserved.TrySetResult(true);
+            });
         var expectedException = new InvalidOperationException(
             "DLQ is unavailable.");
+        var publishAttempts = 0;
         var deadLetterPublisher = new Mock<IEmailDeadLetterPublisher>();
         deadLetterPublisher
             .Setup(publisher => publisher.PublishAsync(
                 consumeResult,
                 "invalid_json",
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(expectedException);
+            .Returns(() =>
+            {
+                calls.Add("publish");
+
+                return Interlocked.Increment(ref publishAttempts) == 1
+                    ? Task.FromException(expectedException)
+                    : YieldOnceAsync();
+            });
         var service = CreateConsumerService(
             kafkaConsumer.Object,
             deadLetterPublisher.Object);
 
-        await service.StartAsync(CancellationToken.None);
+        await RunUntilCommitAsync(service, commitObserved.Task);
 
-        try
-        {
-            var executeTask = Assert.IsAssignableFrom<Task>(
-                service.ExecuteTask);
-
-            var actualException =
-                await Assert.ThrowsAsync<InvalidOperationException>(
-                    () => executeTask.WaitAsync(
-                        TimeSpan.FromSeconds(5)));
-
-            Assert.Same(expectedException, actualException);
-            kafkaConsumer.Verify(
-                consumer => consumer.Commit(
-                    It.IsAny<ConsumeResult<string, string>>()),
-                Times.Never);
-            kafkaConsumer.Verify(
-                consumer => consumer.Close(),
-                Times.Once);
-            kafkaConsumer.Verify(
-                consumer => consumer.Dispose(),
-                Times.Once);
-        }
-        finally
-        {
-            service.Dispose();
-        }
+        Assert.Equal(
+            new[] { "publish", "seek", "publish", "commit" },
+            calls);
+        deadLetterPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                consumeResult,
+                "invalid_json",
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+        kafkaConsumer.Verify(
+            consumer => consumer.Seek(
+                consumeResult.TopicPartitionOffset),
+            Times.Once);
+        kafkaConsumer.Verify(
+            consumer => consumer.Commit(consumeResult),
+            Times.Once);
     }
 
     [Fact]
@@ -191,7 +301,8 @@ public sealed class EmailRequestedConsumerTests
                 emailRequested.MessageId,
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateException(
-                "Email database is temporarily unavailable."));
+                "Email database is temporarily unavailable.",
+                new TransientDbException()));
         var scheduler = new Mock<IEmailJobScheduler>();
         using var services = CreateHandlerServices(
             repository.Object,
@@ -215,6 +326,104 @@ public sealed class EmailRequestedConsumerTests
             publisher => publisher.PublishAsync(
                 consumeResult,
                 "processing_retries_exhausted",
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        kafkaConsumer.Verify(
+            consumer => consumer.Commit(consumeResult),
+            Times.Once);
+        scheduler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithPermanentDbUpdateFailure_DoesNotRetryProcessing()
+    {
+        var emailRequested = CreateEmailRequested();
+        var consumeResult = CreateConsumeResult(
+            JsonSerializer.Serialize(emailRequested),
+            emailRequested.MessageId.ToString());
+        var commitObserved = CreateCompletionSource();
+        var kafkaConsumer = CreateKafkaConsumer(
+            consumeResult,
+            commitObserved);
+        var repository = new Mock<IEmailDeliveryRepository>();
+        repository
+            .Setup(value => value.GetByMessageIdAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateException(
+                "The request violates a database constraint."));
+        var scheduler = new Mock<IEmailJobScheduler>();
+        using var services = CreateHandlerServices(
+            repository.Object,
+            scheduler.Object);
+        var deadLetterPublisher = new Mock<IEmailDeadLetterPublisher>();
+        deadLetterPublisher
+            .Setup(publisher => publisher.PublishAsync(
+                consumeResult,
+                "unexpected_processing_error",
+                It.IsAny<CancellationToken>()))
+            .Returns(YieldOnceAsync);
+        var service = CreateConsumerService(
+            kafkaConsumer.Object,
+            deadLetterPublisher.Object,
+            services.GetRequiredService<IServiceScopeFactory>());
+
+        await RunUntilCommitAsync(service, commitObserved.Task);
+
+        repository.Verify(
+            value => value.GetByMessageIdAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        deadLetterPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                consumeResult,
+                "unexpected_processing_error",
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        scheduler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenUnexpectedProcessingFailureOccurs_PublishesToDlqAndCommits()
+    {
+        var emailRequested = CreateEmailRequested();
+        var consumeResult = CreateConsumeResult(
+            JsonSerializer.Serialize(emailRequested),
+            emailRequested.MessageId.ToString());
+        var commitObserved = CreateCompletionSource();
+        var kafkaConsumer = CreateKafkaConsumer(
+            consumeResult,
+            commitObserved);
+        var repository = new Mock<IEmailDeliveryRepository>();
+        repository
+            .Setup(value => value.GetByMessageIdAsync(
+                emailRequested.MessageId,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException(
+                "Unexpected processing failure."));
+        var scheduler = new Mock<IEmailJobScheduler>();
+        using var services = CreateHandlerServices(
+            repository.Object,
+            scheduler.Object);
+        var deadLetterPublisher = new Mock<IEmailDeadLetterPublisher>();
+        deadLetterPublisher
+            .Setup(publisher => publisher.PublishAsync(
+                consumeResult,
+                "unexpected_processing_error",
+                It.IsAny<CancellationToken>()))
+            .Returns(YieldOnceAsync);
+        var service = CreateConsumerService(
+            kafkaConsumer.Object,
+            deadLetterPublisher.Object,
+            services.GetRequiredService<IServiceScopeFactory>());
+
+        await RunUntilCommitAsync(service, commitObserved.Task);
+
+        deadLetterPublisher.Verify(
+            publisher => publisher.PublishAsync(
+                consumeResult,
+                "unexpected_processing_error",
                 It.IsAny<CancellationToken>()),
             Times.Once);
         kafkaConsumer.Verify(
@@ -365,5 +574,10 @@ public sealed class EmailRequestedConsumerTests
     private static async Task YieldOnceAsync()
     {
         await Task.Yield();
+    }
+
+    private sealed class TransientDbException : System.Data.Common.DbException
+    {
+        public override bool IsTransient => true;
     }
 }

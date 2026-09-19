@@ -9,6 +9,21 @@ using Streetcode.Email.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration
+        .AddJsonFile(
+            "appsettings.DevelopmentDefaults.json",
+            optional: false,
+            reloadOnChange: true)
+        .AddJsonFile(
+            "appsettings.Development.json",
+            optional: true,
+            reloadOnChange: true)
+        .AddUserSecrets<Program>(optional: true)
+        .AddEnvironmentVariables();
+}
+
 var connectionString = builder.Configuration.GetConnectionString("EmailDatabase")
                        ?? throw new InvalidOperationException(
                            "Connection string 'EmailDatabase' is not configured.");
@@ -16,6 +31,12 @@ builder.Services
     .AddOptions<SmtpOptions>()
     .Bind(builder.Configuration.GetSection(SmtpOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(
+        options =>
+            string.IsNullOrWhiteSpace(options.Username) ==
+            string.IsNullOrWhiteSpace(options.Password),
+        "SMTP username and password must either both be configured " +
+        "or both be omitted.")
     .ValidateOnStart();
 
 builder.Services

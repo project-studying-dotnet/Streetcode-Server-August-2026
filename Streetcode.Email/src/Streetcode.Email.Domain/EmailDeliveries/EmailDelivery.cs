@@ -19,6 +19,8 @@ public sealed class EmailDelivery
 
     public EmailDeliveryStatus Status { get; private set; }
 
+    public bool IsJobScheduled { get; private set; }
+
     private EmailDelivery()
     {
     }
@@ -67,6 +69,11 @@ public sealed class EmailDelivery
             pair => pair.Value,
             StringComparer.Ordinal);
         Status = EmailDeliveryStatus.Pending;
+    }
+
+    public void MarkJobAsScheduled()
+    {
+        IsJobScheduled = true;
     }
 
     public void MarkAsSent()

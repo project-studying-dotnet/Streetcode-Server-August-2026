@@ -56,7 +56,8 @@ public sealed class RequestEmailDeliveryCommandHandler
                 command.MessageId);
         }
 
-        if (delivery.Status != EmailDeliveryStatus.Pending)
+        if (delivery.Status != EmailDeliveryStatus.Pending ||
+            delivery.IsJobScheduled)
         {
             return;
         }
@@ -64,6 +65,10 @@ public sealed class RequestEmailDeliveryCommandHandler
         await jobScheduler.EnqueueAsync(
             delivery.MessageId,
             cancellationToken);
+
+        delivery.MarkJobAsScheduled();
+
+        await repository.SaveChangesAsync(cancellationToken);
     }
 
     private static bool HasSameRequestData(

@@ -27,6 +27,7 @@ public sealed class EmailDeliveryTests
         Assert.Null(delivery.Recipient);
         Assert.Equal(templateData, delivery.TemplateData);
         Assert.Equal(EmailDeliveryStatus.Pending, delivery.Status);
+        Assert.False(delivery.IsJobScheduled);
     }
 
     [Fact]
@@ -131,6 +132,16 @@ public sealed class EmailDeliveryTests
         delivery.MarkAsSent();
 
         Assert.Equal(EmailDeliveryStatus.Sent, delivery.Status);
+    }
+
+    [Fact]
+    public void MarkJobAsScheduled_SetsSchedulingFlag()
+    {
+        var delivery = CreateDelivery();
+
+        delivery.MarkJobAsScheduled();
+
+        Assert.True(delivery.IsJobScheduled);
     }
 
     [Fact]

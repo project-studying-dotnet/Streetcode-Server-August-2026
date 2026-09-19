@@ -42,12 +42,19 @@ public sealed class MailKitEmailDeliverySender : IEmailDeliverySender
                 _smtpOptions.UseSsl,
                 cancellationToken);
 
-            client.AuthenticationMechanisms.Remove("XOAUTH2");
+            var username = _smtpOptions.Username;
+            var password = _smtpOptions.Password;
 
-            await client.AuthenticateAsync(
-                _smtpOptions.Username,
-                _smtpOptions.Password,
-                cancellationToken);
+            if (!string.IsNullOrWhiteSpace(username) &&
+                !string.IsNullOrWhiteSpace(password))
+            {
+                client.AuthenticationMechanisms.Remove("XOAUTH2");
+
+                await client.AuthenticateAsync(
+                    username,
+                    password,
+                    cancellationToken);
+            }
 
             await client.SendAsync(mimeMessage, cancellationToken);
         }

@@ -70,6 +70,9 @@ public sealed class FeedbackEmailMessageFactoryTests
 
         Assert.Equal(SenderAddress, from.Address);
         Assert.Equal(RecipientAddress, to.Address);
+        Assert.Equal(
+            $"{delivery.MessageId:D}@email.streetcode",
+            message.MessageId);
         Assert.Equal("Streetcode feedback", message.Subject);
         Assert.True(body.IsHtml);
         Assert.Contains(feedbackSender, body.Text);

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Streetcode.Email.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Streetcode.Email.Infrastructure.Persistence;
 namespace Streetcode.Email.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(EmailDbContext))]
-    partial class EmailDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260919115926_AddEmailJobSchedulingState")]
+    partial class AddEmailJobSchedulingState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

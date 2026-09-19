@@ -12,6 +12,10 @@ public sealed class EmailDtoValidator
 
     public EmailDtoValidator()
     {
+        RuleFor(email => email.MessageId)
+            .NotEmpty()
+            .WithMessage("Message ID is required.");
+
         RuleFor(email => email.From)
             .NotEmpty()
             .WithMessage("Sender email is required.")

@@ -22,6 +22,9 @@ public sealed class EmailDeliveryConfiguration
             .HasMaxLength(32)
             .IsRequired();
 
+        builder.Property(delivery => delivery.IsJobScheduled)
+            .IsRequired();
+
         builder.Property(delivery => delivery.CorrelationId)
             .IsRequired();
 

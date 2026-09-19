@@ -23,6 +23,7 @@ public class EmailControllerTests
         var messageId = Guid.NewGuid();
         var email = new EmailDTO
         {
+            MessageId = messageId,
             From = "sender@example.com",
             Content = "Feedback content",
         };
@@ -63,6 +64,7 @@ public class EmailControllerTests
     {
         var email = new EmailDTO
         {
+            MessageId = Guid.NewGuid(),
             From = "sender@example.com",
             Content = "Feedback content",
         };

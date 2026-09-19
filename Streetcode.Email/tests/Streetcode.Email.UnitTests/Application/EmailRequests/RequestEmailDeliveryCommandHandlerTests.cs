@@ -28,8 +28,9 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
         Assert.Equal(command.Recipient, addedDelivery.Recipient);
         Assert.Equal(command.TemplateData, addedDelivery.TemplateData);
         Assert.Equal(EmailDeliveryStatus.Pending, addedDelivery.Status);
+        Assert.True(addedDelivery.IsJobScheduled);
         Assert.Equal(
-            new[] { "Get", "Add", "Save", "Enqueue" },
+            new[] { "Get", "Add", "Save", "Enqueue", "Save" },
             calls);
         Assert.Equal(
             new[] { command.MessageId },
@@ -37,7 +38,7 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithMatchingPendingDelivery_EnqueuesAgain()
+    public async Task HandleAsync_WithMatchingUnscheduledDelivery_EnqueuesAndMarksScheduled()
     {
         var command = CreateCommand();
         var existingDelivery = CreateDelivery(
@@ -57,10 +58,31 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
         await handler.HandleAsync(command, CancellationToken.None);
 
         Assert.Null(repository.AddedDelivery);
-        Assert.Equal(new[] { "Get", "Enqueue" }, calls);
+        Assert.True(existingDelivery.IsJobScheduled);
+        Assert.Equal(new[] { "Get", "Enqueue", "Save" }, calls);
         Assert.Equal(
             new[] { command.MessageId },
             scheduler.EnqueuedMessageIds);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithMatchingScheduledDelivery_DoesNotEnqueueAgain()
+    {
+        var command = CreateCommand();
+        var existingDelivery = CreateDelivery(command);
+        existingDelivery.MarkJobAsScheduled();
+        var calls = new List<string>();
+        var repository = new FakeEmailDeliveryRepository(
+            calls,
+            existingDelivery);
+        var scheduler = new FakeEmailJobScheduler(calls);
+        var handler = CreateHandler(repository, scheduler);
+
+        await handler.HandleAsync(command, CancellationToken.None);
+
+        Assert.Null(repository.AddedDelivery);
+        Assert.Empty(scheduler.EnqueuedMessageIds);
+        Assert.Equal(new[] { "Get" }, calls);
     }
 
     [Fact]
@@ -177,6 +199,7 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
         Assert.Equal(
             EmailDeliveryStatus.Pending,
             repository.AddedDelivery?.Status);
+        Assert.False(repository.AddedDelivery!.IsJobScheduled);
     }
 
     [Fact]

@@ -85,6 +85,7 @@ public sealed class EmailDeliveryFlowTests
         Assert.Equal(
             EmailDeliveryStatus.Sent,
             persistedDelivery.Status);
+        Assert.True(persistedDelivery.IsJobScheduled);
 
         var mailpitMessage = await GetLatestMailpitMessageAsync(
             mailpitClient);

@@ -21,6 +21,8 @@ public sealed class EmailRequestedConsumer : BackgroundService
     private const string MessageIdConflictReason = "message_id_conflict";
     private const string ProcessingRetriesExhaustedReason =
         "processing_retries_exhausted";
+    private const string UnexpectedProcessingErrorReason =
+        "unexpected_processing_error";
 
     private readonly IOptions<KafkaOptions> _options;
     private readonly IEmailRequestedConsumerFactory _consumerFactory;
@@ -69,6 +71,17 @@ public sealed class EmailRequestedConsumer : BackgroundService
                     when (stoppingToken.IsCancellationRequested)
                 {
                     break;
+                }
+                catch (KafkaException exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Kafka consume failed. Retrying after " +
+                        "{RetryDelayMilliseconds} ms.",
+                        _options.Value.RetryDelayMilliseconds);
+
+                    await DelayBeforeRetryAsync(stoppingToken);
+                    continue;
                 }
 
                 try
@@ -153,6 +166,27 @@ public sealed class EmailRequestedConsumer : BackgroundService
                         MessageIdConflictReason,
                         stoppingToken);
                 }
+                catch (OperationCanceledException)
+                    when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (KafkaException exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Kafka operation failed for topic {Topic}, " +
+                        "partition {Partition}, offset {Offset}. " +
+                        "The consumer will retry the same message.",
+                        result.Topic,
+                        result.Partition.Value,
+                        result.Offset.Value);
+
+                    await RetryCurrentMessageAsync(
+                        consumer,
+                        result,
+                        stoppingToken);
+                }
                 catch (Exception exception)
                     when (IsTransient(exception))
                 {
@@ -171,6 +205,24 @@ public sealed class EmailRequestedConsumer : BackgroundService
                         ProcessingRetriesExhaustedReason,
                         stoppingToken);
                 }
+                catch (Exception exception)
+                {
+                    _logger.LogError(
+                        exception,
+                        "Unexpected failure while processing a Kafka " +
+                        "email request. Topic {Topic}, " +
+                        "partition {Partition}, offset {Offset}. " +
+                        "Moving message to DLQ.",
+                        result.Topic,
+                        result.Partition.Value,
+                        result.Offset.Value);
+
+                    await MoveToDeadLetterAsync(
+                        consumer,
+                        result,
+                        UnexpectedProcessingErrorReason,
+                        stoppingToken);
+                }
             }
         }
         finally
@@ -185,12 +237,54 @@ public sealed class EmailRequestedConsumer : BackgroundService
         string reasonCode,
         CancellationToken cancellationToken)
     {
-        await _emailDeadLetterPublisher.PublishAsync(
-            result,
-            reasonCode,
-            cancellationToken);
+        try
+        {
+            await _emailDeadLetterPublisher.PublishAsync(
+                result,
+                reasonCode,
+                cancellationToken);
 
-        consumer.Commit(result);
+            consumer.Commit(result);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Failed to publish or commit a Kafka message to DLQ. " +
+                "Topic {Topic}, partition {Partition}, offset {Offset}. " +
+                "The consumer will retry the same message.",
+                result.Topic,
+                result.Partition.Value,
+                result.Offset.Value);
+
+            await RetryCurrentMessageAsync(
+                consumer,
+                result,
+                cancellationToken);
+        }
+    }
+
+    private async Task RetryCurrentMessageAsync(
+        IConsumer<string, string> consumer,
+        ConsumeResult<string, string> result,
+        CancellationToken cancellationToken)
+    {
+        consumer.Seek(result.TopicPartitionOffset);
+
+        await DelayBeforeRetryAsync(cancellationToken);
+    }
+
+    private Task DelayBeforeRetryAsync(
+        CancellationToken cancellationToken)
+    {
+        return Task.Delay(
+            _options.Value.RetryDelayMilliseconds,
+            cancellationToken);
     }
 
     private async Task HandleWithRetryAsync(
@@ -249,8 +343,13 @@ public sealed class EmailRequestedConsumer : BackgroundService
 
     private static bool IsTransient(Exception exception)
     {
-        return exception is DbException
-            or DbUpdateException
+        if (exception is DbUpdateException dbUpdateException &&
+            dbUpdateException.InnerException is { } innerException)
+        {
+            return IsTransient(innerException);
+        }
+
+        return exception is DbException { IsTransient: true }
             or BackgroundJobClientException
             or TimeoutException;
     }

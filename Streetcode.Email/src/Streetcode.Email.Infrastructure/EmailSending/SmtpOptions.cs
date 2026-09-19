@@ -14,11 +14,9 @@ public sealed class SmtpOptions
 
     public bool UseSsl { get; init; }
 
-    [Required]
-    public string Username { get; init; } = string.Empty;
+    public string? Username { get; init; }
 
-    [Required]
-    public string Password { get; init; } = string.Empty;
+    public string? Password { get; init; }
 
     [Required]
     [EmailAddress]
