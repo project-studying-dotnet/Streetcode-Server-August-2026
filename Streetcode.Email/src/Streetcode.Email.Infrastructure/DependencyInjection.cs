@@ -21,7 +21,10 @@ public static class DependencyInjection
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         services.AddDbContext<EmailDbContext>(
-            options => options.UseSqlServer(connectionString));
+            options => options.UseSqlServer(
+                connectionString,
+                sqlServerOptions =>
+                    sqlServerOptions.EnableRetryOnFailure()));
 
         services.AddHangfire(configuration => configuration
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

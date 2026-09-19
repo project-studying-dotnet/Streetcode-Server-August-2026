@@ -90,6 +90,7 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
     {
         var command = CreateCommand();
         var existingDelivery = CreateDelivery(command);
+        existingDelivery.MarkAsSending();
         existingDelivery.MarkAsSent();
         var calls = new List<string>();
         var repository = new FakeEmailDeliveryRepository(

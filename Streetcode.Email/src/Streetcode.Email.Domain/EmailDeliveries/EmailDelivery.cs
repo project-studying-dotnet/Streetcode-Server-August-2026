@@ -76,15 +76,48 @@ public sealed class EmailDelivery
         IsJobScheduled = true;
     }
 
-    public void MarkAsSent()
+    public void MarkAsSending()
     {
         if (Status != EmailDeliveryStatus.Pending)
         {
             throw new InvalidOperationException(
-                "Cannot mark as already sent.");
+                "Only a pending delivery can start sending.");
+        }
+
+        Status = EmailDeliveryStatus.Sending;
+    }
+
+    public void MarkAsPendingForRetry()
+    {
+        if (Status != EmailDeliveryStatus.Sending)
+        {
+            throw new InvalidOperationException(
+                "Only a sending delivery can be retried.");
+        }
+
+        Status = EmailDeliveryStatus.Pending;
+    }
+
+    public void MarkAsSent()
+    {
+        if (Status != EmailDeliveryStatus.Sending)
+        {
+            throw new InvalidOperationException(
+                "Only a sending delivery can be marked as sent.");
         }
 
         Status = EmailDeliveryStatus.Sent;
+    }
+
+    public void MarkAsDeliveryUncertain()
+    {
+        if (Status != EmailDeliveryStatus.Sending)
+        {
+            throw new InvalidOperationException(
+                "Only a sending delivery can have an uncertain result.");
+        }
+
+        Status = EmailDeliveryStatus.DeliveryUncertain;
     }
 
     public void MarkAsFailed()

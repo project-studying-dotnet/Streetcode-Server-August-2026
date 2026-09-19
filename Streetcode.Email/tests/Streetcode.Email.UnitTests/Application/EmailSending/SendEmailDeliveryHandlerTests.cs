@@ -70,7 +70,13 @@ public sealed class SendEmailDeliveryHandlerTests
             delivery,
             Assert.Single(sender.AttemptedDeliveries));
         Assert.Equal(
-            new[] { "Get", "Send:Pending", "Save:Sent" },
+            new[]
+            {
+                "Get",
+                "Save:Sending",
+                "Send:Sending",
+                "Save:Sent",
+            },
             calls);
         Assert.Equal(cancellationToken, repository.GetCancellationToken);
         Assert.Equal(cancellationToken, repository.SaveCancellationToken);
@@ -81,6 +87,7 @@ public sealed class SendEmailDeliveryHandlerTests
     public async Task HandleAsync_WithSentDelivery_DoesNotSendOrSave()
     {
         var delivery = CreateDelivery();
+        delivery.MarkAsSending();
         delivery.MarkAsSent();
         var calls = new List<string>();
         var repository = new FakeEmailDeliveryRepository(
@@ -120,7 +127,7 @@ public sealed class SendEmailDeliveryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenSendingFails_LeavesPendingAndDoesNotSave()
+    public async Task HandleAsync_WhenSendingFails_RestoresPendingForRetry()
     {
         var delivery = CreateDelivery();
         var calls = new List<string>();
@@ -141,8 +148,15 @@ public sealed class SendEmailDeliveryHandlerTests
 
         Assert.Same(expectedException, actualException);
         Assert.Equal(EmailDeliveryStatus.Pending, delivery.Status);
-        Assert.Equal(new[] { "Get", "Send:Pending" }, calls);
-        Assert.Null(repository.SaveCancellationToken);
+        Assert.Equal(
+            new[]
+            {
+                "Get",
+                "Save:Sending",
+                "Send:Sending",
+                "Save:Pending",
+            },
+            calls);
     }
 
     [Fact]
@@ -155,7 +169,8 @@ public sealed class SendEmailDeliveryHandlerTests
         var repository = new FakeEmailDeliveryRepository(
             calls,
             delivery,
-            expectedException);
+            expectedException,
+            saveFailureCall: 2);
         var sender = new FakeEmailDeliverySender(calls);
         var handler = CreateHandler(repository, sender);
 
@@ -167,8 +182,65 @@ public sealed class SendEmailDeliveryHandlerTests
         Assert.Same(expectedException, actualException);
         Assert.Equal(EmailDeliveryStatus.Sent, delivery.Status);
         Assert.Equal(
-            new[] { "Get", "Send:Pending", "Save:Sent" },
+            new[]
+            {
+                "Get",
+                "Save:Sending",
+                "Send:Sending",
+                "Save:Sent",
+            },
             calls);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithPersistedSendingDelivery_DoesNotResend()
+    {
+        var delivery = CreateDelivery();
+        delivery.MarkAsSending();
+        var calls = new List<string>();
+        var repository = new FakeEmailDeliveryRepository(
+            calls,
+            delivery);
+        var sender = new FakeEmailDeliverySender(calls);
+        var handler = CreateHandler(repository, sender);
+
+        await handler.HandleAsync(
+            delivery.MessageId,
+            CancellationToken.None);
+
+        Assert.Equal(
+            EmailDeliveryStatus.DeliveryUncertain,
+            delivery.Status);
+        Assert.Empty(sender.AttemptedDeliveries);
+        Assert.Equal(
+            new[] { "Get", "Save:DeliveryUncertain" },
+            calls);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenSavingSendingStatusFails_DoesNotSend()
+    {
+        var delivery = CreateDelivery();
+        var calls = new List<string>();
+        var expectedException = new InvalidOperationException(
+            "SQL storage is unavailable.");
+        var repository = new FakeEmailDeliveryRepository(
+            calls,
+            delivery,
+            expectedException,
+            saveFailureCall: 1);
+        var sender = new FakeEmailDeliverySender(calls);
+        var handler = CreateHandler(repository, sender);
+
+        var actualException = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => handler.HandleAsync(
+                delivery.MessageId,
+                CancellationToken.None));
+
+        Assert.Same(expectedException, actualException);
+        Assert.Equal(EmailDeliveryStatus.Sending, delivery.Status);
+        Assert.Empty(sender.AttemptedDeliveries);
+        Assert.Equal(new[] { "Get", "Save:Sending" }, calls);
     }
 
     private static SendEmailDeliveryHandler CreateHandler(
@@ -206,15 +278,19 @@ public sealed class SendEmailDeliveryHandlerTests
         private readonly List<string> calls;
         private readonly EmailDelivery? delivery;
         private readonly Exception? saveException;
+        private readonly int saveFailureCall;
+        private int saveCallCount;
 
         public FakeEmailDeliveryRepository(
             List<string> calls,
             EmailDelivery? delivery = null,
-            Exception? saveException = null)
+            Exception? saveException = null,
+            int saveFailureCall = 1)
         {
             this.calls = calls;
             this.delivery = delivery;
             this.saveException = saveException;
+            this.saveFailureCall = saveFailureCall;
         }
 
         public List<Guid> RequestedMessageIds { get; } = new();
@@ -246,10 +322,12 @@ public sealed class SendEmailDeliveryHandlerTests
         {
             calls.Add($"Save:{delivery?.Status}");
             SaveCancellationToken = cancellationToken;
+            saveCallCount++;
 
-            return saveException is null
-                ? Task.CompletedTask
-                : Task.FromException(saveException);
+            return saveException is not null &&
+                   saveCallCount == saveFailureCall
+                ? Task.FromException(saveException)
+                : Task.CompletedTask;
         }
     }
 

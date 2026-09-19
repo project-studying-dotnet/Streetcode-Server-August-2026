@@ -37,14 +37,43 @@ public sealed class SendEmailDeliveryHandler
                 $"Email delivery '{messageId}' was not found.");
         }
 
+        if (delivery.Status == EmailDeliveryStatus.Sending)
+        {
+            delivery.MarkAsDeliveryUncertain();
+
+            await repository.SaveChangesAsync(cancellationToken);
+
+            return;
+        }
+
         if (delivery.Status != EmailDeliveryStatus.Pending)
         {
             return;
         }
 
-        await sender.SendAsync(
-            delivery,
-            cancellationToken);
+        delivery.MarkAsSending();
+
+        await repository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await sender.SendAsync(
+                delivery,
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            delivery.MarkAsPendingForRetry();
+
+            await repository.SaveChangesAsync(cancellationToken);
+
+            throw;
+        }
 
         delivery.MarkAsSent();
 

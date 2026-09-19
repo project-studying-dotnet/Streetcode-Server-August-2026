@@ -125,9 +125,31 @@ public sealed class EmailDeliveryTests
     }
 
     [Fact]
-    public void MarkAsSent_WhenStatusIsPending_ChangesStatusToSent()
+    public void MarkAsSending_WhenStatusIsPending_ChangesStatusToSending()
     {
         var delivery = CreateDelivery();
+
+        delivery.MarkAsSending();
+
+        Assert.Equal(EmailDeliveryStatus.Sending, delivery.Status);
+    }
+
+    [Fact]
+    public void MarkAsPendingForRetry_WhenStatusIsSending_ChangesStatusToPending()
+    {
+        var delivery = CreateDelivery();
+        delivery.MarkAsSending();
+
+        delivery.MarkAsPendingForRetry();
+
+        Assert.Equal(EmailDeliveryStatus.Pending, delivery.Status);
+    }
+
+    [Fact]
+    public void MarkAsSent_WhenStatusIsSending_ChangesStatusToSent()
+    {
+        var delivery = CreateDelivery();
+        delivery.MarkAsSending();
 
         delivery.MarkAsSent();
 
@@ -148,9 +170,23 @@ public sealed class EmailDeliveryTests
     public void MarkAsSent_WhenStatusIsAlreadySent_ThrowsInvalidOperationException()
     {
         var delivery = CreateDelivery();
+        delivery.MarkAsSending();
         delivery.MarkAsSent();
 
         Assert.Throws<InvalidOperationException>(() => delivery.MarkAsSent());
+    }
+
+    [Fact]
+    public void MarkAsDeliveryUncertain_WhenStatusIsSending_ChangesStatus()
+    {
+        var delivery = CreateDelivery();
+        delivery.MarkAsSending();
+
+        delivery.MarkAsDeliveryUncertain();
+
+        Assert.Equal(
+            EmailDeliveryStatus.DeliveryUncertain,
+            delivery.Status);
     }
 
     [Fact]
@@ -167,6 +203,7 @@ public sealed class EmailDeliveryTests
     public void MarkAsFailed_WhenStatusIsSent_ThrowsInvalidOperationException()
     {
         var delivery = CreateDelivery();
+        delivery.MarkAsSending();
         delivery.MarkAsSent();
 
         Assert.Throws<InvalidOperationException>(() => delivery.MarkAsFailed());

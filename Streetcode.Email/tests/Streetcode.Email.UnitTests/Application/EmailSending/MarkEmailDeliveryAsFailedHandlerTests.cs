@@ -128,6 +128,7 @@ public sealed class MarkEmailDeliveryAsFailedHandlerTests
             null,
             new Dictionary<string, string>());
 
+        delivery.MarkAsSending();
         delivery.MarkAsSent();
 
         var repository = new Mock<IEmailDeliveryRepository>();

@@ -11,8 +11,13 @@ SMTP.
 3. Persist an `EmailDelivery` using `MessageId` as the primary idempotency key.
 4. Enqueue a Hangfire job and persist `IsJobScheduled`.
 5. Commit the Kafka offset only after Hangfire accepts the job.
-6. Retry SMTP failures through Hangfire and persist `Sent` or `Failed`.
-7. Move invalid or terminally unprocessable Kafka records to
+6. Persist `Sending` before contacting SMTP, then persist `Sent` after SMTP
+   acceptance.
+7. Retry explicit SMTP failures through Hangfire and persist `Failed` after
+   retries are exhausted.
+8. Mark an interrupted, ambiguous SMTP attempt as `DeliveryUncertain` instead
+   of automatically sending the same message again.
+9. Move invalid or terminally unprocessable Kafka records to
    `email.requested.v1.dlq` before committing their source offset.
 
 `IsJobScheduled` prevents a repeated Kafka event from normally creating a
@@ -26,11 +31,17 @@ at-least-once and idempotent by `MessageId` during normal operation.
 
 SMTP does not support a transaction shared with the application database.
 There is an unavoidable crash window after the SMTP server accepts a message
-and before the `Sent` state is committed. A retry in that window can produce a
-duplicate email. Every retry uses the same deterministic MIME `Message-Id`
-derived from `MessageId`, which improves traceability and allows an SMTP
-provider to deduplicate when it supports that behavior, but it is not an
+and before the `Sent` state is committed. The service persists `Sending`
+before SMTP and does not automatically resend a delivery that remains in that
+state after interruption. It records `DeliveryUncertain` for manual inspection
+and operator-controlled recovery. This favors avoiding duplicate recipient
+messages over automatic recovery from an ambiguous attempt and is still not an
 exactly-once guarantee.
+
+EF Core retries transient SQL failures inside the current operation. Every
+SMTP attempt also uses the same deterministic MIME `Message-Id` derived from
+`MessageId`, which improves traceability and allows an SMTP provider to
+deduplicate when it supports that behavior.
 
 ## Local development
 
