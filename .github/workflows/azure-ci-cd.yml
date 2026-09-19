@@ -1,0 +1,114 @@
+name: Azure
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev, main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Streetcode
+        run: dotnet restore ./Streetcode/Streetcode.sln
+
+      - name: Restore Identity
+        run: dotnet restore ./Streetcode.Identity/Streetcode.Identity.sln
+
+      - name: Build Streetcode
+        run: dotnet build ./Streetcode/Streetcode.sln --configuration Release --no-restore
+
+      - name: Build Identity
+        run: dotnet build ./Streetcode.Identity/Streetcode.Identity.sln --configuration Release --no-restore
+
+      - name: Test Streetcode
+        run: dotnet test ./Streetcode/Streetcode.XUnitTest/Streetcode.XUnitTest.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Test Identity
+        run: dotnet test ./Streetcode.Identity/Streetcode.Identity.sln --configuration Release --no-build --verbosity normal
+
+      - name: Build Streetcode Docker image
+        run: docker build --file ./Dockerfile --tag streetcode-api:${{ github.sha }} .
+
+      - name: Build Identity Docker image
+        run: docker build --file ./Streetcode.Identity/Dockerfile --tag streetcode-identity:${{ github.sha }} .
+
+
+  cd:
+    name: Deploy to Azure development
+    needs: ci
+    runs-on: ubuntu-latest
+
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.AZURE_DEPLOY_ENABLED == 'true' }}
+
+    environment: development
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Azure with OIDC
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+
+      - name: Login to Azure Container Registry
+        run: az acr login --name ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+
+      - name: Build Docker image
+        run: |
+          docker build --file ./Dockerfile --tag ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io.streetcode-api:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-api:${{ github.sha }}
+
+      - name: Build Identity Docker image
+        run: |
+          docker build --file ./Streetcode.Identity/Dockerfile --tag ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }} .
+
+      - name: Push Docker Identity image
+        run: |
+          docker push ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }}
+
+
+      - name: Deploy Streetcode Container App
+        env:
+          CONTAINER_APP_NAME: ${{ vars.STREETCODE_CONTAINER_APP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-api:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE"
+
+      - name: Deploy Identity Container App
+        env:
+          CONTAINER_APP_NAME: ${{ vars.IDENTITY_CONTAINER_APP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE"
