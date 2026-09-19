@@ -45,6 +45,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IGoogleIdentityService, GoogleIdentityService>();
         services.AddScoped<IOutboxWriter, OutboxWriter>();
         services.TryAddSingleton<TimeProvider>(TimeProvider.System);
 
