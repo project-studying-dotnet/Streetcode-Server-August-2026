@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Streetcode.BLL.DTO.AdditionalContent.Filter;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.DTO.Streetcode.Create;
+using Streetcode.BLL.DTO.Streetcode.RelatedFigure;
 using Streetcode.BLL.DTO.Streetcode.Update;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Create;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Update;
@@ -12,6 +13,7 @@ using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAllShort;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAllStreetcodesMainPage;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByFilter;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetById;
+using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByIds;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByTransliterationUrl;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetCount;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetShortById;
@@ -72,6 +74,14 @@ public class StreetcodeController : BaseApiController
     public async Task<IActionResult> GetById([FromRoute] int id)
     {
         return HandleResult(await Mediator.Send(new GetStreetcodeByIdQuery(id)));
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(IEnumerable<RelatedFigureDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetByIds([FromQuery] int[] ids, CancellationToken cancellationToken)
+    {
+        return HandleResult(await Mediator.Send(new GetStreetcodesByIdsQuery(ids), cancellationToken));
     }
 
     [HttpPost]
