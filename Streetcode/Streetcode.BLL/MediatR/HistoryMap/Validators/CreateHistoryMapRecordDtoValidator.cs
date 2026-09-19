@@ -7,8 +7,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Validators
     public sealed class CreateHistoryMapRecordDtoValidator
         : AbstractValidator<CreateHistoryMapRecordDTO>
     {
-        public CreateHistoryMapRecordDtoValidator(
-            IValidator<CreateHistoryMapRecordDTO> dtoValidator)
+        public CreateHistoryMapRecordDtoValidator()
         {
             RuleFor(x => x.StreetcodeId)
                 .MustBeValidId("Streetcode");

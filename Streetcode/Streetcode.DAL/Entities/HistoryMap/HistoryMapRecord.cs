@@ -22,15 +22,17 @@ namespace Streetcode.DAL.Entities.HistoryMap
         public Toponym? Toponym { get; set; }
 
         [Required]
+        [Column(TypeName = "decimal(18,4)")]
         public decimal Latitude { get; set; }
 
         [Required]
+        [Column(TypeName = "decimal(18,4)")]
         public decimal Longitude { get; set; }
 
         [Required]
         public int PhysicalStreetcodeNumber { get; set; }
 
-        public DateTime CretedAt { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }
 }

@@ -62,7 +62,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Create
             }
 
             var historyMapRecord = _mapper.Map<HistoryMapRecord>(dto);
-            historyMapRecord.CretedAt = DateTime.UtcNow;
+            historyMapRecord.CreatedAt = DateTime.UtcNow;
             historyMapRecord.UpdatedAt = DateTime.UtcNow;
 
             await _repositoryWrapper.HistoryMapRecordRepository.CreateAsync(historyMapRecord);
