@@ -86,6 +86,33 @@ public sealed class RequestEmailDeliveryCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WithSamePayloadAndNewMetadata_DoesNotConflict()
+    {
+        var originalCommand = CreateCommand();
+        var retryCommand = originalCommand with
+        {
+            CorrelationId = Guid.NewGuid(),
+            RequestedAtUtc = originalCommand.RequestedAtUtc.AddSeconds(1),
+        };
+        var existingDelivery = CreateDelivery(originalCommand);
+        existingDelivery.MarkJobAsScheduled();
+        var calls = new List<string>();
+        var repository = new FakeEmailDeliveryRepository(
+            calls,
+            existingDelivery);
+        var scheduler = new FakeEmailJobScheduler(calls);
+        var handler = CreateHandler(repository, scheduler);
+
+        await handler.HandleAsync(
+            retryCommand,
+            CancellationToken.None);
+
+        Assert.Null(repository.AddedDelivery);
+        Assert.Empty(scheduler.EnqueuedMessageIds);
+        Assert.Equal(new[] { "Get" }, calls);
+    }
+
+    [Fact]
     public async Task HandleAsync_WithMatchingSentDelivery_DoesNotEnqueue()
     {
         var command = CreateCommand();

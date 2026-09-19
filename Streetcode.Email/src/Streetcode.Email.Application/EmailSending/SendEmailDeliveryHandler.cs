@@ -66,6 +66,14 @@ public sealed class SendEmailDeliveryHandler
         {
             throw;
         }
+        catch (EmailDeliveryOutcomeUnknownException)
+        {
+            delivery.MarkAsDeliveryUncertain();
+
+            await repository.SaveChangesAsync(cancellationToken);
+
+            return;
+        }
         catch (Exception)
         {
             delivery.MarkAsPendingForRetry();

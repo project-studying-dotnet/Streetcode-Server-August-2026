@@ -93,7 +93,7 @@ public class SendEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WithClientMessageId_UsesItAsIdempotencyKey()
+    public async Task Handle_TwoRequestsWithSameMessageId_PublishSamePayload()
     {
         var messageId = Guid.NewGuid();
         var email = new EmailDTO
@@ -102,28 +102,44 @@ public class SendEmailHandlerTests
             From = "loki@example.com",
             Content = "Some test info",
         };
-        EmailRequestedV1? publishedRequest = null;
+        var publishedRequests = new List<EmailRequestedV1>();
 
         _publisherMock
             .Setup(publisher => publisher.PublishAsync(
                 It.IsAny<EmailRequestedV1>(),
                 CancellationToken.None))
             .Callback<EmailRequestedV1, CancellationToken>(
-                (request, _) => publishedRequest = request)
+                (request, _) => publishedRequests.Add(request))
             .Returns(Task.CompletedTask);
 
         var handler = new SendEmailHandler(
             _publisherMock.Object,
             _loggerMock.Object);
 
-        var result = await handler.Handle(
+        var firstResult = await handler.Handle(
+            new SendEmailCommand(email),
+            CancellationToken.None);
+        var secondResult = await handler.Handle(
             new SendEmailCommand(email),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(messageId, result.Value);
-        Assert.NotNull(publishedRequest);
-        Assert.Equal(messageId, publishedRequest!.MessageId);
+        Assert.True(firstResult.IsSuccess);
+        Assert.True(secondResult.IsSuccess);
+        Assert.Equal(messageId, firstResult.Value);
+        Assert.Equal(messageId, secondResult.Value);
+        Assert.Equal(2, publishedRequests.Count);
+        Assert.All(
+            publishedRequests,
+            request => Assert.Equal(messageId, request.MessageId));
+        Assert.Equal(
+            publishedRequests[0].TemplateData,
+            publishedRequests[1].TemplateData);
+        Assert.Equal(
+            publishedRequests[0].Template,
+            publishedRequests[1].Template);
+        Assert.NotEqual(
+            publishedRequests[0].CorrelationId,
+            publishedRequests[1].CorrelationId);
     }
 
     [Fact]

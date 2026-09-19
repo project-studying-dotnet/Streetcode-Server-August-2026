@@ -38,6 +38,11 @@ and operator-controlled recovery. This favors avoiding duplicate recipient
 messages over automatic recovery from an ambiguous attempt and is still not an
 exactly-once guarantee.
 
+Connection and authentication failures, plus explicit SMTP command rejection,
+are known to occur before acceptance and remain retryable. I/O, protocol, and
+other failures raised during `SendAsync` have an ambiguous acceptance outcome
+and are recorded as `DeliveryUncertain` without automatic resend.
+
 EF Core retries transient SQL failures inside the current operation. Every
 SMTP attempt also uses the same deterministic MIME `Message-Id` derived from
 `MessageId`, which improves traceability and allows an SMTP provider to

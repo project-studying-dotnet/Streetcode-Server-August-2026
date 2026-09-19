@@ -1,7 +1,9 @@
+using MailKit;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Streetcode.Email.Application.Abstractions;
+using Streetcode.Email.Application.EmailSending;
 using Streetcode.Email.Domain.EmailDeliveries;
 
 namespace Streetcode.Email.Infrastructure.EmailSending;
@@ -56,7 +58,41 @@ public sealed class MailKitEmailDeliverySender : IEmailDeliverySender
                     cancellationToken);
             }
 
-            await client.SendAsync(mimeMessage, cancellationToken);
+            try
+            {
+                await client.SendAsync(
+                    mimeMessage,
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (ServiceNotConnectedException)
+            {
+                throw;
+            }
+            catch (ServiceNotAuthenticatedException)
+            {
+                throw;
+            }
+            catch (SmtpCommandException)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(
+                    exception,
+                    "SMTP delivery outcome is unknown for message " +
+                    "{MessageId}.",
+                    delivery.MessageId);
+
+                throw new EmailDeliveryOutcomeUnknownException(
+                    "SMTP delivery outcome is unknown.",
+                    exception);
+            }
         }
         finally
         {

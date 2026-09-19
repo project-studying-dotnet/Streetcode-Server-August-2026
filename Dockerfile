@@ -15,14 +15,16 @@ ARG Configuration=Release
 WORKDIR /src
 
 # restoring application dependencies
-COPY ./Streetcode/Streetcode.WebApi/*.csproj ./Streetcode.WebApi/
-COPY ./Streetcode/Streetcode.BLL/*.csproj ./Streetcode.BLL/
-COPY ./Streetcode/Streetcode.DAL/*.csproj ./Streetcode.DAL/
-RUN dotnet restore ./Streetcode.WebApi/Streetcode.WebApi.csproj
+COPY ./Streetcode/Streetcode.WebApi/*.csproj ./Streetcode/Streetcode.WebApi/
+COPY ./Streetcode/Streetcode.BLL/*.csproj ./Streetcode/Streetcode.BLL/
+COPY ./Streetcode/Streetcode.DAL/*.csproj ./Streetcode/Streetcode.DAL/
+COPY ./Streetcode.Email/src/Streetcode.Email.Contracts/*.csproj ./Streetcode.Email/src/Streetcode.Email.Contracts/
+RUN dotnet restore ./Streetcode/Streetcode.WebApi/Streetcode.WebApi.csproj
 
 # copying application sources and building the Web API project
-COPY ./Streetcode/ ./
-WORKDIR /src/Streetcode.WebApi
+COPY ./Streetcode/ ./Streetcode/
+COPY ./Streetcode.Email/src/Streetcode.Email.Contracts/ ./Streetcode.Email/src/Streetcode.Email.Contracts/
+WORKDIR /src/Streetcode/Streetcode.WebApi
 RUN dotnet build Streetcode.WebApi.csproj -c "$Configuration" -o /app/build --no-restore
 
 # publishing application

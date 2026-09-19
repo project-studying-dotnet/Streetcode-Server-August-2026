@@ -160,6 +160,42 @@ public sealed class SendEmailDeliveryHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenSmtpOutcomeIsUnknown_DoesNotRetryDelivery()
+    {
+        var delivery = CreateDelivery();
+        var calls = new List<string>();
+        var sender = new FakeEmailDeliverySender(
+            calls,
+            new EmailDeliveryOutcomeUnknownException(
+                "SMTP delivery outcome is unknown.",
+                new IOException("Connection dropped.")));
+        var repository = new FakeEmailDeliveryRepository(
+            calls,
+            delivery);
+        var handler = CreateHandler(repository, sender);
+
+        await handler.HandleAsync(
+            delivery.MessageId,
+            CancellationToken.None);
+
+        Assert.Equal(
+            EmailDeliveryStatus.DeliveryUncertain,
+            delivery.Status);
+        Assert.Same(
+            delivery,
+            Assert.Single(sender.AttemptedDeliveries));
+        Assert.Equal(
+            new[]
+            {
+                "Get",
+                "Save:Sending",
+                "Send:Sending",
+                "Save:DeliveryUncertain",
+            },
+            calls);
+    }
+
+    [Fact]
     public async Task HandleAsync_WhenSavingSentStatusFails_PropagatesException()
     {
         var delivery = CreateDelivery();

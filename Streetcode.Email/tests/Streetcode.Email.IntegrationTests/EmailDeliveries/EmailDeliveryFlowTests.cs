@@ -102,7 +102,7 @@ public sealed class EmailDeliveryFlowTests
     }
 
     [Fact]
-    public async Task RepeatedSentRequest_DoesNotSendAnotherEmail()
+    public async Task HttpRetryMetadata_DoesNotCauseConflictOrSecondEmail()
     {
         await using var factory =
             _fixture.CreateApplicationFactory();
@@ -135,8 +135,14 @@ public sealed class EmailDeliveryFlowTests
                     cancellationToken) == initialMessageCount + 1,
             "Mailpit did not receive the first email.");
 
+        var retriedRequest = emailRequested with
+        {
+            CorrelationId = Guid.NewGuid(),
+            RequestedAtUtc = DateTimeOffset.UtcNow,
+        };
+
         var repeatedDeliveryResult =
-            await PublishAsync(emailRequested);
+            await PublishAsync(retriedRequest);
 
         await WaitUntilCommittedAsync(repeatedDeliveryResult);
 

@@ -78,8 +78,6 @@ public sealed class RequestEmailDeliveryCommandHandler
         var templateData = command.TemplateData!;
 
         return delivery.MessageId == command.MessageId &&
-               delivery.CorrelationId == command.CorrelationId &&
-               delivery.RequestedAtUtc == command.RequestedAtUtc &&
                string.Equals(
                    delivery.Template,
                    command.Template,
