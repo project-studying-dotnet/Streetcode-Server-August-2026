@@ -1,6 +1,7 @@
 using Repositories.Interfaces;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
 using Streetcode.DAL.Repositories.Interfaces.Analytics;
+using Streetcode.DAL.Repositories.Interfaces.HistoryMap;
 using Streetcode.DAL.Repositories.Interfaces.Media.Images;
 using Streetcode.DAL.Repositories.Interfaces.Newss;
 using Streetcode.DAL.Repositories.Interfaces.Partners;
@@ -52,6 +53,7 @@ public interface IRepositoryWrapper
     IStreetcodeToponymRepository StreetcodeToponymRepository { get; }
     IStreetcodeImageRepository StreetcodeImageRepository { get; }
     ICommentRepository CommentRepository { get; }
+    IHistoryMapRecordRepository HistoryMapRecordRepository { get; }
     public int SaveChanges();
 
     public Task<int> SaveChangesAsync();
