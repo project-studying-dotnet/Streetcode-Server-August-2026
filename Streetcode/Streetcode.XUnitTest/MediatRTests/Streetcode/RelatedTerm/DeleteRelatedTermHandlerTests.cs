@@ -36,7 +36,7 @@ public class DeleteRelatedTermHandlerTests
     public async Task Handle_WhenRelatedTermDoesNotExist_ShouldReturnFailure()
     {
         var command = new DeleteRelatedTermCommand("Missing", 5);
-        string expectedError = $"Cannot find a related term: {command.word} for term with id: {command.termId}";
+        var expectedError = string.Format(TestMessages.CannotFindRelatedTerm, command.word, command.termId);
 
         _relatedTermRepositoryMock
             .Setup(repository => repository.GetFirstOrDefaultAsync(
@@ -71,7 +71,7 @@ public class DeleteRelatedTermHandlerTests
         var command = new DeleteRelatedTermCommand("Test", 5);
         var relatedTerm = CreateRelatedTermEntity();
         var relatedTermDto = CreateRelatedTermDto();
-        const string expectedError = "Failed to delete a related term";
+        var expectedError = TestMessages.FailedToDeleteRelatedTerm;
 
         SetupDeletion(relatedTerm, relatedTermDto, saveChangesResult: 0);
 
@@ -99,7 +99,7 @@ public class DeleteRelatedTermHandlerTests
     {
         var command = new DeleteRelatedTermCommand("Test", 5);
         var relatedTerm = CreateRelatedTermEntity();
-        const string expectedError = "Failed to delete a related term";
+        var expectedError = TestMessages.FailedToDeleteRelatedTerm;
 
         SetupDeletion(relatedTerm, null, saveChangesResult: 1);
 
