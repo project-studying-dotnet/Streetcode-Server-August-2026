@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 
+namespace Streetcode.Gateway.Tests;
+
 public sealed class GatewayRoutingTests
 {
     [Fact]

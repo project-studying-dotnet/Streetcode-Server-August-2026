@@ -34,6 +34,4 @@ app.UseCors();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.MapReverseProxy();
 
-app.Run();
-
-public partial class Program;
+await app.RunAsync();
