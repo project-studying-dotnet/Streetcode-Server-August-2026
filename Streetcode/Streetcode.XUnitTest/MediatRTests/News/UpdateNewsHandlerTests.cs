@@ -75,7 +75,7 @@ public class UpdateNewsHandlerTests
     public async Task Handle_ReturnsFailedResult_AndLogsError_WhenMapperReturnsNull()
     {
         var command = new UpdateNewsCommand(new NewsDTO());
-        var expectedError = "Cannot convert null to news";
+        var expectedError = TestMessages.CannotConvertNullToNews;
 
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(It.IsAny<NewsDTO>())).Returns((DAL.Entities.News.News)null!);
 
@@ -94,7 +94,7 @@ public class UpdateNewsHandlerTests
         var newsDto = new NewsDTO { Id = 1 };
         var newsEntity = new DAL.Entities.News.News { Id = 1 };
         var command = new UpdateNewsCommand(newsDto);
-        var expectedError = "Failed to update news";
+        var expectedError = TestMessages.FailedToUpdateNews;
 
         _mapperMock.Setup(m => m.Map<DAL.Entities.News.News>(newsDto)).Returns(newsEntity);
         _mapperMock.Setup(m => m.Map<NewsDTO>(newsEntity)).Returns(new NewsDTO());

@@ -16,6 +16,7 @@ namespace Streetcode.XUnitTest.Controllers
     using Streetcode.BLL.DTO.Streetcode.Comments;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
     using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
+    using Streetcode.BLL.MediatR.Streetcode.Comment.GetByStreetcodeId;
     using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
     using Streetcode.WebApi.Attributes;
     using Streetcode.WebApi.Controllers.Streetcode;
@@ -23,6 +24,44 @@ namespace Streetcode.XUnitTest.Controllers
 
     public class CommentControllerTests
     {
+        [Fact]
+        public async Task GetByStreetcodeId_ShouldSendQueryAndReturnComments()
+        {
+            const int streetcodeId = 7;
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var comments = new List<CommentWithRepliesDto>
+            {
+                new () { Id = 1, StreetcodeId = streetcodeId },
+            };
+            var mediatorMock = new Mock<IMediator>();
+            mediatorMock.Setup(mediator => mediator.Send(
+                    It.Is<GetCommentsByStreetcodeIdQuery>(query => query.StreetcodeId == streetcodeId),
+                    cancellationToken))
+                .ReturnsAsync(Result.Ok<IEnumerable<CommentWithRepliesDto>>(comments));
+
+            using var serviceProvider = new ServiceCollection()
+                .AddSingleton(mediatorMock.Object)
+                .BuildServiceProvider();
+            var controller = new CommentController
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext { RequestServices = serviceProvider },
+                },
+            };
+
+            var result = await controller.GetByStreetcodeId(streetcodeId, cancellationToken);
+
+            Assert.Same(comments, Assert.IsType<OkObjectResult>(result).Value);
+            mediatorMock.VerifyAll();
+            var method = typeof(CommentController)
+                .GetMethod(nameof(CommentController.GetByStreetcodeId));
+            Assert.NotNull(method);
+            var route = method.GetCustomAttribute<HttpGetAttribute>();
+            Assert.Equal("{streetcodeId:int}", route?.Template);
+        }
+
         [Fact]
         public async Task Update_ShouldSendCommandAndReturnOk()
         {

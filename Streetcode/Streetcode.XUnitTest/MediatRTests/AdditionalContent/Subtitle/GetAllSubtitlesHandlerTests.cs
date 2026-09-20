@@ -67,8 +67,8 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Subtitle
             var result = await _handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal("Cannot find any subtitles", result.Errors[0].Message);
-            _mockLogger.Verify(l => l.LogError(query, "Cannot find any subtitles"), Times.Once);
+            Assert.Equal(TestMessages.CannotFindAnySubtitles, result.Errors[0].Message);
+            _mockLogger.Verify(l => l.LogError(query, TestMessages.CannotFindAnySubtitles), Times.Once);
         }
     }
 }

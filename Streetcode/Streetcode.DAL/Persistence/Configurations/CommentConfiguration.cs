@@ -16,7 +16,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(comment => comment.RowVersion)
             .IsRowVersion();
         builder.HasOne(comment => comment.Streetcode)
-            .WithMany()
+            .WithMany(streetcode => streetcode.Comments)
             .HasForeignKey(comment => comment.StreetcodeId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(comment => comment.ParentComment)

@@ -12,10 +12,7 @@ public class ConfigurationBuilderExtensionsTests
         IConfiguration configuration = new ConfigurationManager();
 
         var exception = Assert.Throws<InvalidOperationException>(() => configuration.GetRequiredConnectionString());
-        Assert.Equal(
-            "The connection string 'ConnectionStrings:DefaultConnection' is missing. " +
-            "Set 'STREETCODE_ConnectionStrings__DefaultConnection' in the environment or .env file.",
-            exception.Message);
+        Assert.Equal(TestMessages.MissingDefaultConnectionString, exception.Message);
     }
 
     [Fact]
@@ -43,6 +40,6 @@ public class ConfigurationBuilderExtensionsTests
         var exception = Assert.Throws<InvalidOperationException>(
             () => configuration.GetRequiredConnectionString());
 
-        Assert.Contains("ConnectionStrings:DefaultConnection", exception.Message);
+        Assert.Contains(TestMessages.DefaultConnectionConfigurationKey, exception.Message);
     }
 }
