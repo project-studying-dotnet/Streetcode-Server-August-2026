@@ -15,4 +15,6 @@ public class CommentDto
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? UpdatedAt { get; set; }
+
+    public byte[] RowVersion { get; set; } = null!;
 }

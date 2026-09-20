@@ -13,6 +13,8 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(comment => comment.Text)
             .IsRequired()
             .HasMaxLength(Comment.TextMaxLength);
+        builder.Property(comment => comment.RowVersion)
+            .IsRowVersion();
         builder.HasOne(comment => comment.Streetcode)
             .WithMany(streetcode => streetcode.Comments)
             .HasForeignKey(comment => comment.StreetcodeId)
