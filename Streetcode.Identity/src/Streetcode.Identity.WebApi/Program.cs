@@ -8,6 +8,7 @@ using Streetcode.Identity.Infrastructure.Persistence;
 using Streetcode.Identity.Infrastructure.Security;
 using Streetcode.Identity.WebApi.ExceptionHandling;
 using Streetcode.Identity.WebApi.Extensions;
+using Streetcode.Identity.WebApi.Google;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddJwtServices(builder.Configuration);
+builder.Services.AddGoogleAuth(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddIdentitySeeding(builder.Configuration);
