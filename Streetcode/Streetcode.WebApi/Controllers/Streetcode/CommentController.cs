@@ -5,6 +5,7 @@ using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
 using Streetcode.BLL.MediatR.Streetcode.Comment.Reply;
+using Streetcode.BLL.MediatR.Streetcode.Comment.GetByStreetcodeId;
 using Streetcode.DAL.Enums;
 using Streetcode.WebApi.Attributes;
 
@@ -73,6 +74,16 @@ public class CommentController : BaseApiController
     {
         return HandleResult(await Mediator.Send(
             new GetCommentByIdQuery(id),
+            cancellationToken));
+    }
+
+    [HttpGet("{streetcodeId:int}")]
+    public async Task<IActionResult> GetByStreetcodeId(
+        [FromRoute] int streetcodeId,
+        CancellationToken cancellationToken)
+    {
+        return HandleResult(await Mediator.Send(
+            new GetCommentsByStreetcodeIdQuery(streetcodeId),
             cancellationToken));
     }
 }

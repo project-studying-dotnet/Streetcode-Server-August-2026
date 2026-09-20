@@ -1,0 +1,17 @@
+**/bin
+**/obj
+
+.git
+.idea
+.vs
+
+tests
+
+*.user
+*.suo
+*.DotSettings.user
+
+.env
+.env.*
+
+**/appsettings.Development.json
