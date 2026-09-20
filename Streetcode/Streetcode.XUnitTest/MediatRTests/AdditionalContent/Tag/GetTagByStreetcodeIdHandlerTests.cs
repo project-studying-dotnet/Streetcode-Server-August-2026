@@ -74,8 +74,8 @@ namespace Streetcode.XUnitTest.MediatRTests.AdditionalContent.Tag
             var result = await _handler.Handle(query, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Equal($"Cannot find any tag by the streetcode id: {query.StreetcodeId}", result.Errors[0].Message);
-            _mockLogger.Verify(l => l.LogError(query, $"Cannot find any tag by the streetcode id: {query.StreetcodeId}"), Times.Once);
+            Assert.Equal(string.Format(TestMessages.CannotFindAnyTagByStreetcodeId, query.StreetcodeId), result.Errors[0].Message);
+            _mockLogger.Verify(l => l.LogError(query, string.Format(TestMessages.CannotFindAnyTagByStreetcodeId, query.StreetcodeId)), Times.Once);
         }
     }
 }

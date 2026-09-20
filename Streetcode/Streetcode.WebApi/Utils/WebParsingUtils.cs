@@ -291,21 +291,24 @@ public class WebParsingUtils
             return false;
         }
 
-        await using var transaction = await _streetcodeContext.Database.BeginTransactionAsync();
-        try
+        return await _streetcodeContext.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
-            _streetcodeContext.Set<Toponym>().RemoveRange(_streetcodeContext.Set<Toponym>());
-            await _streetcodeContext.Set<Toponym>().AddRangeAsync(toponyms);
-            await _streetcodeContext.SaveChangesAsync();
-            await transaction.CommitAsync();
-            Console.WriteLine("Success: True");
-            return true;
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            await using var transaction = await _streetcodeContext.Database.BeginTransactionAsync();
+            try
+            {
+                _streetcodeContext.Set<Toponym>().RemoveRange(_streetcodeContext.Set<Toponym>());
+                await _streetcodeContext.Set<Toponym>().AddRangeAsync(toponyms);
+                await _streetcodeContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                Console.WriteLine("Success: True");
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     /// <summary>

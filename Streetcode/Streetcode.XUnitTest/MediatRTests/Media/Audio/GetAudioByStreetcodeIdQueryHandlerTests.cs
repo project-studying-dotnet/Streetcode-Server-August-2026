@@ -38,7 +38,7 @@ public class GetAudioByStreetcodeIdQueryHandlerTests
     public async Task Handle_WhenStreetcodeDoesNotExist_ShouldReturnFailure()
     {
         var query = new GetAudioByStreetcodeIdQuery(5);
-        var expectedError = $"Cannot find an audio with the corresponding streetcode id: {query.StreetcodeId}";
+        var expectedError = string.Format(TestMessages.CannotFindAnAudioWithCorrespondingStreetcodeId, query.StreetcodeId);
 
         _streetcodeRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
