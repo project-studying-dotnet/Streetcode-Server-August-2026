@@ -37,7 +37,7 @@ public class GetAllAudiosHandlerTests
     public async Task Handle_WhenAudiosDoNotExist_ShouldReturnFailure()
     {
         var query = new GetAllAudiosQuery();
-        var expectedError = "Cannot find any audios";
+        var expectedError = TestMessages.CannotFindAnyAudios;
 
         _audioRepositoryMock
             .Setup(repo => repo.GetAllAsync(
