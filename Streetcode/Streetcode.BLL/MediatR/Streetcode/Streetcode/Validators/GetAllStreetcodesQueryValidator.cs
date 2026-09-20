@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetAll;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -12,7 +13,8 @@ public sealed class GetAllStreetcodesQueryValidator
     {
         RuleFor(query => query.request)
             .NotNull()
-            .WithMessage("Request is required.")
+            .WithName("Request")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(requestValidator);
     }
 }

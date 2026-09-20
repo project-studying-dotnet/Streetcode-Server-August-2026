@@ -13,6 +13,7 @@ public sealed class GetAllToponymsQueryValidator
     {
         RuleFor(query => query.request)
             .NotNull()
+            .WithName("Request")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(requestValidator);
     }

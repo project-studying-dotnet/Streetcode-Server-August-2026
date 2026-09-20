@@ -14,6 +14,7 @@ public sealed class CreatePartnerSourceLinkDtoValidator
         RuleFor(link => link.TargetUrl)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
+            .WithName("Partner source URL")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 PartnerSourceLink.TargetUrlMaxLength,

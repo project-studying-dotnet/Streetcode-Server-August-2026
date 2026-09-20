@@ -13,6 +13,7 @@ public sealed class CreateInvoiceCommandValidator
     {
         RuleFor(command => command.Payment)
             .NotNull()
+            .WithName("Payment")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(paymentDtoValidator);
     }

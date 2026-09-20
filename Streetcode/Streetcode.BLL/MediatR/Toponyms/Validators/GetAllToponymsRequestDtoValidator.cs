@@ -13,13 +13,15 @@ public sealed class GetAllToponymsRequestDtoValidator
     {
         RuleFor(dto => dto.Page)
             .GreaterThan(0)
+            .WithName("Page")
             .WithMessage(ErrorMessages.PropertyGreaterThan_Zero);
 
         RuleFor(dto => dto.Amount)
             .GreaterThan(0)
+            .WithName("Amount")
             .WithMessage(ErrorMessages.PropertyGreaterThan_Zero)
             .LessThanOrEqualTo(PaginationLimits.MaxPageSize)
-            .WithMessage(string.Format(ErrorMessages.MustNotExceedPaginationLimits, PaginationLimits.MaxPageSize));
+            .WithMessage(ErrorMessages.MustNotExceedPaginationLimits);
 
         RuleFor(dto => dto.Title)
             .MustNotExceedLength(

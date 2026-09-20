@@ -13,6 +13,7 @@ public sealed class PositionDtoValidator
     {
         RuleFor(position => position.Position)
             .NotEmpty()
+            .WithName("Position name")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 Positions.PositionMaxLength,

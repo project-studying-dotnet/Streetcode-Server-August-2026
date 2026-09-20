@@ -14,6 +14,7 @@ public sealed class UpdatePartnerQueryValidator
     {
         RuleFor(query => query.Partner)
             .NotNull()
+            .WithName("Partner")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(partnerValidator);
 

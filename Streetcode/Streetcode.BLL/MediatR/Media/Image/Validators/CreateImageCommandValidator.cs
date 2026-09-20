@@ -13,6 +13,7 @@ public sealed class CreateImageCommandValidator
     {
         RuleFor(command => command.Image)
             .NotNull()
+            .WithName("Image")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(imageValidator);
     }

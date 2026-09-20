@@ -13,6 +13,7 @@ public sealed class CreatePositionQueryValidator
     {
         RuleFor(query => query.position)
             .NotNull()
+            .WithName("Position")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(positionValidator);
     }

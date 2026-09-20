@@ -13,6 +13,7 @@ public sealed class CreateTeamLinkQueryValidator
     {
         RuleFor(query => query.teamMember)
             .NotNull()
+            .WithName("Team Member Link")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(linkValidator);
     }

@@ -97,6 +97,24 @@ namespace Streetcode.BLL.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} must have the format &apos;status:&lt;Draft|Published|Deleted&gt;&apos;..
+        /// </summary>
+        public static string InvalidFilterFormat {
+            get {
+                return ResourceManager.GetString("InvalidFilterFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {PropertyName} must contain a valid sortable Streetcode property..
+        /// </summary>
+        public static string InvalidSortProperty {
+            get {
+                return ResourceManager.GetString("InvalidSortProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Latitude must be between -90 and 90..
         /// </summary>
         public static string LatitudeMustBeBetween {
@@ -151,7 +169,7 @@ namespace Streetcode.BLL.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {PropertyName} must not exceed {0}..
+        ///   Looks up a localized string similar to {PropertyName} must not exceed {ComparisonValue}..
         /// </summary>
         public static string MustNotExceedPaginationLimits {
             get {

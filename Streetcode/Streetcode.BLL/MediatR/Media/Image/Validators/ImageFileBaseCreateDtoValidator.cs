@@ -2,8 +2,8 @@ using System.Buffers.Text;
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Media.Images;
-using ImageEntity = Streetcode.DAL.Entities.Media.Images.Image;
 using Streetcode.BLL.Resources;
+using ImageEntity = Streetcode.DAL.Entities.Media.Images.Image;
 
 namespace Streetcode.BLL.MediatR.Media.Image.Validators;
 
@@ -35,6 +35,7 @@ public sealed class ImageFileBaseCreateDtoValidator
         RuleFor(image => image.BaseFormat)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
+            .WithName("Image base format")
             .WithMessage(ErrorMessages.Field_Required)
             .Must(base64 =>
                 base64 is not null &&
@@ -43,6 +44,7 @@ public sealed class ImageFileBaseCreateDtoValidator
 
         RuleFor(image => image.MimeType)
             .NotEmpty()
+            .WithName("Image MIME type")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 ImageEntity.MimeTypeMaxLength,
@@ -50,6 +52,7 @@ public sealed class ImageFileBaseCreateDtoValidator
 
         RuleFor(image => image.Extension)
             .NotEmpty()
+            .WithName("Image file extension")
             .WithMessage(ErrorMessages.Field_Required);
 
         RuleFor(image => image.Extension)

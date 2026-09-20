@@ -1,5 +1,6 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.AdditionalContent.Filter;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -10,6 +11,7 @@ public sealed class StreetcodeFilterRequestDtoValidator
     {
         RuleFor(dto => dto.SearchQuery)
             .NotEmpty()
-            .WithMessage("Search query is required.");
+            .WithName("Search query")
+            .WithMessage(ErrorMessages.Field_Required);
     }
 }

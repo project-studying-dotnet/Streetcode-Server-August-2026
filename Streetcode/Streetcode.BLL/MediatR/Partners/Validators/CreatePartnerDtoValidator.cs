@@ -15,6 +15,7 @@ public sealed class CreatePartnerDtoValidator
     {
         RuleFor(partner => partner.Title)
             .NotEmpty()
+            .WithName("Partner title")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(Partner.TitleMaxLength, "Partner title");
 

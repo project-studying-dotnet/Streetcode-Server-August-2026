@@ -14,11 +14,14 @@ public sealed class UpdateCoordinateCommandValidator
     {
         RuleFor(command => command.StreetcodeCoordinate)
             .NotNull()
+            .WithName("Coordinate")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(coordinateValidator);
 
         RuleFor(command => command.StreetcodeCoordinate.Id)
             .MustBeValidId("Coordinate")
+            .WithName("CoordinateId")
+            .WithMessage(ErrorMessages.Field_Required)
             .When(command => command.StreetcodeCoordinate is not null);
     }
 }

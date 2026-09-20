@@ -14,6 +14,7 @@ public sealed class TeamMemberLinkDtoValidator
         RuleFor(link => link.TargetUrl)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
+            .WithName("Team member URL")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 TeamMemberLink.TargetUrlMaxLength,
@@ -25,6 +26,7 @@ public sealed class TeamMemberLinkDtoValidator
 
         RuleFor(link => link.LogoType)
             .IsInEnum()
+            .WithName("Logo type")
             .WithMessage(ErrorMessages.Invalid_Property);
     }
 }

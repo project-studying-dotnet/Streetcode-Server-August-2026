@@ -12,6 +12,7 @@ public sealed class SendEmailCommandValidator
     {
         RuleFor(command => command.Email)
             .NotNull()
+            .WithName("Email")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(emailDtoValidator);
     }

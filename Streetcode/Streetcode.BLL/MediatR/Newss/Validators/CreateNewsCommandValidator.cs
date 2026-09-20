@@ -12,6 +12,7 @@ public sealed class CreateNewsCommandValidator
     {
         RuleFor(command => command.newNews)
             .NotNull()
+            .WithName("News")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(newsDtoValidator);
     }

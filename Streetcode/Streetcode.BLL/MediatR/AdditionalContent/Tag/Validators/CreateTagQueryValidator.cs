@@ -13,6 +13,7 @@ public sealed class CreateTagQueryValidator
     {
         RuleFor(query => query.tag)
             .NotNull()
+            .WithName("Tag")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(tagValidator);
     }

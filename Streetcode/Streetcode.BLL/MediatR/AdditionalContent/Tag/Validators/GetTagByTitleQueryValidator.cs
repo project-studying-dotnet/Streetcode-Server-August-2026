@@ -13,6 +13,7 @@ public sealed class GetTagByTitleQueryValidator
     {
         RuleFor(query => query.Title)
             .NotEmpty()
+            .WithName("Tag title")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(TagEntity.TitleMaxLength, "Tag title");
     }

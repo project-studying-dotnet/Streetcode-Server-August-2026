@@ -13,6 +13,7 @@ public sealed class CreateCoordinateCommandValidator
     {
         RuleFor(command => command.StreetcodeCoordinate)
             .NotNull()
+            .WithName("StreetcodeCoordinate")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(coordinateValidator);
     }

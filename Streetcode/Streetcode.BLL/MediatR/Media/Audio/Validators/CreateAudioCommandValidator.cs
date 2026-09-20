@@ -13,6 +13,7 @@ public sealed class CreateAudioCommandValidator
     {
         RuleFor(command => command.Audio)
             .NotNull()
+            .WithName("Audio")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(audioValidator);
     }

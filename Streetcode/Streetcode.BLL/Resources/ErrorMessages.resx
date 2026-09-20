@@ -139,7 +139,7 @@
     <value>{0} must not exceed {1} characters.</value>
   </data>
   <data name="MustNotExceedPaginationLimits" xml:space="preserve">
-    <value>{PropertyName} must not exceed {0}.</value>
+    <value>{PropertyName} must not exceed {ComparisonValue}.</value>
   </data>
   <data name="PaymentGreaterThan_Zero" xml:space="preserve">
     <value>Payment amount must be greater than 0.</value>
@@ -158,5 +158,11 @@
   </data>
   <data name="LongitudeMustBeBetween" xml:space="preserve">
     <value>Longitude must be between -180 and 180.</value>
+  </data>
+  <data name="InvalidSortProperty" xml:space="preserve">
+    <value>{PropertyName} must contain a valid sortable Streetcode property.</value>
+  </data>
+  <data name="InvalidFilterFormat" xml:space="preserve">
+    <value>{PropertyName} must have the format 'status:&lt;Draft|Published|Deleted&gt;'.</value>
   </data>
 </root>

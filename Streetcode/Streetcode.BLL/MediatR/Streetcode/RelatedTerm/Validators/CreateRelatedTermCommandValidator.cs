@@ -13,6 +13,7 @@ public sealed class CreateRelatedTermCommandValidator
     {
         RuleFor(command => command.RelatedTerm)
             .NotNull()
+            .WithName("Related Term")
             .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(termValidator);
     }

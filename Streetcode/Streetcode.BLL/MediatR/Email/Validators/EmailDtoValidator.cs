@@ -15,6 +15,7 @@ public sealed class EmailDtoValidator
     {
         RuleFor(email => email.From)
             .NotEmpty()
+            .WithName("Sender email")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 FromMaxLength,
@@ -25,6 +26,7 @@ public sealed class EmailDtoValidator
 
         RuleFor(email => email.Content)
             .NotEmpty()
+            .WithName("Email content")
             .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 ContentMaxLength,

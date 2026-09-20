@@ -15,10 +15,12 @@ public sealed class StreetcodeCoordinateDtoValidator
 
         RuleFor(coordinate => coordinate.Latitude)
             .InclusiveBetween(-90, 90)
+            .WithName("Latitude")
             .WithMessage(ErrorMessages.LatitudeMustBeBetween);
 
         RuleFor(coordinate => coordinate.Longtitude)
             .InclusiveBetween(-180, 180)
+            .WithName("Longitude")
             .WithMessage(ErrorMessages.LongitudeMustBeBetween);
     }
 }
