@@ -90,6 +90,7 @@ public class StreetcodeContent
     public List<Subtitle> Subtitles { get; set; } = new ();
 
     public List<Fact> Facts { get; set; } = new ();
+    public List<Comment> Comments { get; set; } = new();
 
     public List<Video> Videos { get; set; } = new ();
 

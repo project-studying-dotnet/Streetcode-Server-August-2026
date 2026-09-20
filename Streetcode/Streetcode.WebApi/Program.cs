@@ -39,6 +39,7 @@ public class Program
         await app.ApplyMigrations();
 
         // await app.SeedDataAsync(); // uncomment for seeding data in local
+        // await app.SeedCommentsAsync(); // uncomment after SeedDataAsync for sample comments
         app.UseHttpsRedirection();
         app.UseRouting();
 
