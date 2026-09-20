@@ -4,8 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Streetcode.BLL.DTO.Streetcode.Comments;
 using Streetcode.BLL.MediatR.Streetcode.Comment.Delete;
 using Streetcode.BLL.MediatR.Streetcode.Comment.GetById;
-using Streetcode.BLL.MediatR.Streetcode.Comment.Reply;
 using Streetcode.BLL.MediatR.Streetcode.Comment.GetByStreetcodeId;
+using Streetcode.BLL.MediatR.Streetcode.Comment.Reply;
+using Streetcode.BLL.MediatR.Streetcode.Comment.Update;
 using Streetcode.DAL.Enums;
 using Streetcode.WebApi.Attributes;
 
@@ -40,6 +41,24 @@ public class CommentController : BaseApiController
             : HandleResult(result);
     }
 
+    [Authorize]
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(
+        [FromRoute] int id,
+        [FromBody] UpdateCommentDto updateCommentDto,
+        CancellationToken cancellationToken)
+    {
+        var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdValue, out var authorId))
+        {
+            return Unauthorized();
+        }
+
+        return HandleResult(await Mediator.Send(
+            new UpdateCommentCommand(id, authorId, updateCommentDto),
+            cancellationToken));
+    }
+
     [AuthorizeRoles(
         UserRole.MainAdministrator,
         UserRole.Admin,
@@ -58,9 +77,7 @@ public class CommentController : BaseApiController
             new DeleteCommentCommand(id),
             cancellationToken);
 
-        return result.Errors.Any(error => error is CommentNotFoundError)
-            ? NotFound(result.Reasons)
-            : HandleResult(result);
+        return HandleResult(result);
     }
 
     [AuthorizeRoles(
