@@ -34,7 +34,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Delete
             }
 
             _repositoryWrapper.HistoryMapRecordRepository.Delete(record);
-            bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+            bool isSaved = await _repositoryWrapper.SaveChangesAsync(cancellationToken) > 0;
 
             if (!isSaved)
             {

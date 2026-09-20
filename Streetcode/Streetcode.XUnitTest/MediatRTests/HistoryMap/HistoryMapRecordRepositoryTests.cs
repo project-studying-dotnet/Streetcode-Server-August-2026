@@ -103,7 +103,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                 Id = 1,
                 StreetcodeId = 10,
                 ToponymId = 20,
-                PhysicalStreetcodeNumber = 42
+                PhysicalStreetcodeNumber = 42,
             };
 
             context.HistoryMapRecords.Add(expectedRecord);
@@ -139,7 +139,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                     Id = 1,
                     StreetcodeId = 10,
                     ToponymId = 20,
-                    PhysicalStreetcodeNumber = 42
+                    PhysicalStreetcodeNumber = 42,
                 });
 
             await context.SaveChangesAsync();
@@ -167,7 +167,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                     Id = 1,
                     StreetcodeId = 10,
                     ToponymId = 20,
-                    PhysicalStreetcodeNumber = 42
+                    PhysicalStreetcodeNumber = 42,
                 });
 
             await context.SaveChangesAsync();
@@ -195,21 +195,21 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                     Id = 1,
                     StreetcodeId = 10,
                     ToponymId = 100,
-                    PhysicalStreetcodeNumber = 1
+                    PhysicalStreetcodeNumber = 1,
                 },
                 new HistoryMapRecord
                 {
                     Id = 2,
                     StreetcodeId = 20,
                     ToponymId = 100,
-                    PhysicalStreetcodeNumber = 2
+                    PhysicalStreetcodeNumber = 2,
                 },
                 new HistoryMapRecord
                 {
                     Id = 3,
                     StreetcodeId = 30,
                     ToponymId = 200,
-                    PhysicalStreetcodeNumber = 3
+                    PhysicalStreetcodeNumber = 3,
                 });
 
             await context.SaveChangesAsync();
@@ -243,7 +243,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                     Id = 1,
                     StreetcodeId = 10,
                     ToponymId = 100,
-                    PhysicalStreetcodeNumber = 1
+                    PhysicalStreetcodeNumber = 1,
                 });
 
             await context.SaveChangesAsync();
@@ -270,7 +270,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap
                     Id = 1,
                     StreetcodeId = 10,
                     ToponymId = 100,
-                    PhysicalStreetcodeNumber = 1
+                    PhysicalStreetcodeNumber = 1,
                 });
 
             await context.SaveChangesAsync();

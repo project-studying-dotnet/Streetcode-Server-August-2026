@@ -56,5 +56,5 @@ public interface IRepositoryWrapper
     IHistoryMapRecordRepository HistoryMapRecordRepository { get; }
     public int SaveChanges();
 
-    public Task<int> SaveChangesAsync();
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

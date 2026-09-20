@@ -62,19 +62,19 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Merge
             var sourceStreetcodeLinkToTransfer = new StreetcodeToponym
             {
                 StreetcodeId = 10,
-                ToponymId = dto.SourceToponymId
+                ToponymId = dto.SourceToponymId,
             };
 
             var sourceStreetcodeLinkWithExistingTarget = new StreetcodeToponym
             {
                 StreetcodeId = 20,
-                ToponymId = dto.SourceToponymId
+                ToponymId = dto.SourceToponymId,
             };
 
             var existingTargetStreetcodeLink = new StreetcodeToponym
             {
                 StreetcodeId = 20,
-                ToponymId = dto.TargetToponymId
+                ToponymId = dto.TargetToponymId,
             };
 
             repositoryMock.SetupSequence(r => r.ToponymRepository.GetFirstOrDefaultAsync(
@@ -105,7 +105,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Merge
                     r.StreetcodeToponymRepository.CreateAsync(It.IsAny<StreetcodeToponym>()))
                 .ReturnsAsync((StreetcodeToponym link) => link);
 
-            repositoryMock.Setup(r => r.SaveChangesAsync())
+            repositoryMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
 
             var handler = new MergeToponymsHandler(
@@ -158,7 +158,7 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Merge
                 Times.Once);
 
             repositoryMock.Verify(
-                r => r.SaveChangesAsync(),
+                r => r.SaveChangesAsync(It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 

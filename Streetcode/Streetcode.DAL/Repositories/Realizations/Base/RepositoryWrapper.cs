@@ -591,8 +591,8 @@ public class RepositoryWrapper : IRepositoryWrapper
         return _streetcodeDbContext.SaveChanges();
     }
 
-    public async Task<int> SaveChangesAsync()
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await _streetcodeDbContext.SaveChangesAsync();
+        return await _streetcodeDbContext.SaveChangesAsync(cancellationToken);
     }
 }

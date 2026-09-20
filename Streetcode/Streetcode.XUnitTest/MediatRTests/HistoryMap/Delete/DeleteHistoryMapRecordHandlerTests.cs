@@ -24,15 +24,18 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Delete
         [Fact]
         public async Task Handle_RecordExists_ShouldDeleteAndReturnOk()
         {
-            var command = new DeleteHistoryMapRecordCommand(1);
-            var recordToDelete = new HistoryMapRecord { Id = 1 };
+            const int recordId = 1;
+
+            var command = new DeleteHistoryMapRecordCommand(recordId);
+
+            var recordToDelete = new HistoryMapRecord { Id = recordId };
 
             repositoryMock.Setup(r => r.HistoryMapRecordRepository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<HistoryMapRecord, bool>>>(),
-                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, Object>>>()))
+                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, object>>>()))
                 .ReturnsAsync(recordToDelete);
 
-            repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+            repositoryMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
             var handler = new DeleteHistoryMapRecordHandler(
                 repositoryMock.Object,
@@ -44,17 +47,21 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Delete
             Assert.Equal(Unit.Value, result.Value);
 
             repositoryMock.Verify(r => r.HistoryMapRecordRepository.Delete(recordToDelete), Times.Once);
-            repositoryMock.Verify(r => r.SaveChangesAsync(), Times.Once);
+            repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            loggerMock.Verify(l => l.LogError(It.IsAny<object>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
         public async Task Handle_RecordNotFound_ShouldReturnFailResult()
         {
-            var command = new DeleteHistoryMapRecordCommand(99);
+            const int recordId = 99;
+
+            var command = new DeleteHistoryMapRecordCommand(recordId);
 
             repositoryMock.Setup(r => r.HistoryMapRecordRepository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<HistoryMapRecord, bool>>>(),
-                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, Object>>>()))
+                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, object>>>()))
                 .ReturnsAsync((HistoryMapRecord)null!);
 
             var handler = new DeleteHistoryMapRecordHandler(
@@ -64,24 +71,33 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Delete
             var result = await handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Contains("Cannot find history map record with id: 99", result.Errors.First().Message);
+            Assert.Contains($"Cannot find history map record with id: {recordId}", result.Errors.First().Message);
 
-            loggerMock.Verify(l => l.LogError(command, It.IsAny<string>()), Times.Once);
+            loggerMock.Verify(
+                l => l.LogError(
+                    command,
+                    $"Cannot find history map record with id: {recordId}"),
+                Times.Once);
+
             repositoryMock.Verify(r => r.HistoryMapRecordRepository.Delete(It.IsAny<HistoryMapRecord>()), Times.Never);
+            repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
         public async Task Handle_DatabaseSaveFails_ShouldReturnFailResult()
         {
-            var command = new DeleteHistoryMapRecordCommand(1);
-            var recordToDelete = new HistoryMapRecord { Id = 1 };
+            const int recordId = 1;
+
+            var command = new DeleteHistoryMapRecordCommand(recordId);
+
+            var recordToDelete = new HistoryMapRecord { Id = recordId };
 
             repositoryMock.Setup(r => r.HistoryMapRecordRepository.GetFirstOrDefaultAsync(
                     It.IsAny<Expression<Func<HistoryMapRecord, bool>>>(),
-                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, Object>>>()))
+                    It.IsAny<Func<IQueryable<HistoryMapRecord>, IIncludableQueryable<HistoryMapRecord, object>>>()))
                 .ReturnsAsync(recordToDelete);
 
-            repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(0);
+            repositoryMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
 
             var handler = new DeleteHistoryMapRecordHandler(
                 repositoryMock.Object,
@@ -90,9 +106,13 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Delete
             var result = await handler.Handle(command, CancellationToken.None);
 
             Assert.True(result.IsFailed);
-            Assert.Contains("Failed to delete history map record", result.Errors.First().Message);
+            Assert.Contains($"Failed to delete history map record with id: {recordId}", result.Errors.First().Message);
 
-            loggerMock.Verify(l => l.LogError(command, It.IsAny<string>()), Times.Once);
+            repositoryMock.Verify(r => r.HistoryMapRecordRepository.Delete(recordToDelete), Times.Once);
+
+            repositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            loggerMock.Verify(l => l.LogError(command, $"Failed to delete history map record with id: {recordId}"), Times.Once);
         }
     }
 }

@@ -81,7 +81,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Merge
 
             _repositoryWrapper.ToponymRepository.Delete(sourceToponym);
 
-            bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+            bool isSaved = await _repositoryWrapper.SaveChangesAsync(cancellationToken) > 0;
 
             if (!isSaved)
             {

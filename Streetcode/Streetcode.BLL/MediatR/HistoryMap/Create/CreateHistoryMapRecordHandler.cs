@@ -66,7 +66,7 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Create
             historyMapRecord.UpdatedAt = DateTime.UtcNow;
 
             await _repositoryWrapper.HistoryMapRecordRepository.CreateAsync(historyMapRecord);
-            bool isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+            bool isSaved = await _repositoryWrapper.SaveChangesAsync(cancellationToken) > 0;
 
             if (!isSaved)
             {
