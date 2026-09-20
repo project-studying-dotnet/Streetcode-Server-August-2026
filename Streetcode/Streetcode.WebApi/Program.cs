@@ -2,7 +2,6 @@ namespace Streetcode.WebApi;
 
 using Hangfire;
 using Streetcode.BLL.Services.BlobStorageService;
-using Streetcode.WebApi.Kafka;
 using Streetcode.WebApi.Extensions;
 using Streetcode.WebApi.Utils;
 using DotNetEnv;
@@ -17,7 +16,6 @@ public class Program
         builder.Host.ConfigureApplication();
 
         builder.Services.AddApplicationServices(builder.Configuration);
-        builder.Services.AddEmailKafka(builder.Configuration);
         builder.Services.AddSwaggerServices();
         builder.Services.AddCustomServices(builder.Configuration);
         builder.Services.ConfigureBlob(builder);

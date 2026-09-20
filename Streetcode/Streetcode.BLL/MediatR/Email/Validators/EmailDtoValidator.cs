@@ -12,11 +12,6 @@ public sealed class EmailDtoValidator
 
     public EmailDtoValidator()
     {
-        RuleFor(email => email.MessageId)
-            .Must(messageId =>
-                messageId is null || messageId != Guid.Empty)
-            .WithMessage("Message ID must not be empty when provided.");
-
         RuleFor(email => email.From)
             .NotEmpty()
             .WithMessage("Sender email is required.")

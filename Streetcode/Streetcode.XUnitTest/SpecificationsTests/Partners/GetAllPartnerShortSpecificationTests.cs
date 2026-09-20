@@ -26,3 +26,4 @@ namespace Streetcode.XUnitTest.SpecificationsTests.Partners;
             Assert.Equal(partners.Select(x => x.Id), result.Select(x => x.Id));
         }
     }
+

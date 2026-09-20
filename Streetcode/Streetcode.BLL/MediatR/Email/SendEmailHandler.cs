@@ -1,74 +1,37 @@
 using FluentResults;
 using MediatR;
-using Microsoft.Extensions.Logging;
-using Streetcode.BLL.Exceptions;
 using Streetcode.BLL.Interfaces.Email;
-using Streetcode.Email.Contracts.Events;
+using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.DAL.Entities.AdditionalContent.Email;
 
-namespace Streetcode.BLL.MediatR.Email;
-
-public sealed class SendEmailHandler
-    : IRequestHandler<SendEmailCommand, Result<Guid>>
+namespace Streetcode.BLL.MediatR.Email
 {
-    private const string FeedbackTemplate = "feedback.v1";
-    private const string SenderEmailKey = "From";
-    private const string ContentKey = "Content";
-
-    private readonly IEmailRequestPublisher _emailRequestPublisher;
-    private readonly ILogger<SendEmailHandler> _logger;
-
-    public SendEmailHandler(
-        IEmailRequestPublisher emailRequestPublisher,
-        ILogger<SendEmailHandler> logger)
+    public class SendEmailHandler : IRequestHandler<SendEmailCommand, Result<Unit>>
     {
-        ArgumentNullException.ThrowIfNull(emailRequestPublisher);
-        ArgumentNullException.ThrowIfNull(logger);
+        private readonly IEmailService _emailService;
+        private readonly ILoggerService _logger;
 
-        _emailRequestPublisher = emailRequestPublisher;
-        _logger = logger;
-    }
+        public SendEmailHandler(IEmailService emailService, ILoggerService logger)
+        {
+            _emailService = emailService;
+            _logger = logger;
+        }
 
-    public async Task<Result<Guid>> Handle(
-        SendEmailCommand request,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
+        public async Task<Result<Unit>> Handle(SendEmailCommand request, CancellationToken cancellationToken)
+        {
+            var message = new Message(new string[] { "streetcodeua@gmail.com" }, request.Email.From, "FeedBack", request.Email.Content);
+            bool isResultSuccess = await _emailService.SendEmailAsync(message);
 
-        var messageId = request.Email.MessageId
-                        ?? Guid.NewGuid();
-        var emailRequested = new EmailRequestedV1(
-            messageId,
-            Guid.NewGuid(),
-            DateTimeOffset.UtcNow,
-            FeedbackTemplate,
-            null,
-            new Dictionary<string, string>
+            if(isResultSuccess)
             {
-                [SenderEmailKey] = request.Email.From,
-                [ContentKey] = request.Email.Content,
-            });
-
-        try
-        {
-            await _emailRequestPublisher.PublishAsync(
-                emailRequested,
-                cancellationToken);
+                return Result.Ok(Unit.Value);
+            }
+            else
+            {
+                const string errorMsg = $"Failed to send email message";
+                _logger.LogError(request, errorMsg);
+                return Result.Fail(new Error(errorMsg));
+            }
         }
-        catch (EmailRequestPublishingException exception)
-        {
-            const string errorMessage =
-                "Unable to accept the email request.";
-
-            _logger.LogError(
-                exception,
-                "Failed to publish email request {MessageId} " +
-                "with correlation {CorrelationId}.",
-                emailRequested.MessageId,
-                emailRequested.CorrelationId);
-
-            return Result.Fail<Guid>(errorMessage);
-        }
-
-        return Result.Ok(messageId);
     }
 }

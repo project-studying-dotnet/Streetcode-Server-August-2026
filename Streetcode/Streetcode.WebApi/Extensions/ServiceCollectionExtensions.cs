@@ -13,6 +13,7 @@ using Microsoft.OpenApi;
 using Serilog.Events;
 using Streetcode.BLL.Interfaces.BlobStorage;
 using Streetcode.BLL.Interfaces.CacheService;
+using Streetcode.BLL.Interfaces.Email;
 using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
@@ -22,11 +23,13 @@ using Streetcode.BLL.Interfaces.Users;
 using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Services.BlobStorageService;
 using Streetcode.BLL.Services.CacheService;
+using Streetcode.BLL.Services.Email;
 using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
 using Streetcode.BLL.Services.Payment;
 using Streetcode.BLL.Services.Sources;
 using Streetcode.BLL.Services.Text;
+using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
@@ -90,6 +93,7 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddScoped<ILoggerService, LoggerService>();
+        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IInstagramService, InstagramService>();
         services.AddScoped<ITextService, AddTermsToTextService>();
@@ -99,6 +103,8 @@ public static class ServiceCollectionExtensions
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
         var connectionString = configuration.GetRequiredConnectionString();
+        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
+        services.AddSingleton(emailConfig);
 
         services.AddRedisCaching(configuration);
 
@@ -119,22 +125,14 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration
-            .GetRequiredSection("CORS")
-            .Get<CorsConfiguration>()
-            ?? throw new InvalidOperationException(
-                "CORS configuration is missing.");
-
-        services.AddCors(options =>
+        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>();
+        services.AddCors(opt =>
         {
-            options.AddDefaultPolicy(policy =>
+            opt.AddDefaultPolicy(policy =>
             {
-                policy
-                    .WithOrigins(corsConfig.AllowedOrigins.ToArray())
-                    .WithHeaders(corsConfig.AllowedHeaders.ToArray())
-                    .WithMethods(corsConfig.AllowedMethods.ToArray())
-                    .SetPreflightMaxAge(
-                        TimeSpan.FromSeconds(corsConfig.PreflightMaxAge));
+                policy.AllowAnyOrigin()
+                      .AllowAnyHeader()
+                      .AllowAnyMethod();
             });
         });
 
@@ -187,9 +185,9 @@ public static class ServiceCollectionExtensions
 
     public class CorsConfiguration
     {
-        public List<string> AllowedOrigins { get; set; } = new();
-        public List<string> AllowedHeaders { get; set; } = new();
-        public List<string> AllowedMethods { get; set; } = new();
-        public int PreflightMaxAge { get; set; } = 1;
+        public List<string> AllowedOrigins { get; set; }
+        public List<string> AllowedHeaders { get; set; }
+        public List<string> AllowedMethods { get; set; }
+        public int PreflightMaxAge { get; set; }
     }
 }

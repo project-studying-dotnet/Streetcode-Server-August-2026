@@ -4,6 +4,7 @@ using Ardalis.Specification.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Query;
+using MimeKit;
 using Streetcode.DAL.Persistence;
 using RepoInterfaces = Streetcode.DAL.Repositories.Interfaces.Base;
 
