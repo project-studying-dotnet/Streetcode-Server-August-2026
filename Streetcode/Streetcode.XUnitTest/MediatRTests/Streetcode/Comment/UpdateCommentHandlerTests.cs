@@ -42,7 +42,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
                 .Setup(mapper => mapper.Map<CommentDto>(comment))
                 .Returns(expectedDto);
             this.repositoryWrapperMock
-                .Setup(wrapper => wrapper.SaveChangesAsync())
+                .Setup(wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
             var beforeUpdate = DateTimeOffset.UtcNow;
 
@@ -55,7 +55,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.NotNull(comment.UpdatedAt);
             Assert.InRange(comment.UpdatedAt!.Value, beforeUpdate, afterUpdate);
             this.commentRepositoryMock.Verify(repository => repository.Update(comment), Times.Once());
-            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Once());
             this.loggerMock.VerifyNoOtherCalls();
         }
 
@@ -73,7 +75,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
-            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never());
             this.mapperMock.VerifyNoOtherCalls();
         }
 
@@ -85,7 +89,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             const string expectedMessage = "Failed to update comment with id: 15";
             this.SetupComment(command.Id, comment);
             this.repositoryWrapperMock
-                .Setup(wrapper => wrapper.SaveChangesAsync())
+                .Setup(wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(0);
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
@@ -94,7 +98,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             Assert.Equal("Updated comment", comment.Text);
             this.commentRepositoryMock.Verify(repository => repository.Update(comment), Times.Once());
-            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Once());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Once());
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.mapperMock.VerifyNoOtherCalls();
         }
@@ -116,7 +122,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.Null(comment.UpdatedAt);
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
-            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never());
             this.mapperMock.VerifyNoOtherCalls();
         }
 
@@ -134,7 +142,9 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             Assert.IsType<CommentConflictError>(result.Errors.Single());
             Assert.Equal(expectedMessage, result.Errors.Single().Message);
             this.commentRepositoryMock.Verify(repository => repository.Update(It.IsAny<CommentEntity>()), Times.Never());
-            this.repositoryWrapperMock.Verify(wrapper => wrapper.SaveChangesAsync(), Times.Never());
+            this.repositoryWrapperMock.Verify(
+                wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()),
+                Times.Never());
             this.loggerMock.Verify(logger => logger.LogError(command, expectedMessage), Times.Once());
         }
 
@@ -146,7 +156,7 @@ namespace Streetcode.XUnitTest.MediatRTests.Streetcode.Comment
             const string expectedMessage = "Comment with id: 15 was updated by another user.";
             this.SetupComment(command.Id, comment);
             this.repositoryWrapperMock
-                .Setup(wrapper => wrapper.SaveChangesAsync())
+                .Setup(wrapper => wrapper.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new DbUpdateConcurrencyException());
 
             var result = await this.CreateHandler().Handle(command, CancellationToken.None);
