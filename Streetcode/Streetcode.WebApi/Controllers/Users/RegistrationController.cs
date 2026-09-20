@@ -7,10 +7,14 @@ namespace Streetcode.WebApi.Controllers.Users;
 public class RegistrationController : BaseApiController
 {
     private readonly UserManager<RegistrationUser> _userManager;
+    private readonly IRegistrationTransactionFactory _transactionFactory;
 
-    public RegistrationController(UserManager<RegistrationUser> userManager)
+    public RegistrationController(
+        UserManager<RegistrationUser> userManager,
+        IRegistrationTransactionFactory transactionFactory)
     {
         _userManager = userManager;
+        _transactionFactory = transactionFactory;
     }
 
     [HttpPost]
@@ -31,19 +35,27 @@ public class RegistrationController : BaseApiController
             Surname = request.Surname.Trim(),
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
+        await using var transaction = await _transactionFactory.BeginAsync();
+        try
         {
-            return BadRequest(result.Errors.Select(error => error.Description));
-        }
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors.Select(error => error.Description));
+            }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, "User");
-        if (!roleResult.Succeeded)
+            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleResult.Succeeded)
+            {
+                return StatusCode(500, "Could not assign the user role.");
+            }
+
+            await transaction.CommitAsync();
+            return Created($"/api/registration/{user.Id}", new { user.Id, user.Email });
+        }
+        catch (Exception)
         {
-            await _userManager.DeleteAsync(user);
-            return StatusCode(500, "Could not assign the user role.");
+            return StatusCode(500, "Could not create the user account.");
         }
-
-        return Created($"/api/registration/{user.Id}", new { user.Id, user.Email });
     }
 }

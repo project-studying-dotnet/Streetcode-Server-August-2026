@@ -22,10 +22,11 @@ public static class WebApplicationExtensions
         catch (Exception ex)
         {
             logger.LogError(ex, "An error occured during startup migration");
+            throw;
         }
     }
 
-    private static async Task SeedIdentityAsync(IServiceProvider services, IConfiguration configuration)
+    public static async Task SeedIdentityAsync(IServiceProvider services, IConfiguration configuration)
     {
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { "User", "Moderator", "Admin", "MainAdministrator" })
@@ -49,30 +50,41 @@ public static class WebApplicationExtensions
 
         var userManager = services.GetRequiredService<UserManager<RegistrationUser>>();
         var admin = await userManager.FindByEmailAsync(email);
-        if (admin is null)
+        if (admin is not null)
         {
-            admin = new RegistrationUser
+            if (!await userManager.IsInRoleAsync(admin, "MainAdministrator"))
             {
-                UserName = email,
-                Email = email,
-                Name = "Main",
-                Surname = "Administrator",
-            };
-            var result = await userManager.CreateAsync(admin, password);
-            if (!result.Succeeded)
-            {
-                throw new InvalidOperationException("Could not seed administrator: " +
-                    string.Join(", ", result.Errors.Select(error => error.Description)));
+                throw new InvalidOperationException(
+                    "The configured administrator email belongs to a non-administrator account.");
             }
+
+            if (!await userManager.CheckPasswordAsync(admin, password))
+            {
+                throw new InvalidOperationException(
+                    "The configured administrator password does not match the existing account.");
+            }
+
+            return;
         }
 
-        if (!await userManager.IsInRoleAsync(admin, "MainAdministrator"))
+        admin = new RegistrationUser
         {
-            var result = await userManager.AddToRoleAsync(admin, "MainAdministrator");
-            if (!result.Succeeded)
-            {
-                throw new InvalidOperationException("Could not assign administrator role.");
-            }
+            UserName = email,
+            Email = email,
+            Name = "Main",
+            Surname = "Administrator",
+        };
+        var createResult = await userManager.CreateAsync(admin, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException("Could not seed administrator: " +
+                string.Join(", ", createResult.Errors.Select(error => error.Description)));
+        }
+
+        var roleResult = await userManager.AddToRoleAsync(admin, "MainAdministrator");
+        if (!roleResult.Succeeded)
+        {
+            throw new InvalidOperationException("Could not assign administrator role.");
         }
     }
 }

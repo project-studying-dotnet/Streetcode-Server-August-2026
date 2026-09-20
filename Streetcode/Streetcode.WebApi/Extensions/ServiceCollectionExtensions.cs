@@ -137,6 +137,7 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication(IdentityConstants.ApplicationScheme)
             .AddIdentityCookies();
         services.AddAuthorization();
+        services.AddScoped<IRegistrationTransactionFactory, RegistrationTransactionFactory>();
 
         services.AddHangfire(config =>
         {
@@ -145,17 +146,19 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>() ?? new CorsConfiguration();
-        var allowedOrigins = corsConfig.AllowedOrigins
-            .Where(origin => !string.IsNullOrWhiteSpace(origin) && origin != "*")
-            .ToArray();
-        services.AddCors(opt =>
+        var corsConfig = configuration
+            .GetRequiredSection("CORS")
+            .Get<CorsConfiguration>()
+            ?? throw new InvalidOperationException("CORS configuration is missing.");
+        services.AddCors(options =>
         {
-            opt.AddDefaultPolicy(policy =>
+            options.AddDefaultPolicy(policy =>
             {
-                policy.WithOrigins(allowedOrigins)
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                policy
+                    .WithOrigins(corsConfig.AllowedOrigins.ToArray())
+                    .WithHeaders(corsConfig.AllowedHeaders.ToArray())
+                    .WithMethods(corsConfig.AllowedMethods.ToArray())
+                    .SetPreflightMaxAge(TimeSpan.FromSeconds(corsConfig.PreflightMaxAge));
             });
         });
 
