@@ -1,8 +1,6 @@
-using System.Data;
 using AutoMapper;
 using FluentResults;
 using MediatR;
-using NLog.Fluent;
 using Streetcode.BLL.DTO.HistoryMap;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
