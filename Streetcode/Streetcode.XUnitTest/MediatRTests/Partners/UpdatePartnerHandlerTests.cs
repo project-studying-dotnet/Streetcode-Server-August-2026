@@ -105,7 +105,7 @@ public class UpdatePartnerHandlerTests
         var updateDto = new CreatePartnerDTO { Id = 1 };
         var partnerEntity = new Partner();
         var query = new UpdatePartnerQuery(updateDto);
-        var expectedError = "Database error during update";
+        var expectedError = TestMessages.DatabaseErrorDuringUpdate;
 
         _mapperMock.Setup(m => m.Map<Partner>(updateDto)).Returns(partnerEntity);
 

@@ -105,8 +105,8 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
-            Assert.Equal("Cannot find any timelineItem", result.Errors.First().Message);
-            this.loggerMock.Verify(logger => logger.LogError(query, "Cannot find any timelineItem"), Times.Once());
+            Assert.Equal(TestMessages.CannotFindAnyTimelineItem, result.Errors.First().Message);
+            this.loggerMock.Verify(logger => logger.LogError(query, TestMessages.CannotFindAnyTimelineItem), Times.Once());
             this.mapperMock.Verify(mapper => mapper.Map<IEnumerable<TimelineItemDTO>>(It.IsAny<object>()), Times.Never());
             this.timelineRepositoryMock.Verify(
                 repo => repo.GetAllAsync(

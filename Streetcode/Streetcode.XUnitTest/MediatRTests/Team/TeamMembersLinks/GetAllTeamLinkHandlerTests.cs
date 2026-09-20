@@ -39,7 +39,7 @@ public class GetAllTeamLinkHandlerTests
 
         var handler = new GetAllTeamLinkHandler(_repositoryMock.Object, _mapperMock.Object, _loggerMock.Object);
         var query = new GetAllTeamLinkQuery();
-        var expectedError = "Cannot find any team links";
+        var expectedError = TestMessages.CannotFindAnyTeamLinks;
 
         var result = await handler.Handle(query, CancellationToken.None);
 

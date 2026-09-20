@@ -98,13 +98,13 @@ namespace Streetcode.XUnitTest.MediatRTests.Timeline.TimelineItem
 
             Assert.True(result.IsFailed);
             Assert.Single(result.Errors);
-            Assert.Equal($"Cannot find a timeline item with corresponding id: {query.Id}", result.Errors[0].Message);
+            Assert.Equal(string.Format(TestMessages.CannotFindTimelineItemWithCorrespondingId, query.Id), result.Errors[0].Message);
             this.timelineRepositoryMock.Verify(
                 repo => repo.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<TimelineItemEntity, bool>>>(),
                 It.IsAny<Func<IQueryable<TimelineItemEntity>, IIncludableQueryable<TimelineItemEntity, object>>?>()), Times.Once());
             this.mapperMock.Verify(mapper => mapper.Map<TimelineItemDTO>(It.IsAny<TimelineItemEntity>()), Times.Never());
-            this.loggerMock.Verify(logger => logger.LogError(query, $"Cannot find a timeline item with corresponding id: {query.Id}"), Times.Once());
+            this.loggerMock.Verify(logger => logger.LogError(query, string.Format(TestMessages.CannotFindTimelineItemWithCorrespondingId, query.Id)), Times.Once());
         }
 
         [Fact]
