@@ -1,0 +1,43 @@
+name: Gateway CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "Streetcode.Gateway/**"
+      - "Streetcode.Gateway.Tests/**"
+      - "Streetcode.Gateway.sln"
+      - ".github/workflows/gateway-ci.yml"
+  pull_request:
+    paths:
+      - "Streetcode.Gateway/**"
+      - "Streetcode.Gateway.Tests/**"
+      - "Streetcode.Gateway.sln"
+      - ".github/workflows/gateway-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore ./Streetcode.Gateway.sln
+
+      - name: Build
+        run: dotnet build ./Streetcode.Gateway.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test ./Streetcode.Gateway.sln --configuration Release --no-build --verbosity normal

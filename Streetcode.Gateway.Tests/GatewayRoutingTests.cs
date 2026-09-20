@@ -32,7 +32,6 @@ public sealed class GatewayRoutingTests
         {
             Content = new StringContent("payload"),
         };
-        request.Headers.TryAddWithoutValidation("Origin", "http://localhost:3000");
 
         using var response = await client.SendAsync(request);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -42,7 +41,6 @@ public sealed class GatewayRoutingTests
         Assert.Equal(path, body.RootElement.GetProperty("path").GetString());
         Assert.Equal("POST", body.RootElement.GetProperty("method").GetString());
         Assert.Equal("payload", body.RootElement.GetProperty("body").GetString());
-        Assert.Equal("*", Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
     }
 
     [Fact]
@@ -58,7 +56,23 @@ public sealed class GatewayRoutingTests
         using var response = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Equal("*", Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
+        Assert.Equal(
+            "http://localhost:3000",
+            Assert.Single(response.Headers.GetValues("Access-Control-Allow-Origin")));
+    }
+
+    [Fact]
+    public async Task Cors_preflight_rejects_an_origin_that_is_not_configured()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+        request.Headers.TryAddWithoutValidation("Origin", "https://untrusted.example");
+        request.Headers.TryAddWithoutValidation("Access-Control-Request-Method", "POST");
+
+        using var response = await client.SendAsync(request);
+
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }
 
     private static WebApplicationFactory<Program> CreateGateway(string identityAddress, string streetcodeAddress) =>
@@ -77,11 +91,6 @@ public sealed class GatewayRoutingTests
         var app = builder.Build();
         app.Run(async context =>
         {
-            if (name == "streetcode")
-            {
-                context.Response.Headers["Access-Control-Allow-Origin"] = "http://localhost:3000";
-            }
-
             await context.Response.WriteAsJsonAsync(new
             {
                 backend = name,

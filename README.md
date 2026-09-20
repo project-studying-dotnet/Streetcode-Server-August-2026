@@ -112,8 +112,9 @@ Set `ReverseProxy__Clusters__streetcode__Destinations__api__Address` and
 `ReverseProxy__Clusters__identity__Destinations__identity-api__Address` to
 override them in another environment.
 The Identity API listens on port 8080 inside Docker; port 5001 is its host
-mapping. The gateway handles CORS for browser requests and removes CORS response
-headers from the Streetcode API to avoid duplicate values.
+mapping. The gateway reads its allowed origins, headers, and methods from the
+`CORS` section in `Streetcode.Gateway/appsettings.json`. Override these values
+with standard ASP.NET Core configuration for each deployment environment.
 
 Run the gateway integration tests with:
 
