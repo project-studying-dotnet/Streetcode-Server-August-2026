@@ -56,7 +56,7 @@ public class UpdateCommentHandler : IRequestHandler<UpdateCommentCommand, Result
         bool isSaved;
         try
         {
-            isSaved = await _repositoryWrapper.SaveChangesAsync() > 0;
+            isSaved = await _repositoryWrapper.SaveChangesAsync(cancellationToken) > 0;
         }
         catch (DbUpdateConcurrencyException)
         {
