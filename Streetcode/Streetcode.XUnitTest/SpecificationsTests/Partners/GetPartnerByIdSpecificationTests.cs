@@ -42,4 +42,3 @@ namespace Streetcode.XUnitTest.SpecificationsTests.Partners;
             Assert.Empty(result);
         }
     }
-
