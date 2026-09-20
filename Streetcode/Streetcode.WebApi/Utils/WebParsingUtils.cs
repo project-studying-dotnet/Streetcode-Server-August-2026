@@ -329,7 +329,7 @@ public class WebParsingUtils
 
             // Add user-agent and referer headers to request
             client.DefaultRequestHeaders.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            client.DefaultRequestHeaders.Add("Referer", "http://www.microsoft.com");
+            client.DefaultRequestHeaders.Add("Referer", "https://www.microsoft.com");
 
             // Send GET request to Nominatim API and retrieve JSON data
             var jsonData = await retryPolicy.WrapAsync(circuitBreakerPolicy).ExecuteAsync(async () =>
