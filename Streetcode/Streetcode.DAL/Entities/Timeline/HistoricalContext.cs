@@ -6,13 +6,15 @@ namespace Streetcode.DAL.Entities.Timeline;
 [Table("historical_contexts", Schema = "timeline")]
 public class HistoricalContext
 {
+    public const int TitleMaxLength = 50;
+
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(50)]
-    public string? Title { get; set; }
+    [MaxLength(TitleMaxLength)]
+    public string Title { get; set; } = string.Empty;
 
     public List<HistoricalContextTimeline> HistoricalContextTimelines { get; set; } = new();
 }

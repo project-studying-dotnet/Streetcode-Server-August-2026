@@ -20,6 +20,7 @@ public class Program
         builder.Services.AddEmailKafka(builder.Configuration);
         builder.Services.AddSwaggerServices();
         builder.Services.AddCustomServices(builder.Configuration);
+        builder.Services.AddTimelineServices();
         builder.Services.ConfigureBlob(builder);
         builder.Services.ConfigurePayment(builder);
         builder.Services.ConfigureInstagram(builder);

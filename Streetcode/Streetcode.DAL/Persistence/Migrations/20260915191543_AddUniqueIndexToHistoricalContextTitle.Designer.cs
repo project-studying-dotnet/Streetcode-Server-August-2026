@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Streetcode.DAL.Persistence;
 
@@ -11,9 +12,11 @@ using Streetcode.DAL.Persistence;
 namespace Streetcode.DAL.Persistence.Migrations
 {
     [DbContext(typeof(StreetcodeDbContext))]
-    partial class StreetcodeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260915191543_AddUniqueIndexToHistoricalContextTitle")]
+    partial class AddUniqueIndexToHistoricalContextTitle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -520,12 +523,6 @@ namespace Streetcode.DAL.Persistence.Migrations
 
                     b.Property<int?>("ParentCommentId")
                         .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
 
                     b.Property<int>("StreetcodeId")
                         .HasColumnType("int");
@@ -1332,7 +1329,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Streetcode.DAL.Entities.Streetcode.StreetcodeContent", "Streetcode")
-                        .WithMany("Comments")
+                        .WithMany()
                         .HasForeignKey("StreetcodeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1602,8 +1599,6 @@ namespace Streetcode.DAL.Persistence.Migrations
 
             modelBuilder.Entity("Streetcode.DAL.Entities.Streetcode.StreetcodeContent", b =>
                 {
-                    b.Navigation("Comments");
-
                     b.Navigation("Coordinates");
 
                     b.Navigation("Facts");
