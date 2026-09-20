@@ -33,7 +33,7 @@ public class GetBaseAudioHandlerTests
     public async Task Handle_WhenAudioDoesNotExist_ShouldReturnFailure()
     {
         var query = new GetBaseAudioQuery(5);
-        var expectedError = $"Cannot find an audio with corresponding id: {query.Id}";
+        var expectedError = string.Format(TestMessages.CannotFindAnAudioWithCorrespondingId, query.Id);
         _audioRepositoryMock
             .Setup(repo => repo.GetFirstOrDefaultAsync(
                 It.IsAny<Expression<Func<AudioEntity, bool>>>(),

@@ -1,33 +1,37 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Azure.Storage.Blobs;
+using FluentValidation;
 using Hangfire;
 using MediatR;
-using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog.Events;
-using Streetcode.WebApi.ExceptionHandlers;
-using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Interfaces.BlobStorage;
-using Streetcode.BLL.Interfaces.Email;
+using Streetcode.BLL.Interfaces.CacheService;
 using Streetcode.BLL.Interfaces.Instagram;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.BLL.Interfaces.Payment;
+using Streetcode.BLL.Interfaces.Sources;
 using Streetcode.BLL.Interfaces.Text;
 using Streetcode.BLL.Interfaces.Users;
+using Streetcode.BLL.MediatR.Behaviors;
 using Streetcode.BLL.Services.BlobStorageService;
-using Streetcode.BLL.Services.Email;
+using Streetcode.BLL.Services.CacheService;
 using Streetcode.BLL.Services.Instagram;
 using Streetcode.BLL.Services.Logging;
 using Streetcode.BLL.Services.Payment;
+using Streetcode.BLL.Services.Sources;
 using Streetcode.BLL.Services.Text;
-using Streetcode.DAL.Entities.AdditionalContent.Email;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 using Streetcode.DAL.Repositories.Realizations.Base;
+using Streetcode.WebApi.ExceptionHandlers;
+using Streetcode.WebApi.Service;
 
 namespace Streetcode.WebApi.Extensions;
 
@@ -39,7 +43,7 @@ public static class ServiceCollectionExtensions
     }
 
     [ExcludeFromCodeCoverage(Justification = "DI composition-root wiring; not meaningfully unit-testable")]
-    public static void AddCustomServices(this IServiceCollection services)
+    public static void AddCustomServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddRepositoryServices();
         services.AddFeatureManagement();
@@ -53,24 +57,56 @@ public static class ServiceCollectionExtensions
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        services.AddScoped<IBlobService, BlobService>();
+        var blobProvider = configuration.GetValue<string>("Blob:Provider");
+
+        if (string.Equals(blobProvider, "Azure", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHostedService<AzureBlobInitializerHostedService>();
+
+            var blobOptions = configuration.GetSection("Blob").Get<BlobEnvironmentVariables>()
+                ?? throw new InvalidOperationException("Blob configuration section is missing.");
+
+            if(string.IsNullOrWhiteSpace(blobOptions.Azure?.ConnectionString) ||
+                string.IsNullOrWhiteSpace(blobOptions.Azure?.ContainerName))
+            {
+                throw new InvalidOperationException("Azure Blob Storage requires both ConnectionString and ContainerName to be configured.");
+            }
+
+            services.AddSingleton(sp =>
+            {
+                var azureOptions = sp.GetRequiredService<IOptions<BlobEnvironmentVariables>>().Value.Azure;
+                return new BlobContainerClient(azureOptions.ConnectionString, azureOptions.ContainerName);
+            });
+
+            services.AddScoped<IBlobService, AzureBlobService>();
+        }
+        else if (string.Equals(blobProvider, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IBlobService, LocalBlobService>();
+        }
+        else
+        {
+            throw new InvalidOperationException($"Invalid Blob:Provider value '{blobProvider}'. Supported values are 'Azure' or 'Local'.");
+        }
+
         services.AddScoped<ILoggerService, LoggerService>();
-        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IInstagramService, InstagramService>();
         services.AddScoped<ITextService, AddTermsToTextService>();
+        services.AddScoped<ISourceCategoryImageProcessor, SourceCategoryImageProcessor>();
     }
 
     public static void AddApplicationServices(this IServiceCollection services, ConfigurationManager configuration)
     {
         var connectionString = configuration.GetRequiredConnectionString();
-        var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
-        services.AddSingleton(emailConfig);
+
+        services.AddRedisCaching(configuration);
 
         services.AddDbContext<StreetcodeDbContext>(options =>
         {
             options.UseSqlServer(connectionString, opt =>
             {
+                opt.EnableRetryOnFailure();
                 opt.MigrationsAssembly(typeof(StreetcodeDbContext).Assembly.GetName().Name);
                 opt.MigrationsHistoryTable("__EFMigrationsHistory", schema: "entity_framework");
             });
@@ -83,14 +119,22 @@ public static class ServiceCollectionExtensions
 
         services.AddHangfireServer();
 
-        var corsConfig = configuration.GetSection("CORS").Get<CorsConfiguration>();
-        services.AddCors(opt =>
+        var corsConfig = configuration
+            .GetRequiredSection("CORS")
+            .Get<CorsConfiguration>()
+            ?? throw new InvalidOperationException(
+                "CORS configuration is missing.");
+
+        services.AddCors(options =>
         {
-            opt.AddDefaultPolicy(policy =>
+            options.AddDefaultPolicy(policy =>
             {
-                policy.AllowAnyOrigin()
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                policy
+                    .WithOrigins(corsConfig.AllowedOrigins.ToArray())
+                    .WithHeaders(corsConfig.AllowedHeaders.ToArray())
+                    .WithMethods(corsConfig.AllowedMethods.ToArray())
+                    .SetPreflightMaxAge(
+                        TimeSpan.FromSeconds(corsConfig.PreflightMaxAge));
             });
         });
 
@@ -104,6 +148,7 @@ public static class ServiceCollectionExtensions
         services.AddLogging();
         services.AddProblemDetails();
         services.AddExceptionHandler<ValidationExceptionHandler>();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddControllers();
     }
 
@@ -117,11 +162,34 @@ public static class ServiceCollectionExtensions
         });
     }
 
+    public static void AddRedisCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<CacheOptions>(configuration.GetSection("Cache"));
+
+        var redisConnectionString = configuration.GetConnectionString("Redis")
+                                     ?? configuration["REDIS_CONNECTION_STRING"];
+
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "streetcode:";
+            });
+
+            services.AddSingleton<ICacheService, CacheService>();
+        }
+        else
+        {
+            services.AddSingleton<ICacheService, NoOpCacheService>();
+        }
+    }
+
     public class CorsConfiguration
     {
-        public List<string> AllowedOrigins { get; set; }
-        public List<string> AllowedHeaders { get; set; }
-        public List<string> AllowedMethods { get; set; }
-        public int PreflightMaxAge { get; set; }
+        public List<string> AllowedOrigins { get; set; } = new();
+        public List<string> AllowedHeaders { get; set; } = new();
+        public List<string> AllowedMethods { get; set; } = new();
+        public int PreflightMaxAge { get; set; } = 1;
     }
 }

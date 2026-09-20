@@ -1,4 +1,3 @@
-using System.Transactions;
 using Repositories.Interfaces;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
@@ -105,6 +104,8 @@ public class RepositoryWrapper : IRepositoryWrapper
     private IStreetcodeToponymRepository _streetcodeToponymRepository;
 
     private IStreetcodeImageRepository _streetcodeImageRepository;
+
+    private ICommentRepository? _commentRepository;
 
     public RepositoryWrapper(StreetcodeDbContext streetcodeDbContext)
     {
@@ -553,7 +554,20 @@ public class RepositoryWrapper : IRepositoryWrapper
 
 			return _streetcodeImageRepository;
 		}
-	}
+    }
+
+    public ICommentRepository CommentRepository
+    {
+        get
+        {
+            if (_commentRepository is null)
+            {
+                _commentRepository = new CommentRepository(_streetcodeDbContext);
+            }
+
+            return _commentRepository;
+        }
+    }
 
     public int SaveChanges()
     {
@@ -565,8 +579,8 @@ public class RepositoryWrapper : IRepositoryWrapper
         return await _streetcodeDbContext.SaveChangesAsync();
     }
 
-    public TransactionScope BeginTransaction()
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+        return await _streetcodeDbContext.SaveChangesAsync(cancellationToken);
     }
 }

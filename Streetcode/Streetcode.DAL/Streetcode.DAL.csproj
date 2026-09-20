@@ -6,8 +6,9 @@
     <CodeAnalysisRuleSet>../settings.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Ardalis.Specification" Version="9.3.1" />
+    <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" Version="9.3.1" />
     <PackageReference Include="EfCore.SchemaCompare" Version="10.0.0" />
-    <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
       <PrivateAssets>all</PrivateAssets>
@@ -21,7 +22,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="2.5.1" />
     <PackageReference Include="Microsoft.SqlServer.Server" Version="1.0.0" />
-    <PackageReference Include="MimeKit" Version="4.17.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
