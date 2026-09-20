@@ -26,27 +26,87 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Merge
         [Fact]
         public async Task Handle_ValidData_ShouldMergeToponymsAndReturnOk()
         {
-            var dto = new MergeToponymsDTO { SourceToponymId = 1, TargetToponymId = 2 };
+            // Arrange
+            var dto = new MergeToponymsDTO
+            {
+                SourceToponymId = 1,
+                TargetToponymId = 2,
+            };
+
             var command = new MergeToponymsCommand(dto);
 
-            var sourceToponym = new Toponym { Id = 1 };
-            var targetToponym = new Toponym { Id = 2 };
+            var sourceToponym = new Toponym
+            {
+                Id = dto.SourceToponymId,
+            };
+
+            var targetToponym = new Toponym
+            {
+                Id = dto.TargetToponymId,
+            };
+
             var recordsToUpdate = new List<HistoryMapRecord>
             {
-                new HistoryMapRecord { Id = 1, ToponymId = 1 },
-                new HistoryMapRecord { Id = 2, ToponymId = 2 },
+                new HistoryMapRecord
+                {
+                    Id = 1,
+                    ToponymId = dto.SourceToponymId,
+                },
+                new HistoryMapRecord
+                {
+                    Id = 2,
+                    ToponymId = dto.SourceToponymId,
+                },
+            };
+
+            var sourceStreetcodeLinkToTransfer = new StreetcodeToponym
+            {
+                StreetcodeId = 10,
+                ToponymId = dto.SourceToponymId
+            };
+
+            var sourceStreetcodeLinkWithExistingTarget = new StreetcodeToponym
+            {
+                StreetcodeId = 20,
+                ToponymId = dto.SourceToponymId
+            };
+
+            var existingTargetStreetcodeLink = new StreetcodeToponym
+            {
+                StreetcodeId = 20,
+                ToponymId = dto.TargetToponymId
             };
 
             repositoryMock.SetupSequence(r => r.ToponymRepository.GetFirstOrDefaultAsync(
-                It.IsAny<Expression<Func<Toponym, bool>>>(),
-                It.IsAny<Func<IQueryable<Toponym>, IIncludableQueryable<Toponym, object>>>()))
+                    It.IsAny<Expression<Func<Toponym, bool>>>(),
+                    It.IsAny<Func<IQueryable<Toponym>, IIncludableQueryable<Toponym, object>>>()))
                 .ReturnsAsync(sourceToponym)
                 .ReturnsAsync(targetToponym);
 
-            repositoryMock.Setup(r => r.HistoryMapRecordRepository.GetByToponymIdAsync(dto.SourceToponymId))
+            repositoryMock.Setup(r =>
+                    r.HistoryMapRecordRepository.GetByToponymIdAsync(dto.SourceToponymId))
                 .ReturnsAsync(recordsToUpdate);
 
-            repositoryMock.Setup(r => r.SaveChangesAsync()).ReturnsAsync(1);
+            repositoryMock.SetupSequence(r =>
+                    r.StreetcodeToponymRepository.GetAllAsync(
+                        It.IsAny<Expression<Func<StreetcodeToponym, bool>>>(),
+                        It.IsAny<Func<IQueryable<StreetcodeToponym>, IIncludableQueryable<StreetcodeToponym, object>>>()))
+                .ReturnsAsync(new List<StreetcodeToponym>
+                {
+                    sourceStreetcodeLinkToTransfer,
+                    sourceStreetcodeLinkWithExistingTarget,
+                })
+                .ReturnsAsync(new List<StreetcodeToponym>
+                {
+                    existingTargetStreetcodeLink,
+                });
+
+            repositoryMock.Setup(r =>
+                    r.StreetcodeToponymRepository.CreateAsync(It.IsAny<StreetcodeToponym>()))
+                .ReturnsAsync((StreetcodeToponym link) => link);
+
+            repositoryMock.Setup(r => r.SaveChangesAsync())
+                .ReturnsAsync(1);
 
             var handler = new MergeToponymsHandler(
                 repositoryMock.Object,
@@ -57,10 +117,49 @@ namespace Streetcode.XUnitTest.MediatRTests.HistoryMap.Merge
             Assert.True(result.IsSuccess);
             Assert.Equal(Unit.Value, result.Value);
 
-            Assert.All(recordsToUpdate, record => Assert.Equal(dto.TargetToponymId, record.ToponymId));
+            Assert.All(
+                recordsToUpdate,
+                record => Assert.Equal(dto.TargetToponymId, record.ToponymId));
 
-            repositoryMock.Verify(r => r.HistoryMapRecordRepository.Update(It.IsAny<HistoryMapRecord>()), Times.Exactly(2));
-            repositoryMock.Verify(r => r.ToponymRepository.Delete(sourceToponym), Times.Once);
+            repositoryMock.Verify(
+                r => r.HistoryMapRecordRepository.Update(It.IsAny<HistoryMapRecord>()),
+                Times.Exactly(recordsToUpdate.Count));
+
+            repositoryMock.Verify(
+                r => r.StreetcodeToponymRepository.Delete(
+                    It.Is<StreetcodeToponym>(x =>
+                        x.StreetcodeId == sourceStreetcodeLinkToTransfer.StreetcodeId &&
+                        x.ToponymId == dto.SourceToponymId)),
+                Times.Once);
+
+            repositoryMock.Verify(
+                r => r.StreetcodeToponymRepository.Delete(
+                    It.Is<StreetcodeToponym>(x =>
+                        x.StreetcodeId == sourceStreetcodeLinkWithExistingTarget.StreetcodeId &&
+                        x.ToponymId == dto.SourceToponymId)),
+                Times.Once);
+
+            repositoryMock.Verify(
+                r => r.StreetcodeToponymRepository.CreateAsync(
+                    It.Is<StreetcodeToponym>(x =>
+                        x.StreetcodeId == sourceStreetcodeLinkToTransfer.StreetcodeId &&
+                        x.ToponymId == dto.TargetToponymId)),
+                Times.Once);
+
+            repositoryMock.Verify(
+                r => r.StreetcodeToponymRepository.CreateAsync(
+                    It.Is<StreetcodeToponym>(x =>
+                        x.StreetcodeId == sourceStreetcodeLinkWithExistingTarget.StreetcodeId &&
+                        x.ToponymId == dto.TargetToponymId)),
+                Times.Never);
+
+            repositoryMock.Verify(
+                r => r.ToponymRepository.Delete(sourceToponym),
+                Times.Once);
+
+            repositoryMock.Verify(
+                r => r.SaveChangesAsync(),
+                Times.Once);
         }
 
         [Fact]

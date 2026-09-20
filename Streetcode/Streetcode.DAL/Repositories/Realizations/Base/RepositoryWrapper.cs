@@ -109,7 +109,7 @@ public class RepositoryWrapper : IRepositoryWrapper
 
     private ICommentRepository? _commentRepository;
 
-    private IHistoryMapRecordRepository _historyMapRecordRepository;
+    private IHistoryMapRecordRepository? _historyMapRecordRepository;
 
     public RepositoryWrapper(StreetcodeDbContext streetcodeDbContext)
     {

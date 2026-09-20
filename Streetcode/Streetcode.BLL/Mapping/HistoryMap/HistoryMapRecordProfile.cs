@@ -11,8 +11,6 @@ namespace Streetcode.BLL.Mapping.HistoryMap
             CreateMap<HistoryMapRecord, HistoryMapRecordDTO>()
                 .ForMember(dest => dest.ToponymName, opt => opt.MapFrom(src => src.Toponym!.StreetName));
 
-            CreateMap<HistoryMapRecordDTO, HistoryMapRecord>();
-
             CreateMap<CreateHistoryMapRecordDTO, HistoryMapRecord>();
         }
     }

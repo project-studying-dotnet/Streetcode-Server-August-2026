@@ -1,6 +1,7 @@
 using FluentResults;
 using MediatR;
 using Streetcode.BLL.Interfaces.Logging;
+using Streetcode.DAL.Entities.Toponyms;
 using Streetcode.DAL.Repositories.Interfaces.Base;
 
 namespace Streetcode.BLL.MediatR.HistoryMap.Merge
@@ -53,6 +54,29 @@ namespace Streetcode.BLL.MediatR.HistoryMap.Merge
                 record.ToponymId = dto.TargetToponymId;
                 record.UpdatedAt = DateTime.UtcNow;
                 _repositoryWrapper.HistoryMapRecordRepository.Update(record);
+            }
+
+            var sourceStreetcodeLinks = await _repositoryWrapper.StreetcodeToponymRepository
+                    .GetAllAsync(predicate: x => x.ToponymId == dto.SourceToponymId);
+
+            var targetStreetcodeIds = (await _repositoryWrapper.StreetcodeToponymRepository
+                        .GetAllAsync(predicate: x => x.ToponymId == dto.TargetToponymId))
+                    .Select(x => x.StreetcodeId)
+                    .ToHashSet();
+
+            foreach (var sourceLink in sourceStreetcodeLinks)
+            {
+                _repositoryWrapper.StreetcodeToponymRepository.Delete(sourceLink);
+
+                if (!targetStreetcodeIds.Contains(sourceLink.StreetcodeId))
+                {
+                    await _repositoryWrapper.StreetcodeToponymRepository.CreateAsync(
+                        new StreetcodeToponym
+                        {
+                            StreetcodeId = sourceLink.StreetcodeId,
+                            ToponymId = dto.TargetToponymId,
+                        });
+                }
             }
 
             _repositoryWrapper.ToponymRepository.Delete(sourceToponym);

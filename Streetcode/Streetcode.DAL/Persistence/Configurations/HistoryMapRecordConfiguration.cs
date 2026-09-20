@@ -11,6 +11,12 @@ public class HistoryMapRecordConfiguration : IEntityTypeConfiguration<HistoryMap
         builder.ToTable("history_map_records", "streetcode");
         builder.HasKey(record => record.Id);
 
+        builder.HasIndex(record => new
+        {
+            record.StreetcodeId,
+            record.PhysicalStreetcodeNumber,
+        }).IsUnique();
+
         builder.HasOne(record => record.Streetcode)
             .WithMany()
             .HasForeignKey(record => record.StreetcodeId)

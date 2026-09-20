@@ -4,6 +4,6 @@ using Streetcode.BLL.DTO.HistoryMap;
 
 namespace Streetcode.BLL.MediatR.HistoryMap.GetByStreetcode
 {
-    public record GetHistoryMapRecordsByStreetcodeQuery(int streetcodeId)
+    public record GetHistoryMapRecordsByStreetcodeQuery(int StreetcodeId)
         : IRequest<Result<IEnumerable<HistoryMapRecordDTO>>>;
 }

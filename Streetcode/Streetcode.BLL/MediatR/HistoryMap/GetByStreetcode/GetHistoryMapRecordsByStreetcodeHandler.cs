@@ -28,17 +28,17 @@ namespace Streetcode.BLL.MediatR.HistoryMap.GetByStreetcode
             CancellationToken cancellationToken)
         {
             var streetcode = await _repositoryWrapper.StreetcodeRepository
-                .GetFirstOrDefaultAsync(predicate: x => x.Id == request.streetcodeId);
+                .GetFirstOrDefaultAsync(predicate: x => x.Id == request.StreetcodeId);
 
             if (streetcode is null)
             {
-                string errorMessage = $"Cannot find streetcode with id: {request.streetcodeId}";
+                string errorMessage = $"Cannot find streetcode with id: {request.StreetcodeId}";
                 _logger.LogError(request, errorMessage);
                 return Result.Fail<IEnumerable<HistoryMapRecordDTO>>(new Error(errorMessage));
             }
 
             var records = await _repositoryWrapper.HistoryMapRecordRepository
-                .GetByStreetcodeIdAsync(request.streetcodeId);
+                .GetByStreetcodeIdAsync(request.StreetcodeId);
 
             var dtos = _mapper.Map<IEnumerable<HistoryMapRecordDTO>>(records);
             return Result.Ok(dtos);

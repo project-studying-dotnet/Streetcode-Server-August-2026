@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Math.EC.Rfc7748;
 using Streetcode.DAL.Entities.HistoryMap;
 using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.HistoryMap;
@@ -37,7 +36,6 @@ namespace Streetcode.DAL.Repositories.Realizations.HistoryMap
         {
             return await _dbContext.Set<HistoryMapRecord>()
                 .Where(x => x.ToponymId == toponymId)
-                .Include(x => x.Streetcode)
                 .ToListAsync();
         }
     }
