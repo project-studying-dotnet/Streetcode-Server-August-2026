@@ -173,7 +173,7 @@ services:
       retries: 5
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.33.0
+    image: mcr.microsoft.com/azure-storage/azurite:latest
     container_name: azurite
     command: "azurite --blobHost 0.0.0.0 --blobPort 10000 --queueHost 0.0.0.0 --queuePort 10001 --tableHost 0.0.0.0 --tablePort 10002"
     ports:
@@ -211,10 +211,6 @@ services:
       STREETCODE_EmailKafka__Topic: "email.requested.v1"
 
       STREETCODE_ConnectionStrings__Redis: "redis:6379"
-      STREETCODE_Blob__BlobStoreKey: "${STREETCODE_Blob__BlobStoreKey:?STREETCODE_Blob__BlobStoreKey is required, copy .env.example to .env}"
-      STREETCODE_Blob__Provider: "${BLOB_PROVIDER:-Azure}"
-      STREETCODE_Blob__Azure__ContainerName: "${BLOB_CONTAINER_NAME:-streetcode-blobs}"
-      STREETCODE_Blob__Azure__ConnectionString: "${STREETCODE_Blob__Azure__ConnectionString:-DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;}"
     ports:
       - "${API_PORT:-5000}:5000"
 
@@ -227,6 +223,26 @@ services:
         condition: service_healthy
       azurite:
         condition: service_healthy
+  streetcode-api-gateway:
+    container_name: streetcode-api-gateway
+    restart: unless-stopped
+
+    build:
+      context: .
+      dockerfile: Streetcode/Streetcode.ApiGateway/Dockerfile
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: "http://+:5002"
+
+    ports:
+      - "${GATEWAY_PORT:-5002}:5002"
+
+    depends_on:
+      api:
+        condition: service_started
+      identity-api:
+        condition: service_started
 
   identity-api:
     container_name: streetcode-identity-api
