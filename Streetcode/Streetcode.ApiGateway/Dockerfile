@@ -31,4 +31,6 @@ WORKDIR /app
 
 COPY --from=publish /app/publish .
 
+USER app
+
 ENTRYPOINT ["dotnet", "Streetcode.ApiGateway.dll"]
