@@ -223,6 +223,26 @@ services:
         condition: service_healthy
       azurite:
         condition: service_healthy
+  streetcode-api-gateway:
+    container_name: streetcode-api-gateway
+    restart: unless-stopped
+
+    build:
+      context: .
+      dockerfile: Streetcode/Streetcode.ApiGateway/Dockerfile
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: "http://+:5002"
+
+    ports:
+      - "${GATEWAY_PORT:-5002}:5002"
+
+    depends_on:
+      api:
+        condition: service_started
+      identity-api:
+        condition: service_started
 
   identity-api:
     container_name: streetcode-identity-api

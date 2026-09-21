@@ -1,11 +1,25 @@
 {
   "Routes": [
     {
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5001
+        }
+      ],
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": [
+        "POST"
+      ]
+    },
+    {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
-          "Host": "172.18.0.1",
+          "Host": "localhost",
           "Port": 5000
         }
       ],
@@ -15,8 +29,7 @@
         "POST",
         "PUT",
         "DELETE",
-        "PATCH",
-        "OPTIONS"
+        "PATCH"
       ]
     }
   ],
