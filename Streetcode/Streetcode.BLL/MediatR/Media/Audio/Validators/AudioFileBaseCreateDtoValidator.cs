@@ -2,6 +2,7 @@ using System.Buffers.Text;
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Media.Audio;
+using Streetcode.BLL.Resources;
 using AudioEntity = Streetcode.DAL.Entities.Media.Audio;
 
 namespace Streetcode.BLL.MediatR.Media.Audio.Validators;
@@ -30,27 +31,30 @@ public sealed class AudioFileBaseCreateDtoValidator
         RuleFor(audio => audio.BaseFormat)
             .Cascade(CascadeMode.Stop)
             .NotEmpty()
-            .WithMessage("Audio content is required.")
+            .WithName("Audio base format")
+            .WithMessage(ErrorMessages.Field_Required)
             .Must(base64 =>
                 base64 is not null &&
                 Base64.IsValid(base64.AsSpan()))
-            .WithMessage("Audio content must be valid Base64.");
+            .WithMessage(ErrorMessages.MustBeValidBase64);
 
         RuleFor(audio => audio.MimeType)
             .NotEmpty()
-            .WithMessage("Audio MIME type is required.")
+            .WithMessage(ErrorMessages.Field_Required)
+            .WithName("Audio MIME type")
             .MustNotExceedLength(
                 AudioEntity.MimeTypeMaxLength,
                 "Audio MIME type");
 
         RuleFor(audio => audio.Extension)
             .NotEmpty()
-            .WithMessage("Audio extension is required.");
+            .WithName("Audio file extension")
+            .WithMessage(ErrorMessages.Field_Required);
 
         RuleFor(audio => audio.Extension)
             .Must((audio, _) => HaveSupportedFileType(audio))
             .WithMessage(
-                "Audio MIME type and extension combination is not supported.")
+                ErrorMessages.AudioMimeTypeAndExtensionNotSupported)
             .When(audio =>
                 !string.IsNullOrWhiteSpace(audio.MimeType) &&
                 !string.IsNullOrWhiteSpace(audio.Extension));

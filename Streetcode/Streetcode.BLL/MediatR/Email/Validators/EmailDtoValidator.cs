@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Email;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Email.Validators;
 
@@ -19,17 +20,19 @@ public sealed class EmailDtoValidator
 
         RuleFor(email => email.From)
             .NotEmpty()
-            .WithMessage("Sender email is required.")
+            .WithName("Sender email")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 FromMaxLength,
                 "Sender email")
             .EmailAddress()
             .WithMessage(
-                "Sender email must be a valid email address.");
+                ErrorMessages.SenderMustBeValidEmail);
 
         RuleFor(email => email.Content)
             .NotEmpty()
-            .WithMessage("Email content is required.")
+            .WithName("Email content")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 ContentMaxLength,
                 "Email content");

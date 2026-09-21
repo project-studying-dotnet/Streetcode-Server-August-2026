@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Media.Audio;
 using Streetcode.BLL.MediatR.Media.Audio.Create;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Media.Audio.Validators;
 
@@ -12,7 +13,8 @@ public sealed class CreateAudioCommandValidator
     {
         RuleFor(command => command.Audio)
             .NotNull()
-            .WithMessage("Audio is required.")
+            .WithName("Audio")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(audioValidator);
     }
 }

@@ -2,6 +2,7 @@ using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode.TextContent;
 using Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Update;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Streetcode.RelatedTerm.Validators;
 
@@ -16,7 +17,8 @@ public sealed class UpdateRelatedTermCommandValidator
 
         RuleFor(command => command.RelatedTerm)
             .NotNull()
-            .WithMessage("Related term is required.")
+            .WithName("Related Term")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(termValidator);
     }
 }

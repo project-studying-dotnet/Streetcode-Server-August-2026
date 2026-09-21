@@ -1,5 +1,6 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.GetByIndex;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -10,6 +11,7 @@ public sealed class GetStreetcodeByIndexQueryValidator
     {
         RuleFor(query => query.Index)
             .GreaterThan(0)
-            .WithMessage("Streetcode index must be greater than 0.");
+            .WithName("Streetcode Index")
+            .WithMessage(ErrorMessages.PropertyGreaterThan_Zero);
     }
 }

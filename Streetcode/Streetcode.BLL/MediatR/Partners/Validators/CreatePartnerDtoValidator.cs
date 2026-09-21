@@ -3,6 +3,7 @@ using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.DTO.Partners.Create;
 using Streetcode.DAL.Entities.Partners;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Partners.Validators;
 
@@ -14,7 +15,8 @@ public sealed class CreatePartnerDtoValidator
     {
         RuleFor(partner => partner.Title)
             .NotEmpty()
-            .WithMessage("Partner title is required.")
+            .WithName("Partner title")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(Partner.TitleMaxLength, "Partner title");
 
         RuleFor(partner => partner.LogoId)

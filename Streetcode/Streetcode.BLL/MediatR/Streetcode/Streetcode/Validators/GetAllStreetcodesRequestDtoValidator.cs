@@ -3,6 +3,7 @@ using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode;
 using Streetcode.BLL.MediatR.Streetcode.Streetcode.Filters;
 using Streetcode.DAL.Entities.Streetcode;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Streetcode.Streetcode.Validators;
 
@@ -32,11 +33,13 @@ public sealed class GetAllStreetcodesRequestDtoValidator
     {
         RuleFor(dto => dto.Page)
             .GreaterThan(0)
-            .WithMessage("Page must be greater than 0.");
+            .WithName("Page")
+            .WithMessage(ErrorMessages.PropertyGreaterThan_Zero);
 
         RuleFor(dto => dto.Amount)
             .GreaterThan(0)
-            .WithMessage("Amount must be greater than 0.")
+            .WithName("Amount")
+            .WithMessage(ErrorMessages.PropertyGreaterThan_Zero)
             .LessThanOrEqualTo(PaginationLimits.MaxPageSize)
             .WithMessage(
                 $"Amount must not exceed {PaginationLimits.MaxPageSize}.");
@@ -49,14 +52,16 @@ public sealed class GetAllStreetcodesRequestDtoValidator
 
         RuleFor(dto => dto.Sort)
             .Must(BeValidSortProperty)
-            .WithMessage("Sort must contain a valid sortable Streetcode property.")
+            .WithName("Sort")
+            .WithMessage(ErrorMessages.InvalidSortProperty)
             .When(dto => dto.Sort is not null);
 
         RuleFor(dto => dto.Filter)
             .Must(filter =>
                 StreetcodeFilterParser.TryParse(filter, out _))
+            .WithName("Filter")
             .WithMessage(
-                "Filter must have the format 'status:<Draft|Published|Deleted>'.")
+                ErrorMessages.InvalidFilterFormat)
             .When(dto => dto.Filter is not null);
     }
 

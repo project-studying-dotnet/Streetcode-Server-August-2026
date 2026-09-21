@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.DTO.Partners;
 using Streetcode.BLL.MediatR.Partners.Create;
+using Streetcode.BLL.Resources;
 
 namespace Streetcode.BLL.MediatR.Partners.Validators;
 
@@ -12,7 +13,8 @@ public sealed class CreatePartnerQueryValidator
     {
         RuleFor(query => query.newPartner)
             .NotNull()
-            .WithMessage("Partner is required.")
+            .WithName("Partner")
+            .WithMessage(ErrorMessages.Field_Required)
             .SetValidator(partnerValidator);
     }
 }

@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.MediatR.Newss.GetByUrl;
+using Streetcode.BLL.Resources;
 using NewsEntity = Streetcode.DAL.Entities.News.News;
 
 namespace Streetcode.BLL.MediatR.Newss.Validators;
@@ -12,7 +13,8 @@ public sealed class GetNewsByUrlQueryValidator
     {
         RuleFor(query => query.url)
             .NotEmpty()
-            .WithMessage("URL is required.")
+            .WithName("URL")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(NewsEntity.UrlMaxLength, "URL");
     }
 }

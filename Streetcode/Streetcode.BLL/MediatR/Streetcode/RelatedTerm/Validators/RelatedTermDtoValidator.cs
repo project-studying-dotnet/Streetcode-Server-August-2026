@@ -1,6 +1,7 @@
 using FluentValidation;
 using Streetcode.BLL.MediatR.Validators;
 using Streetcode.BLL.DTO.Streetcode.TextContent;
+using Streetcode.BLL.Resources;
 using RelatedTermEntity =
     Streetcode.DAL.Entities.Streetcode.TextContent.RelatedTerm;
 
@@ -13,7 +14,8 @@ public sealed class RelatedTermDtoValidator
     {
         RuleFor(term => term.Word)
             .NotEmpty()
-            .WithMessage("Related term word is required.")
+            .WithName("Related term word")
+            .WithMessage(ErrorMessages.Field_Required)
             .MustNotExceedLength(
                 RelatedTermEntity.WordMaxLength,
                 "Related term word");
