@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
 using FluentResults;
 using MediatR;
+using Streetcode.BLL.Constants;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Text;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
-using Streetcode.BLL.Constants;
 
 using Entity = Streetcode.DAL.Entities.Streetcode.TextContent.Text;
 

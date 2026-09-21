@@ -10,6 +10,18 @@ namespace Streetcode.DAL.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (
+                    SELECT 1
+                    FROM [streetcode].[texts]
+                    WHERE DATALENGTH([Title]) / 2 > 50
+                )
+                BEGIN
+                    THROW 50001, 'Cannot limit texts.Title to 50 characters because longer values exist.', 1;
+                END
+                """);
+
             migrationBuilder.AlterColumn<string>(
                 name: "Title",
                 schema: "streetcode",
@@ -20,6 +32,18 @@ namespace Streetcode.DAL.Persistence.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(300)",
                 oldMaxLength: 300);
+
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (
+                    SELECT 1
+                    FROM [streetcode].[texts]
+                    WHERE DATALENGTH([AdditionalText]) / 2 > 200
+                )
+                BEGIN
+                    THROW 50001, 'Cannot limit texts.AdditionalText to 200 characters because longer values exist.', 1;
+                END
+                """);
 
             migrationBuilder.AlterColumn<string>(
                 name: "AdditionalText",
@@ -32,7 +56,7 @@ namespace Streetcode.DAL.Persistence.Migrations
                 oldType: "nvarchar(500)",
                 oldMaxLength: 500,
                 oldNullable: true);
-        }
+                    }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)

@@ -19,7 +19,7 @@ public class Text
     public string? Title { get; set; }
 
     [Required]
-    [MaxLength(25000)]
+    [MaxLength(TextContentMaxLength)]
     public string? TextContent { get; set; }
     [MaxLength(AdditionalTextMaxLength)]
     public string? AdditionalText { get; set; }
