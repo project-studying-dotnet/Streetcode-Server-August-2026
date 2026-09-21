@@ -3,6 +3,8 @@ using Streetcode.BLL.DTO.Streetcode.TextContent;
 using Streetcode.BLL.MediatR.Streetcode.Term.GetAll;
 using Streetcode.BLL.MediatR.Streetcode.Term.GetById;
 using Streetcode.BLL.MediatR.Streetcode.Term.Create;
+using Streetcode.DAL.Enums;
+using Streetcode.WebApi.Attributes;
 
 namespace Streetcode.WebApi.Controllers.Streetcode.TextContent;
 
@@ -20,6 +22,7 @@ public class TermController : BaseApiController
         return HandleResult(await Mediator.Send(new GetTermByIdQuery(id)));
     }
 
+    [AuthorizeRoles(UserRole.Admin)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] TermCreateDTO termCreateDto)
     {
