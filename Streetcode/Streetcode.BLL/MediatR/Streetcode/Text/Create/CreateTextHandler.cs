@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentResults;
 using MediatR;
+using Streetcode.BLL.Constants;
 using Streetcode.BLL.DTO.Streetcode.TextContent.Text;
 using Streetcode.BLL.Interfaces.Logging;
 using Streetcode.DAL.Repositories.Interfaces.Base;
@@ -53,6 +54,11 @@ namespace Streetcode.BLL.MediatR.Streetcode.Text.Create
                     const string errorMsg = "Cannot create new text.";
                     _logger.LogError(request, errorMsg);
                     return Result.Fail(new Error(errorMsg));
+                }
+
+                if (text.AdditionalText == TextConstants.DefaultAdditionalText)
+                {
+                    text.AdditionalText = null;
                 }
 
                 var createdText = await _repository.TextRepository.CreateAsync(text);
