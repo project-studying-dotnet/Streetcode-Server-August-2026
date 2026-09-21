@@ -1,0 +1,131 @@
+name: Azure
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      streetcode: ${{ steps.paths.outputs.streetcode }}
+      identity: ${{ steps.paths.outputs.identity }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: List changed files
+        id: paths
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          printf '%s\n' "$changed_files"
+          if printf '%s\n' "$changed_files" | grep -qE '^(Streetcode/|Dockerfile$|\.dockerignore$)'; then
+            echo "streetcode=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "streetcode=false" >> "$GITHUB_OUTPUT"
+          fi
+          if printf '%s\n' "$changed_files" | grep -qE '^(Streetcode\.Identity/|\.dockerignore$)'; then
+            echo "identity=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "identity=false" >> "$GITHUB_OUTPUT"
+          fi
+  ci:
+    name: Validate Docker images
+    needs: changes
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Build Streetcode Docker image
+        if: ${{ needs.changes.outputs.streetcode == 'true' }}
+        run: docker build --file ./Dockerfile --tag streetcode-api:${{ github.sha }} .
+
+      - name: Build Identity Docker image
+        if: ${{ needs.changes.outputs.identity == 'true' }}
+        run: docker build --file ./Streetcode.Identity/Dockerfile --tag streetcode-identity:${{ github.sha }} .
+
+  cd:
+    name: Deploy to Azure development
+    needs: changes
+    runs-on: ubuntu-latest
+    concurrency:
+      group: azure-deploy-development
+      cancel-in-progress: false
+
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/dev' && vars.AZURE_DEPLOY_ENABLED == 'true' && (needs.changes.outputs.streetcode == 'true' || needs.changes.outputs.identity == 'true') }}
+
+    environment: development
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Login to Azure with OIDC
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure Container Registry
+        run: az acr login --name ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}
+
+      - name: Build Docker image
+        if: ${{ needs.changes.outputs.streetcode == 'true' }}
+        run: |
+          docker build --file ./Dockerfile --tag ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-api:${{ github.sha }} .
+
+      - name: Push Docker image
+        if: ${{ needs.changes.outputs.streetcode == 'true' }}
+        run: |
+          docker push ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-api:${{ github.sha }}
+
+      - name: Build Identity Docker image
+        if: ${{ needs.changes.outputs.identity == 'true' }}
+        run: |
+          docker build --file ./Streetcode.Identity/Dockerfile --tag ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }} .
+
+      - name: Push Docker Identity image
+        if: ${{ needs.changes.outputs.identity == 'true' }}
+        run: |
+          docker push ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }}
+
+      - name: Deploy Streetcode Container App
+        if: ${{ needs.changes.outputs.streetcode == 'true' }}
+        env:
+          CONTAINER_APP_NAME: ${{ vars.STREETCODE_CONTAINER_APP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-api:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE"
+
+      - name: Deploy Identity Container App
+        if: ${{ needs.changes.outputs.identity == 'true' }}
+        env:
+          CONTAINER_APP_NAME: ${{ vars.IDENTITY_CONTAINER_APP_NAME }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          IMAGE: ${{ vars.AZURE_CONTAINER_REGISTRY_NAME }}.azurecr.io/streetcode-identity:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name "$CONTAINER_APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --image "$IMAGE"

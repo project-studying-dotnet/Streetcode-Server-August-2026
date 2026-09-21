@@ -578,4 +578,9 @@ public class RepositoryWrapper : IRepositoryWrapper
     {
         return await _streetcodeDbContext.SaveChangesAsync();
     }
+
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return await _streetcodeDbContext.SaveChangesAsync(cancellationToken);
+    }
 }
