@@ -3,6 +3,7 @@ using Streetcode.DAL.Entities.AdditionalContent;
 using Streetcode.DAL.Entities.AdditionalContent.Coordinates.Types;
 using Streetcode.DAL.Entities.Analytics;
 using Streetcode.DAL.Entities.Feedback;
+using Streetcode.DAL.Entities.HistoryMap;
 using Streetcode.DAL.Entities.Media;
 using Streetcode.DAL.Entities.Media.Images;
 using Streetcode.DAL.Entities.News;
@@ -66,6 +67,7 @@ public class StreetcodeDbContext : DbContext
     public DbSet<StreetcodePartner> StreetcodePartners { get; set; }
     public DbSet<TeamMemberPositions> TeamMemberPosition { get; set; }
     public DbSet<Comment> Comments { get; set; }
+    public DbSet<HistoryMapRecord> HistoryMapRecords { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

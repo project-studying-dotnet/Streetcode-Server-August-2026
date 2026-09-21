@@ -3,6 +3,7 @@ using Streetcode.DAL.Persistence;
 using Streetcode.DAL.Repositories.Interfaces.AdditionalContent;
 using Streetcode.DAL.Repositories.Interfaces.Analytics;
 using Streetcode.DAL.Repositories.Interfaces.Base;
+using Streetcode.DAL.Repositories.Interfaces.HistoryMap;
 using Streetcode.DAL.Repositories.Interfaces.Media.Images;
 using Streetcode.DAL.Repositories.Interfaces.Newss;
 using Streetcode.DAL.Repositories.Interfaces.Partners;
@@ -16,6 +17,7 @@ using Streetcode.DAL.Repositories.Interfaces.Transactions;
 using Streetcode.DAL.Repositories.Interfaces.Users;
 using Streetcode.DAL.Repositories.Realizations.AdditionalContent;
 using Streetcode.DAL.Repositories.Realizations.Analytics;
+using Streetcode.DAL.Repositories.Realizations.HistoryMap;
 using Streetcode.DAL.Repositories.Realizations.Media;
 using Streetcode.DAL.Repositories.Realizations.Media.Images;
 using Streetcode.DAL.Repositories.Realizations.Newss;
@@ -106,6 +108,8 @@ public class RepositoryWrapper : IRepositoryWrapper
     private IStreetcodeImageRepository _streetcodeImageRepository;
 
     private ICommentRepository? _commentRepository;
+
+    private IHistoryMapRecordRepository? _historyMapRecordRepository;
 
     public RepositoryWrapper(StreetcodeDbContext streetcodeDbContext)
     {
@@ -569,17 +573,25 @@ public class RepositoryWrapper : IRepositoryWrapper
         }
     }
 
+    public IHistoryMapRecordRepository HistoryMapRecordRepository
+{
+    get
+    {
+        if (_historyMapRecordRepository is null)
+        {
+            _historyMapRecordRepository = new HistoryMapRecordRepository(_streetcodeDbContext);
+        }
+
+        return _historyMapRecordRepository;
+    }
+}
+
     public int SaveChanges()
     {
         return _streetcodeDbContext.SaveChanges();
     }
 
-    public async Task<int> SaveChangesAsync()
-    {
-        return await _streetcodeDbContext.SaveChangesAsync();
-    }
-
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _streetcodeDbContext.SaveChangesAsync(cancellationToken);
     }
